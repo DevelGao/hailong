@@ -65,7 +65,7 @@ allprojects {
       // This path needs to be relative to each project
       target fileTree('.') {
         include '**/*.java'
-        exclude '**/.gradle/**', 'web3j'
+        exclude '**/.gradle/**'
       }
       removeUnusedImports()
       eclipse().configFile(rootProject.file('gradle/eclipse-java-google-style.xml'))
@@ -297,7 +297,6 @@ startScripts {
 dependencies {
   compile project(':beaconchain')
   errorprone 'com.google.errorprone:error_prone_core:2.3.1'
-  compile ('org.web3j:core:3.5.0')
 }
 
 task createEVMToolApp(type: CreateStartScripts) {
