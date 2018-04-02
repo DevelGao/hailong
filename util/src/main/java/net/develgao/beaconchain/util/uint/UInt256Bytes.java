@@ -3,11 +3,6 @@ package net.develgao.beaconchain.util.uint;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-
-import java.math.BigInteger;
-import java.util.function.BinaryOperator;
-
-import com.google.common.annotations.VisibleForTesting;
 import net.develgao.beaconchain.util.bytes.Bytes3;
 import net.develgao.beaconchain.util.bytes.Bytes32;
 import net.develgao.beaconchain.util.bytes.Bytes32s;
@@ -15,6 +10,11 @@ import net.develgao.beaconchain.util.bytes.BytesValue;
 import net.develgao.beaconchain.util.bytes.BytesValues;
 import net.develgao.beaconchain.util.bytes.MutableBytes3;
 import net.develgao.beaconchain.util.bytes.MutableBytes32;
+
+import java.math.BigInteger;
+import java.util.function.BinaryOperator;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Static operations to work on bytes interpreted as 256 bytes unsigned integers.
