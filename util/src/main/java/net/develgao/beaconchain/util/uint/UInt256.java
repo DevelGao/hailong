@@ -1,5 +1,6 @@
 package net.develgao.beaconchain.util.uint;
 
+import net.develgao.beaconchain.util.bytes.Bytes3;
 import net.develgao.beaconchain.util.bytes.Bytes32;
 import net.develgao.beaconchain.util.bytes.BytesValue;
 
