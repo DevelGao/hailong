@@ -13,10 +13,15 @@
 
 package net.develgao.beaconchain;
 
+import net.develgao.beaconchain.controllers.ServiceController;
 
 public final class BeaconChain {
     public static void main(final String... args) {
         // Process Command Line Args
-        // Instantiate NodeController and start event loop
+        // Instantiate ServiceController and start event loop
+         System.out.println(Constants.getConstantsAsString());
+         ServiceController sc = new ServiceController();
+         sc.start();
+
     }
 }

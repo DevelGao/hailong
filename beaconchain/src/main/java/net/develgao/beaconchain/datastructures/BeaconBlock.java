@@ -13,15 +13,22 @@
 
 package net.develgao.beaconchain.datastructures;
 
+import net.develgao.beaconchain.ethereum.core.Hash;
+import net.develgao.beaconchain.util.uint.UInt384;
 import net.develgao.beaconchain.util.uint.UInt64;
 
-public class ShardAndCommittee {
+public class BeaconBlock {
 
-  public UInt64 shard;
-  public int[] committee;
-  private UInt64 total_validator_count;
+  public UInt64 slot;
+  private Hash randao_reveal;
+  private Hash candidate_pow_receipt_root;
+  private Hash[] ancestor_hashes;
+  private Hash state_root;
+  private AttestationRecord[] attestations;
+  private SpecialRecord[] specials;
+  private UInt384[] proposer_signature;
 
-  public ShardAndCommittee() {
+  public BeaconBlock() {
 
   }
 
