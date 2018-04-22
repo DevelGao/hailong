@@ -13,16 +13,23 @@
 
 package net.develgao.beaconchain.datastructures;
 
-import net.develgao.beaconchain.util.bytes.Bytes32;
-import net.develgao.beaconchain.util.uint.UInt384;
+import net.develgao.beaconchain.ethereum.core.Hash;
 
+import org.web3j.abi.datatypes.Bytes;
+import org.web3j.abi.datatypes.generated.Int16;
+import org.web3j.abi.datatypes.generated.Int256;
+import org.web3j.abi.datatypes.generated.Int64;
 
 public class AttestationRecord {
 
-  private AttestationData data;
-  private Bytes32 participation_bitfield;
-  private Bytes32 custody_bitfield;
-  private UInt384 aggregate_sig;
+  private Bytes attester_bitfield;
+  private Hash justified_block_hash;
+  private Hash shard_block_hash;
+  private Hash[] oblique_parent_hashes;
+  private Int16 shard_id;
+  private Int64 justified_slot;
+  private Int64 slot;
+  private Int256[] aggregate_sig;
 
   public AttestationRecord() {
 

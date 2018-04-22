@@ -13,13 +13,13 @@
 
 package net.develgao.beaconchain.datastructures;
 
-import net.develgao.beaconchain.util.uint.UInt64;
+import org.web3j.abi.datatypes.generated.Int16;
+import org.web3j.abi.datatypes.generated.Int24;
 
 public class ShardAndCommittee {
 
-  public UInt64 shard;
-  public int[] committee;
-  private UInt64 total_validator_count;
+  private Int16 shard_id;
+  private Int24[] committee;
 
   public ShardAndCommittee() {
 
