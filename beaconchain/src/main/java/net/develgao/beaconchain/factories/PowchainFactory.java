@@ -1,6 +1,6 @@
 package net.develgao.beaconchain.services;
 
-
+import net.develgao.beaconchain.services.PowchainService;
 
 public class PowchainFactory {
 
