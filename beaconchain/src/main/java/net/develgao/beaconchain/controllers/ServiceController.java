@@ -1,15 +1,17 @@
 package net.develgao.beaconchain.controllers;
 
-import com.google.common.eventbus.EventBus;
 import net.develgao.beaconchain.services.EventBusFactory;
+import net.develgao.beaconchain.services.PowchainFactory;
 import net.develgao.beaconchain.services.PowchainService;
+
+import com.google.common.eventbus.EventBus;
 
 public class ServiceController {
     private PowchainService powchainService;
     private EventBus eventBus;
 
     public ServiceController(){
-        this.powchainService = PowchainService.getInstance();
+        this.powchainService = PowchainFactory.getInstance();
         this.eventBus = EventBusFactory.getInstance();
         this.init();
     }
