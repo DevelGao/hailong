@@ -11,19 +11,17 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.services;
+package net.develgao.beaconchain;
 
-import java.util.concurrent.Executors;
+import net.develgao.beaconchain.controllers.ServiceController;
 
-import com.google.common.eventbus.AsyncEventBus;
-import com.google.common.eventbus.EventBus;
+public final class App {
+    public static void main(final String... args) {
+        // Process Command Line Args
+        // Instantiate ServiceController and start event loop
+         System.out.println(Constants.getConstantsAsString());
+         ServiceController.init();
+         ServiceController.start();
 
-public class EventBusFactory {
-
-    private static final EventBus eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
-
-    public static EventBus getInstance() {
-        return eventBus;
     }
-
 }
