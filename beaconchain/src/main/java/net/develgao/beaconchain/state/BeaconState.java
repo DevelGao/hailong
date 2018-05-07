@@ -15,13 +15,13 @@ package net.develgao.beaconchain.state;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import net.develgao.beaconchain.datastructures.CandidatePoWReceiptRootRecord;
-import net.develgao.beaconchain.datastructures.CrosslinkRecord;
-import net.develgao.beaconchain.datastructures.ForkData;
-import net.develgao.beaconchain.datastructures.PendingAttestationRecord;
-import net.develgao.beaconchain.datastructures.ShardAndCommittee;
-import net.develgao.beaconchain.datastructures.ShardReassignmentRecord;
-import net.develgao.beaconchain.datastructures.ValidatorRecord;
+import net.develgao.beaconchain.datastructures.BeaconChainState.CandidatePoWReceiptRootRecord;
+import net.develgao.beaconchain.datastructures.BeaconChainState.CrosslinkRecord;
+import net.develgao.beaconchain.datastructures.BeaconChainState.ForkData;
+import net.develgao.beaconchain.datastructures.BeaconChainState.PendingAttestationRecord;
+import net.develgao.beaconchain.datastructures.BeaconChainState.ShardCommittee;
+import net.develgao.beaconchain.datastructures.BeaconChainState.ShardReassignmentRecord;
+import net.develgao.beaconchain.datastructures.BeaconChainState.ValidatorRecord;
 import net.develgao.beaconchain.ethereum.core.Hash;
 import net.develgao.beaconchain.util.bytes.Bytes3;
 import net.develgao.beaconchain.util.uint.UInt64;
@@ -42,7 +42,7 @@ public class BeaconState {
   // Randomness and committees
   private Hash randao_mix;
   private Hash next_seed;
-  private ShardAndCommittee[][] shard_committees_at_slots;
+  private ShardCommittee[][] shard_committees_at_slots;
   private int[][] persistent_committees;
   private ShardReassignmentRecord[] persistent_committee_reassignments;
 
