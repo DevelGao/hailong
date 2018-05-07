@@ -290,7 +290,7 @@ subprojects {
 jar { enabled = false }
 
 apply plugin: 'application'
-mainClassName = "net.develgao.beaconchain.BeaconChain"
+mainClassName = "net.develgao.beaconchain.App"
 applicationDefaultJvmArgs = [
   "-Dvertx.disableFileCPResolving=true",
   "-Dpantheon.home=PANTHEON_HOME",
