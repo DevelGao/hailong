@@ -11,18 +11,21 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.datastructures.BeaconChainOperations;
+package net.develgao.beaconchain.util.bytes;
 
-import net.develgao.beaconchain.util.uint.UInt64;
 
-public class DepositData {
+import org.junit.Test;
 
-  private DepositParameters depositParameters;
-  private UInt64 value;
-  private UInt64 timestamp;
+public class Bytes1Test {
 
-  public DepositData() {
+  @Test(expected = IllegalArgumentException.class)
+  public void failsWhenWrappingArraySmallerThan1() {
+    Bytes1.wrap(new byte[0]);
+  }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void failsWhenWrappingArrayLargerThan1() {
+    Bytes1.wrap(new byte[2]);
   }
 
 }
