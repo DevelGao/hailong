@@ -19,7 +19,6 @@ import net.develgao.beaconchain.datastructures.BeaconChainOperations.Deposit;
 import net.develgao.beaconchain.datastructures.BeaconChainOperations.Exit;
 import net.develgao.beaconchain.datastructures.BeaconChainOperations.ProposerSlashing;
 
-
 public class BeaconBlockBody {
 
   private Attestation[] attestations;
