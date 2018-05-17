@@ -67,9 +67,14 @@ allprojects {
   targetCompatibility = '1.8'
 
   repositories {
-    jcenter()
-    mavenCentral()
-    maven { url  "https://develgao.bintray.com/devgao-repo" }
+    if ("$System.env.JENKINS_URL" == 'https://jenkins.devgao.tech/') {
+      maven { url "https://nexus.int.devgao.tech/repository/jcenter/" }
+      maven { url  "https://develgao.bintray.com/devgao-repo" }
+    } else {
+      jcenter()
+      mavenCentral()
+      maven { url  "https://develgao.bintray.com/devgao-repo" }
+    }
   }
 
   dependencies {
