@@ -11,22 +11,22 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.util.uint;
+package net.develgao.artemis.util.uint;
 
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import net.develgao.beaconchain.util.bytes.Bytes1;
-import net.develgao.beaconchain.util.bytes.Bytes3;
-import net.develgao.beaconchain.util.bytes.Bytes32;
-import net.develgao.beaconchain.util.bytes.Bytes32s;
-import net.develgao.beaconchain.util.bytes.Bytes48;
-import net.develgao.beaconchain.util.bytes.BytesValue;
-import net.develgao.beaconchain.util.bytes.BytesValues;
-import net.develgao.beaconchain.util.bytes.MutableBytes1;
-import net.develgao.beaconchain.util.bytes.MutableBytes3;
-import net.develgao.beaconchain.util.bytes.MutableBytes32;
-import net.develgao.beaconchain.util.bytes.MutableBytes48;
+import net.develgao.artemis.util.bytes.Bytes1;
+import net.develgao.artemis.util.bytes.Bytes3;
+import net.develgao.artemis.util.bytes.Bytes32;
+import net.develgao.artemis.util.bytes.Bytes32s;
+import net.develgao.artemis.util.bytes.Bytes48;
+import net.develgao.artemis.util.bytes.BytesValue;
+import net.develgao.artemis.util.bytes.BytesValues;
+import net.develgao.artemis.util.bytes.MutableBytes1;
+import net.develgao.artemis.util.bytes.MutableBytes3;
+import net.develgao.artemis.util.bytes.MutableBytes32;
+import net.develgao.artemis.util.bytes.MutableBytes48;
 
 import java.math.BigInteger;
 import java.util.function.BinaryOperator;

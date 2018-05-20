@@ -11,10 +11,10 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.crypto;
+package net.develgao.artemis.crypto;
 
-import net.develgao.beaconchain.util.bytes.Bytes32;
-import net.develgao.beaconchain.util.bytes.BytesValue;
+import net.develgao.artemis.util.bytes.Bytes32;
+import net.develgao.artemis.util.bytes.BytesValue;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.util.uint;
+package net.develgao.artemis.util.uint;
 
 import java.util.Objects;
 

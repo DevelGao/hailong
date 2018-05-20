@@ -11,10 +11,10 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.vm;
+package net.develgao.artemis.ethereum.vm;
 
-import net.develgao.beaconchain.ethereum.core.Address;
-import net.develgao.beaconchain.util.bytes.BytesValue;
+import net.develgao.artemis.ethereum.core.Address;
+import net.develgao.artemis.util.bytes.BytesValue;
 
 import org.junit.Assert;
 import org.junit.Test;

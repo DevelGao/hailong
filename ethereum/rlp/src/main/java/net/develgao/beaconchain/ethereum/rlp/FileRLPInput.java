@@ -11,14 +11,14 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.rlp;
+package net.develgao.artemis.ethereum.rlp;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import net.develgao.beaconchain.util.bytes.Bytes32;
-import net.develgao.beaconchain.util.bytes.BytesValue;
-import net.develgao.beaconchain.util.bytes.BytesValues;
+import net.develgao.artemis.util.bytes.Bytes32;
+import net.develgao.artemis.util.bytes.BytesValue;
+import net.develgao.artemis.util.bytes.BytesValues;
 
 import java.io.File;
 import java.io.IOException;

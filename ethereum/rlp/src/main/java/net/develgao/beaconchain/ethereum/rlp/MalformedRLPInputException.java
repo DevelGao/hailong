@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.rlp;
+package net.develgao.artemis.ethereum.rlp;
 
 /**
  * Exception thrown if an RLP input is strictly malformed, but in such a way that can be processed

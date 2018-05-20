@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.core;
+package net.develgao.artemis.ethereum.core;
 
 /**
  * An interface for creating the block hash given a {@link BlockHeader}.

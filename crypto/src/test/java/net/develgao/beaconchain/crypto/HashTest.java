@@ -11,12 +11,12 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.crypto;
+package net.develgao.artemis.crypto;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 
-import net.develgao.beaconchain.util.bytes.BytesValue;
+import net.develgao.artemis.util.bytes.BytesValue;
 
 import org.junit.Test;
 

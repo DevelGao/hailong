@@ -11,13 +11,13 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.util.bytes;
+package net.develgao.artemis.util.bytes;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import net.develgao.beaconchain.util.uint.Int256;
-import net.develgao.beaconchain.util.uint.UInt256;
-import net.develgao.beaconchain.util.uint.UInt256Bytes;
+import net.develgao.artemis.util.uint.Int256;
+import net.develgao.artemis.util.uint.UInt256;
+import net.develgao.artemis.util.uint.UInt256Bytes;
 
 
 /**

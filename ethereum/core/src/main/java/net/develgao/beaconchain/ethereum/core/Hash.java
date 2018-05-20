@@ -11,14 +11,14 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.core;
+package net.develgao.artemis.ethereum.core;
 
-import static net.develgao.beaconchain.crypto.Hash.keccak256;
+import static net.develgao.artemis.crypto.Hash.keccak256;
 
-import net.develgao.beaconchain.ethereum.rlp.RLP;
-import net.develgao.beaconchain.util.bytes.Bytes32;
-import net.develgao.beaconchain.util.bytes.BytesValue;
-import net.develgao.beaconchain.util.bytes.DelegatingBytes32;
+import net.develgao.artemis.ethereum.rlp.RLP;
+import net.develgao.artemis.util.bytes.Bytes32;
+import net.develgao.artemis.util.bytes.BytesValue;
+import net.develgao.artemis.util.bytes.DelegatingBytes32;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 

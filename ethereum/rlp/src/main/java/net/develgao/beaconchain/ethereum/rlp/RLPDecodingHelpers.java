@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.rlp;
+package net.develgao.artemis.ethereum.rlp;
 
 
 import java.util.function.IntUnaryOperator;

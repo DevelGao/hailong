@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.vrc;
+package net.develgao.artemis.vrc;
 
 //TODO: This class needs to be modified to contain
 // the validator info that the beacon chain needs.

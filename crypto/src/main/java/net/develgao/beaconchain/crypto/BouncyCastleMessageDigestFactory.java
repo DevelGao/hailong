@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.crypto;
+package net.develgao.artemis.crypto;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

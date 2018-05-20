@@ -11,17 +11,17 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.util.bytes;
+package net.develgao.artemis.util.bytes;
 
-import static net.develgao.beaconchain.util.bytes.BytesValue.fromHexString;
-import static net.develgao.beaconchain.util.bytes.BytesValues.asSignedBigInteger;
-import static net.develgao.beaconchain.util.bytes.BytesValues.asUnsignedBigInteger;
-import static net.develgao.beaconchain.util.bytes.BytesValues.concatenate;
-import static net.develgao.beaconchain.util.bytes.BytesValues.extractInt;
-import static net.develgao.beaconchain.util.bytes.BytesValues.extractLong;
-import static net.develgao.beaconchain.util.bytes.BytesValues.ofUnsignedShort;
-import static net.develgao.beaconchain.util.bytes.BytesValues.toMinimalBytes;
-import static net.develgao.beaconchain.util.bytes.BytesValues.trimLeadingZeros;
+import static net.develgao.artemis.util.bytes.BytesValue.fromHexString;
+import static net.develgao.artemis.util.bytes.BytesValues.asSignedBigInteger;
+import static net.develgao.artemis.util.bytes.BytesValues.asUnsignedBigInteger;
+import static net.develgao.artemis.util.bytes.BytesValues.concatenate;
+import static net.develgao.artemis.util.bytes.BytesValues.extractInt;
+import static net.develgao.artemis.util.bytes.BytesValues.extractLong;
+import static net.develgao.artemis.util.bytes.BytesValues.ofUnsignedShort;
+import static net.develgao.artemis.util.bytes.BytesValues.toMinimalBytes;
+import static net.develgao.artemis.util.bytes.BytesValues.trimLeadingZeros;
 import static org.junit.Assert.assertEquals;
 
 import java.math.BigInteger;

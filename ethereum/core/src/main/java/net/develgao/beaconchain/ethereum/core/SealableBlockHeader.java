@@ -11,10 +11,10 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.core;
+package net.develgao.artemis.ethereum.core;
 
-import net.develgao.beaconchain.util.bytes.BytesValue;
-import net.develgao.beaconchain.util.uint.UInt256;
+import net.develgao.artemis.util.bytes.BytesValue;
+import net.develgao.artemis.util.uint.UInt256;
 
 
 /**

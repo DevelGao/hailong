@@ -11,12 +11,12 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.mainnet;
+package net.develgao.artemis.ethereum.mainnet;
 
-import net.develgao.beaconchain.ethereum.core.BlockHeader;
-import net.develgao.beaconchain.ethereum.core.Hash;
-import net.develgao.beaconchain.ethereum.rlp.RLP;
-import net.develgao.beaconchain.util.bytes.BytesValue;
+import net.develgao.artemis.ethereum.core.BlockHeader;
+import net.develgao.artemis.ethereum.core.Hash;
+import net.develgao.artemis.ethereum.rlp.RLP;
+import net.develgao.artemis.util.bytes.BytesValue;
 
 /**
  * Implements the block hashing algorithm for MainNet as per the yellow paper.

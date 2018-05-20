@@ -11,15 +11,15 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.core;
+package net.develgao.artemis.ethereum.core;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import net.develgao.beaconchain.ethereum.rlp.RLP;
-import net.develgao.beaconchain.ethereum.rlp.RLPException;
-import net.develgao.beaconchain.ethereum.rlp.RLPInput;
-import net.develgao.beaconchain.util.bytes.BytesValue;
-import net.develgao.beaconchain.util.bytes.DelegatingBytesValue;
+import net.develgao.artemis.ethereum.rlp.RLP;
+import net.develgao.artemis.ethereum.rlp.RLPException;
+import net.develgao.artemis.ethereum.rlp.RLPInput;
+import net.develgao.artemis.util.bytes.BytesValue;
+import net.develgao.artemis.util.bytes.DelegatingBytesValue;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 

@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.vrc;
+package net.develgao.artemis.vrc;
 
 
 import com.google.common.eventbus.EventBus;

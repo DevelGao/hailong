@@ -11,13 +11,13 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.util.bytes;
+package net.develgao.artemis.util.bytes;
 
-import static net.develgao.beaconchain.util.bytes.BytesValue.fromHexString;
-import static net.develgao.beaconchain.util.bytes.BytesValue.fromHexStringLenient;
-import static net.develgao.beaconchain.util.bytes.BytesValue.of;
-import static net.develgao.beaconchain.util.bytes.BytesValue.wrap;
-import static net.develgao.beaconchain.util.bytes.BytesValue.wrapBuffer;
+import static net.develgao.artemis.util.bytes.BytesValue.fromHexString;
+import static net.develgao.artemis.util.bytes.BytesValue.fromHexStringLenient;
+import static net.develgao.artemis.util.bytes.BytesValue.of;
+import static net.develgao.artemis.util.bytes.BytesValue.wrap;
+import static net.develgao.artemis.util.bytes.BytesValue.wrapBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -25,7 +25,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-import net.develgao.beaconchain.crypto.BouncyCastleMessageDigestFactory;
+import net.develgao.artemis.crypto.BouncyCastleMessageDigestFactory;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;

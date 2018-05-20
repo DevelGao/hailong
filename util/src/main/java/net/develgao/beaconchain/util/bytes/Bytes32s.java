@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.util.bytes;
+package net.develgao.artemis.util.bytes;
 
 /** Static utility methods to work with {@link Bytes32}. */
 public abstract class Bytes32s {

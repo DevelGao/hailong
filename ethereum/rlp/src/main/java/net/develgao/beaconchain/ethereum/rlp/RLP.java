@@ -11,17 +11,17 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.rlp;
+package net.develgao.artemis.ethereum.rlp;
 
 import static java.lang.String.format;
-import static net.develgao.beaconchain.ethereum.rlp.RLPDecodingHelpers.extractSize;
-import static net.develgao.beaconchain.ethereum.rlp.RLPEncodingHelpers.elementSize;
-import static net.develgao.beaconchain.ethereum.rlp.RLPEncodingHelpers.isSingleRLPByte;
-import static net.develgao.beaconchain.ethereum.rlp.RLPEncodingHelpers.writeElement;
+import static net.develgao.artemis.ethereum.rlp.RLPDecodingHelpers.extractSize;
+import static net.develgao.artemis.ethereum.rlp.RLPEncodingHelpers.elementSize;
+import static net.develgao.artemis.ethereum.rlp.RLPEncodingHelpers.isSingleRLPByte;
+import static net.develgao.artemis.ethereum.rlp.RLPEncodingHelpers.writeElement;
 
-import net.develgao.beaconchain.ethereum.rlp.RLPDecodingHelpers.Kind;
-import net.develgao.beaconchain.util.bytes.BytesValue;
-import net.develgao.beaconchain.util.bytes.MutableBytesValue;
+import net.develgao.artemis.ethereum.rlp.RLPDecodingHelpers.Kind;
+import net.develgao.artemis.util.bytes.BytesValue;
+import net.develgao.artemis.util.bytes.MutableBytesValue;
 
 import java.util.ArrayList;
 import java.util.List;

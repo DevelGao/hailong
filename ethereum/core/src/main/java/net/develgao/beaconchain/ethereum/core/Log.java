@@ -11,11 +11,11 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.ethereum.core;
+package net.develgao.artemis.ethereum.core;
 
-import net.develgao.beaconchain.ethereum.rlp.RLPInput;
-import net.develgao.beaconchain.ethereum.rlp.RLPOutput;
-import net.develgao.beaconchain.util.bytes.BytesValue;
+import net.develgao.artemis.ethereum.rlp.RLPInput;
+import net.develgao.artemis.ethereum.rlp.RLPOutput;
+import net.develgao.artemis.util.bytes.BytesValue;
 
 import java.util.List;
 import java.util.Objects;

@@ -11,11 +11,11 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.util.uint;
+package net.develgao.artemis.util.uint;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import net.develgao.beaconchain.util.bytes.Bytes32Backed;
+import net.develgao.artemis.util.bytes.Bytes32Backed;
 
 /**
  * Represents a 256-bits (32 bytes) unsigned integer value.

@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.util.bytes;
+package net.develgao.artemis.util.bytes;
 
 /**
  * An implementation of {@link MutableBytes3} backed by a byte array ({@code byte[]}).

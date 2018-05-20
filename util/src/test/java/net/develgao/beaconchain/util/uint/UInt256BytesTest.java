@@ -11,12 +11,12 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.beaconchain.util.uint;
+package net.develgao.artemis.util.uint;
 
-import net.develgao.beaconchain.util.bytes.Bytes32;
-import net.develgao.beaconchain.util.bytes.MutableBytes32;
-import net.develgao.beaconchain.util.uint.UInt256Bytes.BinaryLongOp;
-import net.develgao.beaconchain.util.uint.UInt256Bytes.BinaryOp;
+import net.develgao.artemis.util.bytes.Bytes32;
+import net.develgao.artemis.util.bytes.MutableBytes32;
+import net.develgao.artemis.util.uint.UInt256Bytes.BinaryLongOp;
+import net.develgao.artemis.util.uint.UInt256Bytes.BinaryOp;
 
 import java.math.BigInteger;
 
