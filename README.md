@@ -1,4 +1,10 @@
 # BeaconChain
+
+ [![Build Status](https://jenkins.devgao.tech/job/Artemis/job/master/badge/icon)](https://jenkins.devgao.tech/job/Artemis/job/master/)
+ [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/DevgaoEng/artemis/blob/master/LICENSE)
+ [ ![Download](https://api.bintray.com/packages/develgao/devgao-repo/artemis/images/download.svg) ](https://bintray.com/develgao/devgao-repo/artemis/_latestVersion)
+ [![Gitter chat](https://badges.gitter.im/devgaoEng/artemis.png)](https://gitter.im/devgaoEng/artemis)
+
 Implementation of the Ethereum 2.0 Beacon Chain.
 
 Based on the (evolving) [specification](https://notes.ethereum.org/SCIg8AH5SA-O4C1G1LYZHQ?view).
