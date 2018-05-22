@@ -11,9 +11,9 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package net.develgao.artemis.ethereum.rlp;
+package tech.devgao.artemis.ethereum.rlp;
 
-import net.develgao.artemis.util.bytes.BytesValue;
+import tech.devgao.artemis.util.bytes.BytesValue;
 
 import java.util.ArrayList;
 import java.util.List;
