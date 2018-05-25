@@ -16,12 +16,10 @@ package tech.devgao.artemis.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static tech.devgao.artemis.state.BeaconState.BeaconStateHelperFunctions.bytes3ToInt;
 import static tech.devgao.artemis.state.BeaconState.BeaconStateHelperFunctions.clamp;
-import static tech.devgao.artemis.state.BeaconState.BeaconStateHelperFunctions.intToBytes3;
 import static tech.devgao.artemis.state.BeaconState.BeaconStateHelperFunctions.shuffle;
 import static tech.devgao.artemis.state.BeaconState.BeaconStateHelperFunctions.split;
 
 import tech.devgao.artemis.ethereum.core.Hash;
-import tech.devgao.artemis.util.bytes.Bytes3;
 import tech.devgao.artemis.util.bytes.BytesValue;
 
 import org.junit.Test;
@@ -34,20 +32,8 @@ public class BeaconStateTest {
   }
 
   @Test(expected = IllegalArgumentException.class)
-  public void failsWhenInvalidArgumentIntToBytes3() {
-    intToBytes3(-1);
-  }
-
-  @Test(expected = IllegalArgumentException.class)
   public void failsWhenInvalidArgumentsBytes3ToInt() {
     bytes3ToInt(hashSrc(), -1);
-  }
-
-  @Test
-  public void convertIntToBytes3() {
-    Bytes3 expected = Bytes3.wrap(new byte[]{(byte) 1, (byte) 256, (byte) 65656});
-    Bytes3 actual = intToBytes3(65656);
-    assertThat(actual).isEqualTo(expected);
   }
 
   @Test
