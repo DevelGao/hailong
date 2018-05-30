@@ -13,16 +13,17 @@
 
 package tech.devgao.artemis.datastructures.BeaconChainOperations;
 
-import tech.devgao.artemis.util.uint.UInt64;
+import tech.devgao.artemis.ethereum.core.Hash;
+import tech.devgao.artemis.util.uint.UInt384;
 
-public class DepositData {
+public class DepositInput {
 
-  private DepositInput depositInput;
-  private UInt64 value;
-  private UInt64 timestamp;
+  private UInt384 pubkey;
+  private Hash withdrawal_credentials;
+  private Hash randao_commitment;
+  private UInt384[] proof_of_possession;
 
-  public DepositData() {
+  public DepositInput() {
 
   }
-
 }
