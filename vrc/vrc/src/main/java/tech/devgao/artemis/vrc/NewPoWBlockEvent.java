@@ -11,23 +11,24 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.errorpronechecks;
+package tech.devgao.artemis.vrc;
 
-import java.util.Optional;
+//TODO: This class needs to be modified to contain
+// the block info that the beacon chain needs.
+public class NewPoWBlockEvent {
 
-public class DoNotReturnNullOptionalsPositiveCases {
+    private String info;
 
-  // BUG: Diagnostic contains: Do not return null optionals.
-  public Optional<Long> returnsNull() {
-    return null;
-  }
+    public NewPoWBlockEvent(){
 
-  // BUG: Diagnostic contains: Do not return null optionals.
-  public Optional<Long> sometimesReturnsNull(boolean random) {
-    if (random) {
-
-      return null;
     }
-    return Optional.of(2L);
-  }
+
+    public String getInfo() {
+        return this.info;
+    }
+
+    public void setInfo(String info) {
+        this.info = info;
+    }
+
 }

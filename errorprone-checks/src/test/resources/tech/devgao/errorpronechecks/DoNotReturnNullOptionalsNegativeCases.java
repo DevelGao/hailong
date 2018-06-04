@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.errorpronechecks.testdata;
+package tech.devgao.errorpronechecks;
 
 import java.util.Optional;
 import javax.annotation.Nullable;

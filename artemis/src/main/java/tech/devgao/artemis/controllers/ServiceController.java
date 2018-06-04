@@ -13,9 +13,9 @@
 
 package tech.devgao.artemis.controllers;
 
-import tech.devgao.artemis.services.BeaconChainService;
-import tech.devgao.artemis.services.PowchainService;
-import tech.devgao.artemis.services.ServiceFactory;
+import tech.devgao.artemis.factories.ServiceFactory;
+import tech.devgao.artemis.services.beaconchain.BeaconChainService;
+import tech.devgao.artemis.services.powchain.PowchainService;
 
 
 public class ServiceController {
