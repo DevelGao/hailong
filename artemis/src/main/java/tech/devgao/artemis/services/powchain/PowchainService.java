@@ -13,13 +13,14 @@
 
 package tech.devgao.artemis.services.powchain;
 import tech.devgao.artemis.factories.EventBusFactory;
+import tech.devgao.artemis.pow.ValidatorRegistrationClient;
 import tech.devgao.artemis.services.ServiceInterface;
-import tech.devgao.artemis.vrc.ValidatorRegistrationClient;
 
 import com.google.common.eventbus.EventBus;
 
 
-public class PowchainService implements ServiceInterface{
+
+public class PowchainService implements ServiceInterface {
 
     private final EventBus eventBus;
     private final ValidatorRegistrationClient vrc;

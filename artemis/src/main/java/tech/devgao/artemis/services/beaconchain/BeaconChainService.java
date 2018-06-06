@@ -15,10 +15,10 @@ package tech.devgao.artemis.services.beaconchain;
 import tech.devgao.artemis.Constants;
 import tech.devgao.artemis.datastructures.BeaconChainBlocks.BeaconBlock;
 import tech.devgao.artemis.factories.EventBusFactory;
+import tech.devgao.artemis.pow.event.ChainStartEvent;
+import tech.devgao.artemis.pow.event.ValidatorRegistrationEvent;
 import tech.devgao.artemis.services.ServiceInterface;
 import tech.devgao.artemis.state.BeaconState;
-import tech.devgao.artemis.vrc.NewPoWBlockEvent;
-import tech.devgao.artemis.vrc.ValidatorRegisteredEvent;
 
 import java.util.Date;
 import java.util.concurrent.Executors;
@@ -56,15 +56,14 @@ public class BeaconChainService implements ServiceInterface{
     }
 
     @Subscribe
-    public void onNewPoWBlock(NewPoWBlockEvent newPoWBlockEvent){
-        System.out.println("New POW Block Event detected");
-        System.out.println("   Block Number:" + newPoWBlockEvent.getInfo());
+    public void onChainStarted(ChainStartEvent event){
+        System.out.println("ChainStart Event Detected");
     }
 
     @Subscribe
-    public void onValidatorRegistered(ValidatorRegisteredEvent validatorRegisteredEvent){
+    public void onValidatorRegistered(ValidatorRegistrationEvent event){
         System.out.println("Validator Registration Event detected");
-        System.out.println("   Validator Number: " + validatorRegisteredEvent.getInfo());
+        //System.out.println("   Validator Number: " + validatorRegisteredEvent.getInfo());
     }
 
     @Subscribe
