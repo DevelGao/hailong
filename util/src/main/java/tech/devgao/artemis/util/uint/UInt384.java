@@ -17,8 +17,21 @@ public class UInt384 {
 
   private final long value;
 
-  public UInt384(long value) {
+  private UInt384(long value) {
     this.value = value;
   }
+
+  public UInt384(UInt64 uint) {
+    this.value = uint.getValue();
+  }
+
+  public long getValue() {
+    return value;
+  }
+
+  public static UInt384 valueOf(long unsignedValue) {
+    return new UInt384(unsignedValue);
+  }
+
 
 }

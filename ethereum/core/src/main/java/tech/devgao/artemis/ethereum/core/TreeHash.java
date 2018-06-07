@@ -11,20 +11,14 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.artemis.datastructures.BeaconChainState;
+package tech.devgao.artemis.ethereum.core;
 
-import tech.devgao.artemis.util.uint.UInt64;
+import tech.devgao.artemis.util.bytes.Bytes32;
 
-public class ShardCommittee {
+public class TreeHash {
 
-  public UInt64 shard;
-  public int[] committee;
-  private UInt64 total_validator_count;
-
-  public ShardCommittee(UInt64 shard, int[] committee, UInt64 total_validator_count) {
-    this.shard = shard;
-    this.committee = committee;
-    this.total_validator_count = total_validator_count;
+  public static Bytes32 hash_tree_root(Object value) {
+    return Bytes32.FALSE;
   }
 
 }
