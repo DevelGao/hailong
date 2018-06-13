@@ -11,11 +11,20 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.artemis.services;
+package tech.devgao.artemis.services.beaconchain;
 
-public interface ServiceInterface extends Runnable{
-    void init();
+import java.util.Date;
+
+import com.google.common.eventbus.EventBus;
+
+
+public class SlotScheduler implements Runnable {
+    private EventBus eventBus;
+    SlotScheduler(EventBus eventBus){
+        this.eventBus = eventBus;
+    }
     @Override
-    void run();
-    void stop();
+    public void run(){
+        this.eventBus.post(new Date());
+    }
 }

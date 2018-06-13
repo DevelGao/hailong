@@ -13,9 +13,23 @@
 
 package tech.devgao.artemis.services;
 
-public interface ServiceInterface extends Runnable{
-    void init();
-    @Override
-    void run();
-    void stop();
+public class ServiceFactory<T> {
+
+    private final Class<T> type;
+
+    public ServiceFactory(Class<T> type) {
+      this.type = type;
+    }
+
+    public T getInstance() {
+        try {
+            return type.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <S> ServiceFactory<S> getInstance(Class<S> type) {
+        return new ServiceFactory<S>(type);
+    }
 }

@@ -12,10 +12,12 @@
  */
 
 package tech.devgao.artemis.services.powchain;
-import tech.devgao.artemis.factories.EventBusFactory;
 import tech.devgao.artemis.pow.ValidatorRegistrationClient;
 import tech.devgao.artemis.services.ServiceInterface;
 
+import java.util.concurrent.Executors;
+
+import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 
 
@@ -26,7 +28,7 @@ public class PowchainService implements ServiceInterface {
     private final ValidatorRegistrationClient vrc;
 
     public PowchainService(){
-        this.eventBus = EventBusFactory.getInstance();
+        this.eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
         this.vrc = new ValidatorRegistrationClient(eventBus);
     }
 
@@ -36,12 +38,12 @@ public class PowchainService implements ServiceInterface {
     }
 
     @Override
-    public void start(){
+    public void run(){
         this.vrc.listenToPoWChain();
     }
 
     @Override
     public void stop(){
-
+        this.eventBus.unregister(this);
     }
 }
