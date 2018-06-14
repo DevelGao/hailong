@@ -14,7 +14,7 @@
 package tech.devgao.artemis.services.beaconchain;
 
 import tech.devgao.artemis.Constants;
-import tech.devgao.artemis.datastructures.BeaconChainBlocks.BeaconBlock;
+import tech.devgao.artemis.datastructures.beaconchainblocks.BeaconBlock;
 import tech.devgao.artemis.state.BeaconState;
 import tech.devgao.artemis.util.uint.UInt64;
 

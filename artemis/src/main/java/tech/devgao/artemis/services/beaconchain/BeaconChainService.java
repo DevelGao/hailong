@@ -13,7 +13,7 @@
 
 package tech.devgao.artemis.services.beaconchain;
 import tech.devgao.artemis.Constants;
-import tech.devgao.artemis.datastructures.BeaconChainBlocks.BeaconBlock;
+import tech.devgao.artemis.datastructures.beaconchainblocks.BeaconBlock;
 import tech.devgao.artemis.pow.event.ChainStartEvent;
 import tech.devgao.artemis.pow.event.ValidatorRegistrationEvent;
 import tech.devgao.artemis.services.ServiceInterface;

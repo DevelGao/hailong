@@ -26,9 +26,9 @@ import static tech.devgao.artemis.state.BeaconState.BeaconStateHelperFunctions.c
 import static tech.devgao.artemis.state.BeaconState.BeaconStateHelperFunctions.shuffle;
 import static tech.devgao.artemis.state.BeaconState.BeaconStateHelperFunctions.split;
 
-import tech.devgao.artemis.datastructures.BeaconChainState.ForkData;
-import tech.devgao.artemis.datastructures.BeaconChainState.ShardCommittee;
-import tech.devgao.artemis.datastructures.BeaconChainState.ValidatorRecord;
+import tech.devgao.artemis.datastructures.beaconchainstate.ForkData;
+import tech.devgao.artemis.datastructures.beaconchainstate.ShardCommittee;
+import tech.devgao.artemis.datastructures.beaconchainstate.ValidatorRecord;
 import tech.devgao.artemis.ethereum.core.Hash;
 import tech.devgao.artemis.util.bytes.Bytes32;
 import tech.devgao.artemis.util.bytes.BytesValue;
