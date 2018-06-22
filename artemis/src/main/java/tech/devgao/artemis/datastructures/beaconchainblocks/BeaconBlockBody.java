@@ -17,13 +17,19 @@ import tech.devgao.artemis.datastructures.beaconchainoperations.Attestation;
 import tech.devgao.artemis.datastructures.beaconchainoperations.CasperSlashing;
 import tech.devgao.artemis.datastructures.beaconchainoperations.Deposit;
 import tech.devgao.artemis.datastructures.beaconchainoperations.Exit;
+import tech.devgao.artemis.datastructures.beaconchainoperations.ProofOfCustodyChallenge;
+import tech.devgao.artemis.datastructures.beaconchainoperations.ProofOfCustodyResponse;
+import tech.devgao.artemis.datastructures.beaconchainoperations.ProofOfCustodySeedChange;
 import tech.devgao.artemis.datastructures.beaconchainoperations.ProposerSlashing;
 
 public class BeaconBlockBody {
 
-  private Attestation[] attestations;
   private ProposerSlashing[] proposer_slashings;
   private CasperSlashing[] casper_slashings;
+  private Attestation[] attestations;
+  private ProofOfCustodySeedChange[] poc_seed_changes;
+  private ProofOfCustodyChallenge[] poc_challenges;
+  private ProofOfCustodyResponse[] poc_responses;
   private Deposit[] deposits;
   private Exit[] exits;
 
