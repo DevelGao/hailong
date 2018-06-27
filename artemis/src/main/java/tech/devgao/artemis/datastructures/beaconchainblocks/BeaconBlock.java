@@ -15,12 +15,11 @@ package tech.devgao.artemis.datastructures.beaconchainblocks;
 
 import tech.devgao.artemis.ethereum.core.Hash;
 import tech.devgao.artemis.util.uint.UInt384;
-import tech.devgao.artemis.util.uint.UInt64;
 
 public class BeaconBlock {
 
   // Header
-  private UInt64 slot;
+  private long slot;
   private Hash[] ancestor_hashes;
   private Hash state_root;
   private Hash randao_reveal;
@@ -122,14 +121,14 @@ public class BeaconBlock {
   /**
    * @return the slot
    */
-  public UInt64 getSlot() {
+  public long getSlot() {
     return slot;
   }
 
   /**
    * @param slot the slot to set
    */
-  public void setSlot(UInt64 slot) {
+  public void setSlot(long slot) {
     this.slot = slot;
   }
 }
