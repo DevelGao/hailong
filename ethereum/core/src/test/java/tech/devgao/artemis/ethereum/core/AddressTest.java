@@ -11,9 +11,8 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.artemis.ethereum.vm;
+package tech.devgao.artemis.ethereum.core;
 
-import tech.devgao.artemis.ethereum.core.Address;
 import tech.devgao.artemis.util.bytes.BytesValue;
 
 import org.junit.Assert;
