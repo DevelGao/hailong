@@ -27,6 +27,7 @@ import static tech.devgao.artemis.state.BeaconState.BeaconStateHelperFunctions.s
 import static tech.devgao.artemis.state.BeaconState.BeaconStateHelperFunctions.split;
 
 import tech.devgao.artemis.datastructures.beaconchainoperations.AttestationData;
+import tech.devgao.artemis.datastructures.beaconchainoperations.LatestBlockRoots;
 import tech.devgao.artemis.datastructures.beaconchainstate.ForkData;
 import tech.devgao.artemis.datastructures.beaconchainstate.ShardCommittee;
 import tech.devgao.artemis.datastructures.beaconchainstate.ValidatorRecord;
@@ -52,7 +53,7 @@ public class BeaconStateTest {
         UInt64.MIN_VALUE, UInt64.MIN_VALUE), new Validators(), new ArrayList<>(),
        0, 0, hash(Bytes32.TRUE), new ArrayList<>(), new ArrayList<>(),
         new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 0, 0, 0,
-        0,  new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>(),
+        0,  new ArrayList<>(), new LatestBlockRoots(), new ArrayList<>(), new ArrayList<>(),
         new ArrayList<>(), hash(Bytes32.TRUE), new ArrayList<>());
 
     // Add validator records
