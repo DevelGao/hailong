@@ -13,7 +13,6 @@
 
 package tech.devgao.artemis.ethereum.rlp;
 
-
 import java.util.function.IntUnaryOperator;
 import java.util.function.LongUnaryOperator;
 

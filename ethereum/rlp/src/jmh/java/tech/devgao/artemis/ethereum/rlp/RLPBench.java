@@ -13,17 +13,15 @@
 
 package tech.devgao.artemis.ethereum.rlp;
 
-import tech.devgao.artemis.util.bytes.BytesValue;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
+import tech.devgao.artemis.util.bytes.BytesValue;
 
 @State(Scope.Benchmark)
 public class RLPBench {

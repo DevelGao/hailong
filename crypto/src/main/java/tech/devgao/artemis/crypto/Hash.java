@@ -13,19 +13,15 @@
 
 package tech.devgao.artemis.crypto;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.Security;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import tech.devgao.artemis.util.bytes.Bytes32;
 import tech.devgao.artemis.util.bytes.BytesValue;
 import tech.devgao.artemis.util.message.BouncyCastleMessageDigestFactory;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.Security;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
-/**
- * Various utilities for providing hashes (digests) of arbitrary data.
- */
+/** Various utilities for providing hashes (digests) of arbitrary data. */
 public abstract class Hash {
   private Hash() {}
 

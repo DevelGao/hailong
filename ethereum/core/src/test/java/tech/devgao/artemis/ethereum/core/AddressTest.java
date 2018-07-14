@@ -13,10 +13,9 @@
 
 package tech.devgao.artemis.ethereum.core;
 
-import tech.devgao.artemis.util.bytes.BytesValue;
-
 import org.junit.Assert;
 import org.junit.Test;
+import tech.devgao.artemis.util.bytes.BytesValue;
 
 public class AddressTest {
 

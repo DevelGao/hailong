@@ -15,15 +15,16 @@ package tech.devgao.artemis.pow.event;
 
 import tech.devgao.artemis.pow.contract.ValidatorRegistrationContract;
 
-public class ValidatorRegistrationEvent{
+public class ValidatorRegistrationEvent {
 
-    private ValidatorRegistrationContract.Eth1DepositEventResponse response = null;
+  private ValidatorRegistrationContract.Eth1DepositEventResponse response = null;
 
-    public ValidatorRegistrationEvent(ValidatorRegistrationContract.Eth1DepositEventResponse response){
-        this.response = response;
-    }
+  public ValidatorRegistrationEvent(
+      ValidatorRegistrationContract.Eth1DepositEventResponse response) {
+    this.response = response;
+  }
 
-    public ValidatorRegistrationContract.Eth1DepositEventResponse getResponse() {
-        return response;
-    }
+  public ValidatorRegistrationContract.Eth1DepositEventResponse getResponse() {
+    return response;
+  }
 }

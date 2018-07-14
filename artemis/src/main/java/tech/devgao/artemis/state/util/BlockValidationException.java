@@ -14,7 +14,7 @@
 package tech.devgao.artemis.state.util;
 
 public class BlockValidationException extends Exception {
-    public BlockValidationException(String err){
-        super(err);
-    }
+  public BlockValidationException(String err) {
+    super(err);
+  }
 }

@@ -16,9 +16,8 @@ package tech.devgao.artemis.crypto;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 
-import tech.devgao.artemis.util.bytes.BytesValue;
-
 import org.junit.Test;
+import tech.devgao.artemis.util.bytes.BytesValue;
 
 public class HashTest {
 
