@@ -16,6 +16,9 @@ package tech.devgao.artemis;
 import picocli.CommandLine;
 import tech.devgao.artemis.cli.CommandLineArguments;
 import tech.devgao.artemis.services.ServiceController;
+import tech.devgao.artemis.services.beaconchain.BeaconChainService;
+import tech.devgao.artemis.services.p2p.P2PService;
+import tech.devgao.artemis.services.powchain.PowchainService;
 
 public final class Artemis {
 
@@ -40,7 +43,8 @@ public final class Artemis {
                 }
               });
       // Initialize services
-      ServiceController.initAll(cliArgs);
+      ServiceController.initAll(
+          cliArgs, BeaconChainService.class, PowchainService.class, P2PService.class);
       // Start services
       ServiceController.startAll(cliArgs);
     } catch (Exception e) {
