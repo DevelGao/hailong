@@ -13,12 +13,12 @@
 
 package tech.devgao.artemis.state.util;
 
+import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import tech.devgao.artemis.Constants;
 import tech.devgao.artemis.datastructures.beaconchainstate.PendingAttestationRecord;
 import tech.devgao.artemis.ethereum.core.Hash;
 import tech.devgao.artemis.state.BeaconState;
-import tech.devgao.artemis.util.uint.UInt64;
 
 public class AttestationUtil {
 
@@ -51,7 +51,7 @@ public class AttestationUtil {
                 .getData()
                 .getEpoch_boundary_hash()
                 .equals(get_block_root(state, record.getData().getSlot() - Constants.EPOCH_LENGTH))
-            && record.getData().getJustified_slot().getValue() == state.getJustified_slot())
+            && record.getData().getJustified_slot().longValue() == state.getJustified_slot())
           current_epoch_attestations.add(record);
       }
     }
@@ -64,7 +64,7 @@ public class AttestationUtil {
     if ((state.getSlot() <= slot_upper_bound) || slot < state.getSlot())
       return state
           .getLatest_block_roots()
-          .get(UInt64.valueOf(slot % state.getLatest_block_roots().size()));
+          .get(UnsignedLong.valueOf(slot % state.getLatest_block_roots().size()));
     throw new BlockValidationException("Desired block root not within the provided bounds");
   }
 }
