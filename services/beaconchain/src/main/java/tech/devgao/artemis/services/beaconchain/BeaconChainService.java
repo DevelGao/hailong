@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tech.devgao.artemis.Constants;
-import tech.devgao.artemis.pow.event.ChainStartEvent;
-import tech.devgao.artemis.pow.event.ValidatorRegistrationEvent;
+import tech.devgao.artemis.pow.api.ChainStartEvent;
+import tech.devgao.artemis.pow.api.ValidatorRegistrationEvent;
 import tech.devgao.artemis.services.ServiceInterface;
 import tech.devgao.artemis.state.StateTreeManager;
 

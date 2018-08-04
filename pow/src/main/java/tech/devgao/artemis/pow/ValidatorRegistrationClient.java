@@ -25,9 +25,11 @@ import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import rx.Subscription;
+import tech.devgao.artemis.pow.api.ChainStartEvent;
+import tech.devgao.artemis.pow.api.ValidatorRegistrationEvent;
 import tech.devgao.artemis.pow.contract.ValidatorRegistrationContract;
-import tech.devgao.artemis.pow.event.ChainStartEvent;
-import tech.devgao.artemis.pow.event.ValidatorRegistrationEvent;
+import tech.devgao.artemis.pow.event.ChainStart;
+import tech.devgao.artemis.pow.event.ValidatorRegistration;
 
 public class ValidatorRegistrationClient {
 
@@ -135,12 +137,12 @@ public class ValidatorRegistrationClient {
   }
 
   public void validatorRegistered(ValidatorRegistrationContract.Eth1DepositEventResponse response) {
-    ValidatorRegistrationEvent event = new ValidatorRegistrationEvent(response);
+    ValidatorRegistrationEvent event = new ValidatorRegistration(response);
     this.eventBus.post(event);
   }
 
   public void chainStarted(ValidatorRegistrationContract.ChainStartEventResponse response) {
-    ChainStartEvent event = new ChainStartEvent(response);
+    ChainStartEvent event = new ChainStart(response);
     this.eventBus.post(event);
   }
 }
