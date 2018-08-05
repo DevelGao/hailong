@@ -11,18 +11,15 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.artemis.datastructures.beaconchainoperations;
+package tech.devgao.artemis.state.util;
 
-import com.google.common.primitives.UnsignedLong;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import net.develgao.cava.bytes.Bytes32;
-import tech.devgao.artemis.Constants;
 
-public class LatestBlockRoots extends LinkedHashMap<UnsignedLong, Bytes32> {
+public final class TreeHashUtil {
 
-  @Override
-  protected boolean removeEldestEntry(Map.Entry<UnsignedLong, Bytes32> eldest) {
-    return this.size() > Constants.LATEST_BLOCK_ROOTS_LENGTH;
+  private TreeHashUtil() {}
+
+  public static Bytes32 hash_tree_root(Object value) {
+    return Bytes32.ZERO;
   }
 }

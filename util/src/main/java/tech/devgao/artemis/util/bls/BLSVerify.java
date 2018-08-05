@@ -14,14 +14,13 @@
 package tech.devgao.artemis.util.bls;
 
 import com.google.common.primitives.UnsignedLong;
-import tech.devgao.artemis.util.bytes.Bytes32;
-import tech.devgao.artemis.util.uint.UInt384;
+import net.develgao.cava.bytes.Bytes32;
+import net.develgao.cava.bytes.Bytes48;
 
 public class BLSVerify {
 
-  // TODO: Need to update UInt384 to UInt384[].
   public static boolean bls_verify(
-      UInt384 pubkey, Bytes32 message, UInt384 signature, UnsignedLong domain) {
+      Bytes48 pubkey, Bytes32 message, Bytes48[] signature, UnsignedLong domain) {
     return true;
   }
 }

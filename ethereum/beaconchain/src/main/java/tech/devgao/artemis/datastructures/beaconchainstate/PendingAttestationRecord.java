@@ -14,8 +14,8 @@
 package tech.devgao.artemis.datastructures.beaconchainstate;
 
 import com.google.common.primitives.UnsignedLong;
+import net.develgao.cava.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.beaconchainoperations.AttestationData;
-import tech.devgao.artemis.util.bytes.Bytes32;
 
 public class PendingAttestationRecord {
 

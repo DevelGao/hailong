@@ -19,20 +19,20 @@ import static tech.devgao.artemis.Constants.LATEST_RANDAO_MIXES_LENGTH;
 
 import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
+import net.develgao.cava.bytes.Bytes32;
+import net.develgao.cava.crypto.Hash;
 import tech.devgao.artemis.datastructures.beaconchainblocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.beaconchainoperations.LatestBlockRoots;
 import tech.devgao.artemis.datastructures.beaconchainstate.ValidatorRecord;
 import tech.devgao.artemis.datastructures.beaconchainstate.Validators;
-import tech.devgao.artemis.ethereum.core.Hash;
 import tech.devgao.artemis.state.BeaconState;
 import tech.devgao.artemis.state.StateTransitionException;
-import tech.devgao.artemis.util.bytes.Bytes32;
 
 public class SlotProcessorUtil {
 
-  public static Hash merkle_root(LatestBlockRoots latest_block_roots) {
+  public static Bytes32 merkle_root(LatestBlockRoots latest_block_roots) {
     // TODO
-    return Hash.wrap(Bytes32.FALSE);
+    return Hash.keccak256(Bytes32.ZERO);
   }
 
   public static void updateProposerRandaoLayer(BeaconState state) {
@@ -46,14 +46,14 @@ public class SlotProcessorUtil {
 
   public static void updateLatestRandaoMixes(BeaconState state) {
     int currSlot = toIntExact(state.getSlot());
-    ArrayList<Hash> latestRandaoMixes = state.getLatest_randao_mixes();
-    Hash prevSlotRandaoMix = latestRandaoMixes.get((currSlot - 1) % LATEST_RANDAO_MIXES_LENGTH);
+    ArrayList<Bytes32> latestRandaoMixes = state.getLatest_randao_mixes();
+    Bytes32 prevSlotRandaoMix = latestRandaoMixes.get((currSlot - 1) % LATEST_RANDAO_MIXES_LENGTH);
     latestRandaoMixes.set(currSlot % LATEST_RANDAO_MIXES_LENGTH, prevSlotRandaoMix);
   }
 
   public static void updateRecentBlockHashes(BeaconState state, BeaconBlock block)
       throws StateTransitionException {
-    Hash previous_state_root = block.getState_root();
+    Bytes32 previous_state_root = block.getState_root();
     if (previous_state_root != null)
       state.getLatest_block_roots().put(UnsignedLong.valueOf(state.getSlot()), previous_state_root);
     else
@@ -62,10 +62,10 @@ public class SlotProcessorUtil {
               + "previous_state_root returning a null");
 
     if (state.getSlot() % LATEST_BLOCK_ROOTS_LENGTH == 0) {
-      ArrayList<Hash> batched_block_roots = state.getBatched_block_roots();
+      ArrayList<Bytes32> batched_block_roots = state.getBatched_block_roots();
       LatestBlockRoots latest_block_roots = state.getLatest_block_roots();
       if (batched_block_roots != null && latest_block_roots != null) {
-        Hash merkle_root = SlotProcessorUtil.merkle_root(latest_block_roots);
+        Bytes32 merkle_root = SlotProcessorUtil.merkle_root(latest_block_roots);
         batched_block_roots.add(merkle_root);
       } else
         throw new StateTransitionException(
