@@ -24,6 +24,7 @@ import tech.devgao.artemis.Constants;
 import tech.devgao.artemis.pow.api.ChainStartEvent;
 import tech.devgao.artemis.pow.api.ValidatorRegistrationEvent;
 import tech.devgao.artemis.services.ServiceInterface;
+import tech.devgao.artemis.state.SlotScheduler;
 import tech.devgao.artemis.state.StateTreeManager;
 
 public class BeaconChainService implements ServiceInterface {
