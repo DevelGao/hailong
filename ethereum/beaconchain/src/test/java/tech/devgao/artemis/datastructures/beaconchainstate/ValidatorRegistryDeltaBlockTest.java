@@ -11,17 +11,28 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.artemis.state.util;
+package tech.devgao.artemis.datastructures.beaconchainstate;
 
+import static org.junit.Assert.assertEquals;
+
+import com.google.common.primitives.UnsignedLong;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.ssz.SSZ;
+import net.develgao.cava.bytes.Bytes48;
+import org.junit.Test;
 
-public final class TreeHashUtil {
+public class ValidatorRegistryDeltaBlockTest {
 
-  private TreeHashUtil() {}
-
-  public static Bytes32 hash_tree_root(Bytes value) {
-    return SSZ.hashTreeRoot(value);
+  @Test
+  public void roundtripSSZ() {
+    ValidatorRegistryDeltaBlock block =
+        new ValidatorRegistryDeltaBlock(
+            UnsignedLong.valueOf(123),
+            Bytes32.random(),
+            Bytes48.random(),
+            UnsignedLong.valueOf(456),
+            23);
+    Bytes encoded = block.toBytes();
+    assertEquals(block, ValidatorRegistryDeltaBlock.fromBytes(encoded));
   }
 }

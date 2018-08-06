@@ -11,17 +11,27 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.artemis.state.util;
+package tech.devgao.artemis.datastructures.beaconchainoperations;
+
+import static org.junit.Assert.assertEquals;
 
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.ssz.SSZ;
+import net.develgao.cava.bytes.Bytes48;
+import org.junit.Test;
 
-public final class TreeHashUtil {
+public class DepositInputTest {
 
-  private TreeHashUtil() {}
-
-  public static Bytes32 hash_tree_root(Bytes value) {
-    return SSZ.hashTreeRoot(value);
+  @Test
+  public void rountripSSZ() {
+    DepositInput di =
+        new DepositInput(
+            Bytes32.random(),
+            new Bytes48[] {Bytes48.random(), Bytes48.random(), Bytes48.random()},
+            Bytes48.random(),
+            Bytes32.random(),
+            Bytes32.random());
+    Bytes sszBytes = di.toBytes();
+    assertEquals(di, DepositInput.fromBytes(sszBytes));
   }
 }

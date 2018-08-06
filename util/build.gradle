@@ -12,7 +12,7 @@ dependencies {
   implementation 'com.google.guava:guava'
   implementation 'io.vertx:vertx-core'
   implementation 'io.netty:netty-common'
-  implementation 'net.develgao.cava:cava-units:1.0.0-F5022C-snapshot'
+  implementation 'net.develgao.cava:cava-units'
 
   testImplementation 'org.mockito:mockito-core'
 }
