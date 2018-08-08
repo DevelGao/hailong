@@ -24,25 +24,22 @@ import static tech.devgao.artemis.Constants.LATEST_RANDAO_MIXES_LENGTH;
 import static tech.devgao.artemis.Constants.PENDING_ACTIVATION;
 
 import com.google.common.primitives.UnsignedLong;
-import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collections;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.bytes.Bytes48;
 import net.develgao.cava.crypto.Hash;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.Test;
+import net.develgao.cava.junit.BouncyCastleExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import tech.devgao.artemis.datastructures.beaconchainblocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.beaconchainstate.ShardCommittee;
 import tech.devgao.artemis.datastructures.beaconchainstate.ValidatorRecord;
 import tech.devgao.artemis.state.util.SlotProcessorUtil;
 
-public class StateTransitionTest {
-
-  static {
-    Security.addProvider(new BouncyCastleProvider());
-  }
+@ExtendWith(BouncyCastleExtension.class)
+class StateTransitionTest {
 
   private BeaconState newState() {
     // Initialize state
@@ -111,7 +108,7 @@ public class StateTransitionTest {
   }
 
   @Test
-  public void testUpdateProposerRandaoLayer() {
+  void testUpdateProposerRandaoLayer() {
     // initialize state and state transition objects
     BeaconState state = newState();
     state.setSlot(4);
@@ -154,7 +151,7 @@ public class StateTransitionTest {
   }
 
   @Test
-  public void testUpdateLatestRandaoMixes() {
+  void testUpdateLatestRandaoMixes() {
     BeaconState state = newState();
     state.setLatest_randao_mixes(
         new ArrayList<Bytes32>(Collections.nCopies(LATEST_RANDAO_MIXES_LENGTH, Bytes32.ZERO)));
@@ -175,7 +172,7 @@ public class StateTransitionTest {
   }
 
   @Test
-  public void testUpdateRecentBlockHashes() throws StateTransitionException {
+  void testUpdateRecentBlockHashes() throws StateTransitionException {
     BeaconState state = newState();
     ArrayList<ArrayList<ShardCommittee>> shard_committees_at_slots =
         new ArrayList<ArrayList<ShardCommittee>>();

@@ -13,18 +13,18 @@
 
 package tech.devgao.artemis.datastructures.beaconchainstate;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.primitives.UnsignedLong;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.bytes.Bytes48;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class ValidatorRegistryDeltaBlockTest {
+class ValidatorRegistryDeltaBlockTest {
 
   @Test
-  public void roundtripSSZ() {
+  void roundtripSSZ() {
     ValidatorRegistryDeltaBlock block =
         new ValidatorRegistryDeltaBlock(
             UnsignedLong.valueOf(123),
