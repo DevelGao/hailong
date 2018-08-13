@@ -14,7 +14,9 @@
 package tech.devgao.artemis.datastructures.beaconchainoperations;
 
 import java.util.ArrayList;
+import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes48;
+import net.develgao.cava.ssz.SSZ;
 
 public class SlashableVoteData {
 
@@ -32,6 +34,20 @@ public class SlashableVoteData {
     this.custody_bit_1_indices = custody_bit_1_indices;
     this.data = data;
     this.aggregate_signature = aggregate_signature;
+  }
+
+  public Bytes toBytes() {
+    return SSZ.encode(
+        writer -> {
+          for (Integer item : custody_bit_0_indices) {
+            writer.writeInt(item, 24);
+          }
+          for (Integer item : custody_bit_1_indices) {
+            writer.writeInt(item, 24);
+          }
+          writer.writeBytes(data.toBytes());
+          writer.writeBytesList(aggregate_signature);
+        });
   }
 
   /** ******************* * GETTERS & SETTERS * * ******************* */

@@ -13,7 +13,13 @@
 
 package tech.devgao.artemis.datastructures.beaconchainoperations;
 
+import net.develgao.cava.bytes.Bytes;
+import net.develgao.cava.ssz.SSZ;
+
 public class ProofOfCustodyResponse {
 
   /** Class to be defined in Phase 1. */
+  public Bytes toBytes() {
+    return SSZ.encode(writer -> {});
+  }
 }

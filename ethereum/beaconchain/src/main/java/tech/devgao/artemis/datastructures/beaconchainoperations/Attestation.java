@@ -13,8 +13,10 @@
 
 package tech.devgao.artemis.datastructures.beaconchainoperations;
 
+import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.bytes.Bytes48;
+import net.develgao.cava.ssz.SSZ;
 
 public class Attestation {
 
@@ -32,6 +34,16 @@ public class Attestation {
     this.participation_bitfield = participation_bitfield;
     this.custody_bitfield = custody_bitfield;
     this.aggregate_signature = aggregate_signature;
+  }
+
+  public Bytes toBytes() {
+    return SSZ.encode(
+        writer -> {
+          writer.writeBytes(data.toBytes());
+          writer.writeBytes(participation_bitfield);
+          writer.writeBytes(custody_bitfield);
+          writer.writeBytesList(aggregate_signature);
+        });
   }
 
   /** ******************* * GETTERS & SETTERS * * ******************* */
