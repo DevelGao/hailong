@@ -20,20 +20,14 @@ import static tech.devgao.artemis.Constants.LATEST_RANDAO_MIXES_LENGTH;
 import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.crypto.Hash;
+import tech.devgao.artemis.Constants;
 import tech.devgao.artemis.datastructures.beaconchainblocks.BeaconBlock;
-import tech.devgao.artemis.datastructures.beaconchainoperations.LatestBlockRoots;
 import tech.devgao.artemis.datastructures.beaconchainstate.ValidatorRecord;
 import tech.devgao.artemis.datastructures.beaconchainstate.Validators;
 import tech.devgao.artemis.state.BeaconState;
 import tech.devgao.artemis.state.StateTransitionException;
 
 public class SlotProcessorUtil {
-
-  public static Bytes32 merkle_root(LatestBlockRoots latest_block_roots) {
-    // TODO
-    return Hash.keccak256(Bytes32.ZERO);
-  }
 
   public static void updateProposerRandaoLayer(BeaconState state) {
     int currSlot = toIntExact(state.getSlot());
@@ -52,20 +46,26 @@ public class SlotProcessorUtil {
   }
 
   public static void updateRecentBlockHashes(BeaconState state, BeaconBlock block)
-      throws StateTransitionException {
-    Bytes32 previous_state_root = block.getState_root();
-    if (previous_state_root != null)
-      state.getLatest_block_roots().put(UnsignedLong.valueOf(state.getSlot()), previous_state_root);
-    else
+      throws Exception {
+    Bytes32 previous_block_root = BeaconStateUtil.get_block_root(state, state.getSlot() - 1);
+    if (previous_block_root != null) {
+      ArrayList<Bytes32> latest_block_roots = state.getLatest_block_roots();
+
+      latest_block_roots.set(
+          toIntExact(state.getSlot() - 1) % Constants.LATEST_BLOCK_ROOTS_LENGTH,
+          previous_block_root);
+      state.setLatest_block_roots(latest_block_roots);
+    } else {
       throw new StateTransitionException(
           "StateTransitionException: BeaconState cannot be updated due to "
-              + "previous_state_root returning a null");
+              + "previous_block_root returning a null");
+    }
 
     if (state.getSlot() % LATEST_BLOCK_ROOTS_LENGTH == 0) {
       ArrayList<Bytes32> batched_block_roots = state.getBatched_block_roots();
-      LatestBlockRoots latest_block_roots = state.getLatest_block_roots();
+      ArrayList<Bytes32> latest_block_roots = state.getLatest_block_roots();
       if (batched_block_roots != null && latest_block_roots != null) {
-        Bytes32 merkle_root = SlotProcessorUtil.merkle_root(latest_block_roots);
+        Bytes32 merkle_root = BeaconStateUtil.merkle_root(latest_block_roots);
         batched_block_roots.add(merkle_root);
       } else
         throw new StateTransitionException(
