@@ -68,7 +68,7 @@ allprojects {
         include '**/*.java'
         exclude '**/.gradle/**'
         exclude 'web3j'
-        //Excluding tech.devgao.artemis.Constants due to preferred formatting overwritten by plugin in getConstantsAsString.
+        //Excluding tech.devgao.artemis.datastructures due to preferred formatting overwritten by plugin in getConstantsAsString.
         exclude '**/src/main/java/tech/devgao/artemis/Constants.java'
       }
       removeUnusedImports()

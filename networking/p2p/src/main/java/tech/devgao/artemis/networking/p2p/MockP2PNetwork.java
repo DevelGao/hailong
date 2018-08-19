@@ -21,9 +21,9 @@ import java.util.concurrent.CompletableFuture;
 import net.develgao.cava.bytes.Bytes32;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import tech.devgao.artemis.datastructures.beaconchainblocks.BeaconBlock;
-import tech.devgao.artemis.datastructures.beaconchainoperations.Attestation;
-import tech.devgao.artemis.datastructures.beaconchainoperations.AttestationData;
+import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
+import tech.devgao.artemis.datastructures.operations.Attestation;
+import tech.devgao.artemis.datastructures.operations.AttestationData;
 import tech.devgao.artemis.networking.p2p.api.P2PNetwork;
 
 public class MockP2PNetwork implements P2PNetwork {

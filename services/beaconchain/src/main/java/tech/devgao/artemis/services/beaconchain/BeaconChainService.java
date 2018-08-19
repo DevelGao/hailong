@@ -17,10 +17,10 @@ import com.google.common.eventbus.EventBus;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import tech.devgao.artemis.Constants;
+import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.services.ServiceInterface;
-import tech.devgao.artemis.state.SlotScheduler;
-import tech.devgao.artemis.state.StateTreeManager;
+import tech.devgao.artemis.statetransition.SlotScheduler;
+import tech.devgao.artemis.statetransition.StateTreeManager;
 
 public class BeaconChainService implements ServiceInterface {
 

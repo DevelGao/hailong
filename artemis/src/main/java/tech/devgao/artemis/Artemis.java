@@ -14,12 +14,12 @@
 package tech.devgao.artemis;
 
 import picocli.CommandLine;
-import tech.devgao.artemis.cli.CommandLineArguments;
 import tech.devgao.artemis.services.ServiceController;
 import tech.devgao.artemis.services.beaconchain.BeaconChainService;
 import tech.devgao.artemis.services.beaconnode.BeaconNodeService;
 import tech.devgao.artemis.services.chainstorage.ChainStorageService;
 import tech.devgao.artemis.services.powchain.PowchainService;
+import tech.devgao.artemis.util.cli.CommandLineArguments;
 
 public final class Artemis {
 
