@@ -22,10 +22,10 @@ import static tech.devgao.artemis.datastructures.Constants.EMPTY_SIGNATURE;
 import static tech.devgao.artemis.datastructures.Constants.EXITED_WITHOUT_PENALTY;
 import static tech.devgao.artemis.datastructures.Constants.EXITED_WITH_PENALTY;
 import static tech.devgao.artemis.datastructures.Constants.PENDING_ACTIVATION;
-import static tech.devgao.artemis.statetransition.BeaconState.BeaconStateHelperFunctions.bytes3ToInt;
-import static tech.devgao.artemis.statetransition.BeaconState.BeaconStateHelperFunctions.clamp;
-import static tech.devgao.artemis.statetransition.BeaconState.BeaconStateHelperFunctions.shuffle;
-import static tech.devgao.artemis.statetransition.BeaconState.BeaconStateHelperFunctions.split;
+import static tech.devgao.artemis.statetransition.util.BeaconStateUtil.bytes3ToInt;
+import static tech.devgao.artemis.statetransition.util.BeaconStateUtil.clamp;
+import static tech.devgao.artemis.statetransition.util.BeaconStateUtil.shuffle;
+import static tech.devgao.artemis.statetransition.util.BeaconStateUtil.split;
 
 import com.google.common.primitives.UnsignedLong;
 import com.google.gson.Gson;
