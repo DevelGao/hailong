@@ -15,6 +15,7 @@ package tech.devgao.artemis.datastructures.operations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Arrays;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.bytes.Bytes48;
@@ -27,7 +28,7 @@ class DepositInputTest {
     DepositInput di =
         new DepositInput(
             Bytes32.random(),
-            new Bytes48[] {Bytes48.random(), Bytes48.random(), Bytes48.random()},
+            Arrays.asList(Bytes48.random(), Bytes48.random(), Bytes48.random()),
             Bytes48.random(),
             Bytes32.random(),
             Bytes32.random());
