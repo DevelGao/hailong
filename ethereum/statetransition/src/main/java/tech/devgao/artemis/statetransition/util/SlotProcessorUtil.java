@@ -17,12 +17,11 @@ import static java.lang.Math.toIntExact;
 import static tech.devgao.artemis.datastructures.Constants.LATEST_BLOCK_ROOTS_LENGTH;
 import static tech.devgao.artemis.datastructures.Constants.LATEST_RANDAO_MIXES_LENGTH;
 
-import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import net.develgao.cava.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
-import tech.devgao.artemis.datastructures.state.ValidatorRecord;
+import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.datastructures.state.Validators;
 import tech.devgao.artemis.statetransition.BeaconState;
 import tech.devgao.artemis.statetransition.StateTransitionException;
@@ -34,8 +33,9 @@ public class SlotProcessorUtil {
     int proposerIndex = BeaconState.get_beacon_proposer_index(state, currSlot);
 
     Validators validators = state.getValidator_registry();
-    ValidatorRecord proposerRecord = validators.get(proposerIndex);
-    proposerRecord.setRandao_layers(proposerRecord.getRandao_layers().plus(UnsignedLong.ONE));
+    Validator proposerRecord = validators.get(proposerIndex);
+    // todo update methods following the 0.01 updates
+    //    proposerRecord.setRandao_layers(proposerRecord.getRandao_layers().plus(UnsignedLong.ONE));
   }
 
   public static void updateLatestRandaoMixes(BeaconState state) {

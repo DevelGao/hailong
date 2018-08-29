@@ -26,7 +26,8 @@ import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.crypto.Hash;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.state.ShardCommittee;
-import tech.devgao.artemis.datastructures.state.ValidatorRecord;
+import tech.devgao.artemis.datastructures.state.Validator;
+import tech.devgao.artemis.datastructures.state.Validators;
 import tech.devgao.artemis.statetransition.BeaconState;
 
 public class BeaconStateUtil {
@@ -104,15 +105,6 @@ public class BeaconStateUtil {
     return state.getLatest_crosslinks().get(toIntExact(shard)).getShard_block_hash();
   }
 
-  public static ArrayList<ValidatorRecord> get_active_validator_indices(
-      ArrayList<ValidatorRecord> validators) {
-    ArrayList<ValidatorRecord> activeValidators = new ArrayList<ValidatorRecord>();
-    for (ValidatorRecord record : validators) {
-      if (isActiveValidator(record)) activeValidators.add(record);
-    }
-    return activeValidators;
-  }
-
   /**
    * Return the epoch number of the given ``slot``
    *
@@ -152,12 +144,7 @@ public class BeaconStateUtil {
     return state.getLatest_randao_mixes().get(index);
   }
 
-  private static boolean isActiveValidator(ValidatorRecord validator) {
-    return validator.getStatus().equals(UnsignedLong.valueOf(Constants.ACTIVE))
-        || validator.getStatus().equals(UnsignedLong.valueOf(Constants.ACTIVE_PENDING_EXIT));
-  }
-
-  public static double get_effective_balance(BeaconState state, ValidatorRecord record) {
+  public static double get_effective_balance(BeaconState state, Validator record) {
     // hacky work around for pass by index spec
     int index = state.getValidator_registry().indexOf(record);
     return Math.min(
@@ -196,13 +183,13 @@ public class BeaconStateUtil {
    *
    * @param seed
    * @param validators
-   * @param crosslinking_start_shard
+   * @param epoch
    * @return
    */
   public static ArrayList<ArrayList<ShardCommittee>> get_new_shuffling(
-      Bytes32 seed, ArrayList<ValidatorRecord> validators, int crosslinking_start_shard) {
+      Bytes32 seed, Validators validators, long epoch) {
     ArrayList<Integer> active_validator_indices =
-        ValidatorsUtil.get_active_validator_indices(validators);
+        ValidatorsUtil.get_active_validator_indices_at_epoch(validators, epoch);
 
     int committees_per_slot =
         clamp(
@@ -226,7 +213,8 @@ public class BeaconStateUtil {
           split(validators_per_slot.get(slot), committees_per_slot);
       ArrayList<ShardCommittee> shard_committees = new ArrayList<>();
 
-      int shard_id_start = crosslinking_start_shard + slot * committees_per_slot;
+      // todo after refactor of the spec this method requires rework
+      int shard_id_start = 0; // crosslinking_start_shard + slot * committees_per_slot;
 
       for (int shard_position = 0; shard_position < shard_indices.size(); shard_position++) {
         shard_committees.add(
