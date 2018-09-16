@@ -19,8 +19,8 @@ import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import net.develgao.cava.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.Constants;
+import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
 import tech.devgao.artemis.datastructures.state.CrosslinkRecord;
-import tech.devgao.artemis.datastructures.state.ShardCommittee;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.datastructures.state.Validators;
 import tech.devgao.artemis.statetransition.BeaconState;
@@ -52,9 +52,9 @@ public class EpochProcessorUtil {
 
   public static void updateCrosslinks(BeaconState state) throws BlockValidationException {
     for (long n = (state.getSlot() - 2 * Constants.EPOCH_LENGTH); n < state.getSlot(); n++) {
-      ArrayList<ShardCommittee> crosslink_committees_at_slot =
+      ArrayList<CrosslinkCommittee> crosslink_committees_at_slot =
           BeaconStateUtil.get_crosslink_committees_at_slot(state, n);
-      for (ShardCommittee crosslink_committee : crosslink_committees_at_slot) {
+      for (CrosslinkCommittee crosslink_committee : crosslink_committees_at_slot) {
         UnsignedLong shard = crosslink_committee.getShard();
 
         if (3 * AttestationUtil.getTotal_attesting_balance(state)
@@ -86,12 +86,12 @@ public class EpochProcessorUtil {
                 || (state.getJustification_bitfield() % 16) == 15)));
   }
 
-  private static Bytes32 winning_root(ShardCommittee crosslink_committee) {
+  private static Bytes32 winning_root(CrosslinkCommittee crosslink_committee) {
     // todo
     return null;
   }
 
-  private static double total_balance(ShardCommittee crosslink_committee) {
+  private static double total_balance(CrosslinkCommittee crosslink_committee) {
     // todo
     return 0.0d;
   }

@@ -37,10 +37,10 @@ import tech.devgao.artemis.datastructures.blocks.Eth1DataVote;
 import tech.devgao.artemis.datastructures.operations.AttestationData;
 import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.operations.DepositInput;
+import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
 import tech.devgao.artemis.datastructures.state.CrosslinkRecord;
 import tech.devgao.artemis.datastructures.state.Fork;
 import tech.devgao.artemis.datastructures.state.PendingAttestationRecord;
-import tech.devgao.artemis.datastructures.state.ShardCommittee;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.datastructures.state.Validators;
 import tech.devgao.artemis.statetransition.util.BeaconStateUtil;
@@ -445,7 +445,7 @@ public class BeaconState {
    * @return
    */
   public static Integer get_beacon_proposer_index(BeaconState state, int slot) {
-    ShardCommittee first_committee =
+    CrosslinkCommittee first_committee =
         BeaconStateUtil.get_crosslink_committees_at_slot(state, slot).get(0);
     return first_committee.getCommittee().get(slot % first_committee.getCommitteeSize());
   }
@@ -461,14 +461,14 @@ public class BeaconState {
   public static ArrayList<Integer> get_attestation_participants(
       BeaconState state, AttestationData attestation_data, byte[] participation_bitfield) {
     // Find the relevant committee
-    ArrayList<ShardCommittee> crosslink_committees =
+    ArrayList<CrosslinkCommittee> crosslink_committees =
         BeaconStateUtil.get_crosslink_committees_at_slot(
             state, toIntExact(attestation_data.getSlot()));
 
     // TODO: assert attestation_data.shard in [shard for _, shard in crosslink_committees]
 
-    ShardCommittee crosslink_committee = null;
-    for (ShardCommittee curr_crosslink_committee : crosslink_committees) {
+    CrosslinkCommittee crosslink_committee = null;
+    for (CrosslinkCommittee curr_crosslink_committee : crosslink_committees) {
       if (curr_crosslink_committee.getShard().equals(attestation_data.getShard())) {
         crosslink_committee = curr_crosslink_committee;
         break;

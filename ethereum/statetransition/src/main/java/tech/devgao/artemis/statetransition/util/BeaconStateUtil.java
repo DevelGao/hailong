@@ -23,7 +23,7 @@ import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.crypto.Hash;
 import tech.devgao.artemis.datastructures.Constants;
-import tech.devgao.artemis.datastructures.state.ShardCommittee;
+import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.datastructures.state.Validators;
 import tech.devgao.artemis.statetransition.BeaconState;
@@ -35,7 +35,7 @@ public class BeaconStateUtil {
   }
 
   /** Return the list of `(committee, shard)` tuples for the `slot`. */
-  public static ArrayList<ShardCommittee> get_crosslink_committees_at_slot(
+  public static ArrayList<CrosslinkCommittee> get_crosslink_committees_at_slot(
       //      BeaconState state, long slot, boolean registry_change) throws BlockValidationException
       // {
       BeaconState state, long slot, boolean registry_change) {
@@ -102,10 +102,11 @@ public class BeaconStateUtil {
     long slot_start_shard =
         (shuffling_start_shard + committees_per_slot * offset) % Constants.SHARD_COUNT;
 
-    ArrayList<ShardCommittee> crosslink_committees_at_slot = new ArrayList<ShardCommittee>();
+    ArrayList<CrosslinkCommittee> crosslink_committees_at_slot =
+        new ArrayList<CrosslinkCommittee>();
     for (int i = 0; i < committees_per_slot; i++) {
-      ShardCommittee committee =
-          new ShardCommittee(
+      CrosslinkCommittee committee =
+          new CrosslinkCommittee(
               UnsignedLong.valueOf(committees_per_slot * offset + i),
               shuffling.get(toIntExact(slot_start_shard + i) % Constants.SHARD_COUNT));
       crosslink_committees_at_slot.add(committee);
@@ -114,7 +115,7 @@ public class BeaconStateUtil {
   }
 
   /** This is a wrapper that defaults `registry_change` to false when it is not provided */
-  public static ArrayList<ShardCommittee> get_crosslink_committees_at_slot(
+  public static ArrayList<CrosslinkCommittee> get_crosslink_committees_at_slot(
       BeaconState state, long slot) {
     return get_crosslink_committees_at_slot(state, slot, false);
   }
