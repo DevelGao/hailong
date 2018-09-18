@@ -16,6 +16,7 @@ package tech.devgao.artemis.statetransition.util;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
+import tech.devgao.artemis.datastructures.state.Validators;
 
 public final class TreeHashUtil {
 
@@ -23,5 +24,10 @@ public final class TreeHashUtil {
 
   public static Bytes32 hash_tree_root(Bytes value) {
     return SSZ.hashTreeRoot(value);
+  }
+
+  public static Bytes32 hash_tree_root(Validators validators) {
+    // TODO
+    return Bytes32.ZERO;
   }
 }

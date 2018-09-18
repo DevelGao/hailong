@@ -13,9 +13,11 @@
 
 package tech.devgao.artemis.statetransition;
 
+import static tech.devgao.artemis.datastructures.Constants.EPOCH_LENGTH;
+
+import com.google.common.primitives.UnsignedLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.statetransition.util.BlockProcessorUtil;
 import tech.devgao.artemis.statetransition.util.EpochProcessorUtil;
@@ -37,7 +39,11 @@ public class StateTransition {
         blockProcessor(state, block);
       }
       // per-epoch processing
-      if ((state.getSlot() + 1) % Constants.EPOCH_LENGTH == 0) {
+      if (state
+          .getSlot()
+          .plus(UnsignedLong.ONE)
+          .mod(UnsignedLong.valueOf(EPOCH_LENGTH))
+          .equals(UnsignedLong.ZERO)) {
         epochProcessor(state);
       }
     } catch (Exception e) {
