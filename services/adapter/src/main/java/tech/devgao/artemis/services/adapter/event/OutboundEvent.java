@@ -11,14 +11,24 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.artemis.pow.event;
+package tech.devgao.artemis.services.adapter.event;
 
-import tech.devgao.artemis.pow.api.ChainStartEvent;
-import tech.devgao.artemis.pow.contract.ValidatorRegistrationContract.ChainStartEventResponse;
+public class OutboundEvent<T> {
 
-public class ChainStart extends AbstractEvent<ChainStartEventResponse> implements ChainStartEvent {
+  private Class<T> eventClass;
 
-  public ChainStart(ChainStartEventResponse response) {
-    super(response);
+  private String url;
+
+  public OutboundEvent(Class<T> eventClass, String url) {
+    this.eventClass = eventClass;
+    this.url = url;
+  }
+
+  public Class<T> getEventClass() {
+    return eventClass;
+  }
+
+  public String getUrl() {
+    return url;
   }
 }

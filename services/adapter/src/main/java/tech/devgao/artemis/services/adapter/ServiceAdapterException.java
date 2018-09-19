@@ -11,14 +11,16 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.artemis.pow.event;
+package tech.devgao.artemis.services.adapter;
 
-import tech.devgao.artemis.pow.api.ChainStartEvent;
-import tech.devgao.artemis.pow.contract.ValidatorRegistrationContract.ChainStartEventResponse;
+/** This class defines the ServiceAdapter classes excections */
+public class ServiceAdapterException extends RuntimeException {
 
-public class ChainStart extends AbstractEvent<ChainStartEventResponse> implements ChainStartEvent {
+  public ServiceAdapterException(String msg) {
+    super(msg);
+  }
 
-  public ChainStart(ChainStartEventResponse response) {
-    super(response);
+  public ServiceAdapterException(String msg, Throwable cause) {
+    super(msg, cause);
   }
 }
