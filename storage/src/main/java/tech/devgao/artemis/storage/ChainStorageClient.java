@@ -22,7 +22,7 @@ import net.develgao.cava.bytes.Bytes;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 
-/** TThis class is the ChainStorage client-side logic */
+/** This class is the ChainStorage client-side logic */
 public class ChainStorageClient implements ChainStorage {
 
   protected LinkedBlockingQueue<BeaconBlock> unprocessedBlocks;
