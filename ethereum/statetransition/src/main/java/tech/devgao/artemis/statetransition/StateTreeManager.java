@@ -15,14 +15,25 @@ package tech.devgao.artemis.statetransition;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.google.common.primitives.UnsignedLong;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import net.develgao.cava.bytes.Bytes32;
+import net.develgao.cava.bytes.Bytes48;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
+import tech.devgao.artemis.datastructures.blocks.Eth1Data;
+import tech.devgao.artemis.datastructures.operations.Deposit;
+import tech.devgao.artemis.datastructures.operations.DepositData;
+import tech.devgao.artemis.datastructures.operations.DepositInput;
 import tech.devgao.artemis.pow.api.ChainStartEvent;
 import tech.devgao.artemis.pow.api.ValidatorRegistrationEvent;
+import tech.devgao.artemis.statetransition.util.BeaconStateUtil;
 import tech.devgao.artemis.storage.ChainStorage;
 import tech.devgao.artemis.storage.ChainStorageClient;
 
@@ -38,7 +49,6 @@ public class StateTreeManager {
   public StateTreeManager(EventBus eventBus) {
     this.eventBus = eventBus;
     this.stateTransition = new StateTransition();
-    this.state = new BeaconState();
     this.eventBus.register(this);
     this.storage = ChainStorage.Create(ChainStorageClient.class, eventBus);
   }
@@ -46,7 +56,20 @@ public class StateTreeManager {
   @Subscribe
   public void onChainStarted(ChainStartEvent event) {
     LOG.info("ChainStart Event Detected");
-    // TODO: initial state transition logic
+    // TODO: Startup Logic: Initial State Data
+    List<Bytes32> merkle_roots = new ArrayList<Bytes32>();
+    merkle_roots.add(Bytes32.ZERO);
+    DepositInput deposit_input =
+        new DepositInput(Bytes48.ZERO, Bytes32.ZERO, new ArrayList<Bytes48>());
+    DepositData deposit_data = new DepositData(deposit_input, UnsignedLong.ZERO, UnsignedLong.ZERO);
+    Deposit deposit = new Deposit(merkle_roots, UnsignedLong.ZERO, deposit_data);
+    ArrayList<Deposit> deposits = new ArrayList<Deposit>();
+    deposits.add(deposit);
+    this.state =
+        BeaconStateUtil.get_initial_beacon_state(
+            deposits,
+            UnsignedLong.valueOf(Constants.GENESIS_SLOT),
+            new Eth1Data(Bytes32.ZERO, Bytes32.ZERO));
   }
 
   @Subscribe
