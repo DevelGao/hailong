@@ -15,6 +15,7 @@ package tech.devgao.artemis.statetransition.util;
 
 import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
+import java.util.List;
 import net.develgao.cava.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
@@ -25,7 +26,7 @@ public class AttestationUtil {
 
   public static ArrayList<PendingAttestationRecord> get_current_epoch_attestations(
       BeaconState state) {
-    ArrayList<PendingAttestationRecord> latest_attestations = state.getLatest_attestations();
+    List<PendingAttestationRecord> latest_attestations = state.getLatest_attestations();
     ArrayList<PendingAttestationRecord> current_epoch_attestations = new ArrayList<>();
     if (latest_attestations != null) {
       for (PendingAttestationRecord record : latest_attestations) {
