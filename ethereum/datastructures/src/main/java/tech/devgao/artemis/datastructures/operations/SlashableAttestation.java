@@ -13,35 +13,42 @@
 
 package tech.devgao.artemis.datastructures.operations;
 
+import com.google.common.primitives.UnsignedLong;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
 
-public class Attestation {
+public class SlashableAttestation {
 
-  private Bytes32 aggregation_bitfield;
+  private List<UnsignedLong> validator_indices;
   private AttestationData data;
   private Bytes32 custody_bitfield;
   private BLSSignature aggregate_signature;
 
-  public Attestation(
-      Bytes32 aggregation_bitfield,
+  public SlashableAttestation(
+      List<UnsignedLong> validator_indices,
       AttestationData data,
       Bytes32 custody_bitfield,
       BLSSignature aggregate_signature) {
-    this.aggregation_bitfield = aggregation_bitfield;
+    this.validator_indices = validator_indices;
     this.data = data;
     this.custody_bitfield = custody_bitfield;
     this.aggregate_signature = aggregate_signature;
   }
 
-  public static Attestation fromBytes(Bytes bytes) {
+  public static SlashableAttestation fromBytes(Bytes bytes) {
     return SSZ.decode(
         bytes,
         reader ->
-            new Attestation(
-                Bytes32.wrap(reader.readBytes()),
+            new SlashableAttestation(
+                reader
+                    .readUInt64List()
+                    .stream()
+                    .map(UnsignedLong::fromLongBits)
+                    .collect(Collectors.toList()),
                 AttestationData.fromBytes(reader.readBytes()),
                 Bytes32.wrap(reader.readBytes()),
                 BLSSignature.fromBytes(reader.readBytes())));
@@ -50,7 +57,9 @@ public class Attestation {
   public Bytes toBytes() {
     return SSZ.encode(
         writer -> {
-          writer.writeBytes(aggregation_bitfield);
+          writer.writeULongIntList(
+              64,
+              validator_indices.stream().map(UnsignedLong::longValue).collect(Collectors.toList()));
           writer.writeBytes(data.toBytes());
           writer.writeBytes(custody_bitfield);
           writer.writeBytes(aggregate_signature.toBytes());
@@ -59,7 +68,7 @@ public class Attestation {
 
   @Override
   public int hashCode() {
-    return Objects.hash(aggregation_bitfield, data, custody_bitfield, aggregate_signature);
+    return Objects.hash(validator_indices, data, custody_bitfield, aggregate_signature);
   }
 
   @Override
@@ -72,26 +81,18 @@ public class Attestation {
       return true;
     }
 
-    if (!(obj instanceof Attestation)) {
+    if (!(obj instanceof SlashableAttestation)) {
       return false;
     }
 
-    Attestation other = (Attestation) obj;
-    return Objects.equals(this.getAggregation_bitfield(), other.getAggregation_bitfield())
+    SlashableAttestation other = (SlashableAttestation) obj;
+    return Objects.equals(this.getValidator_indices(), other.getValidator_indices())
         && Objects.equals(this.getData(), other.getData())
         && Objects.equals(this.getCustody_bitfield(), other.getCustody_bitfield())
         && Objects.equals(this.getAggregate_signature(), other.getAggregate_signature());
   }
 
   /** ******************* * GETTERS & SETTERS * * ******************* */
-  public Bytes32 getAggregation_bitfield() {
-    return aggregation_bitfield;
-  }
-
-  public void setAggregation_bitfield(Bytes32 aggregation_bitfield) {
-    this.aggregation_bitfield = aggregation_bitfield;
-  }
-
   public AttestationData getData() {
     return data;
   }
@@ -100,19 +101,27 @@ public class Attestation {
     this.data = data;
   }
 
-  public Bytes32 getCustody_bitfield() {
-    return custody_bitfield;
-  }
-
-  public void setCustody_bitfield(Bytes32 custody_bitfield) {
-    this.custody_bitfield = custody_bitfield;
-  }
-
   public BLSSignature getAggregate_signature() {
     return aggregate_signature;
   }
 
   public void setAggregate_signature(BLSSignature aggregate_signature) {
     this.aggregate_signature = aggregate_signature;
+  }
+
+  public List<UnsignedLong> getValidator_indices() {
+    return validator_indices;
+  }
+
+  public void setValidator_indices(List<UnsignedLong> validator_indices) {
+    this.validator_indices = validator_indices;
+  }
+
+  public Bytes32 getCustody_bitfield() {
+    return custody_bitfield;
+  }
+
+  public void setCustody_bitfield(Bytes32 custody_bitfield) {
+    this.custody_bitfield = custody_bitfield;
   }
 }

@@ -18,21 +18,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.bytes.Bytes48;
-import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlockBody;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
 import tech.devgao.artemis.datastructures.blocks.ProposalSignedData;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.operations.AttestationData;
+import tech.devgao.artemis.datastructures.operations.AttesterSlashing;
 import tech.devgao.artemis.datastructures.operations.BLSSignature;
-import tech.devgao.artemis.datastructures.operations.CasperSlashing;
 import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.operations.DepositData;
 import tech.devgao.artemis.datastructures.operations.DepositInput;
 import tech.devgao.artemis.datastructures.operations.Exit;
 import tech.devgao.artemis.datastructures.operations.ProposerSlashing;
-import tech.devgao.artemis.datastructures.operations.SlashableVoteData;
+import tech.devgao.artemis.datastructures.operations.SlashableAttestation;
+import tech.devgao.artemis.datastructures.state.Crosslink;
 
 public final class DataStructureUtil {
 
@@ -52,44 +52,57 @@ public final class DataStructureUtil {
     return new Eth1Data(Bytes32.random(), Bytes32.random());
   }
 
+  /**
+   * Generate random Crosslink.
+   *
+   * @return A Crosslink containing a random epoch and block root.
+   */
+  public static Crosslink randomCrosslink() {
+    return new Crosslink(randomUnsignedLong(), Bytes32.random());
+  }
+
   public static AttestationData randomAttestationData(long slotNum) {
     return new AttestationData(
-        slotNum,
+        UnsignedLong.valueOf(slotNum),
         randomUnsignedLong(),
         Bytes32.random(),
         Bytes32.random(),
         Bytes32.random(),
-        Bytes32.random(),
+        randomCrosslink(),
         randomUnsignedLong(),
         Bytes32.random());
   }
 
   public static AttestationData randomAttestationData() {
     return new AttestationData(
-        randomLong(),
+        randomUnsignedLong(),
         randomUnsignedLong(),
         Bytes32.random(),
         Bytes32.random(),
         Bytes32.random(),
-        Bytes32.random(),
+        randomCrosslink(),
         randomUnsignedLong(),
         Bytes32.random());
   }
 
   public static Attestation randomAttestation(long slotNum) {
     return new Attestation(
-        randomAttestationData(slotNum),
         Bytes32.random(),
+        randomAttestationData(slotNum),
         Bytes32.random(),
         new BLSSignature(Bytes48.random(), Bytes48.random()));
   }
 
   public static Attestation randomAttestation() {
     return new Attestation(
+        Bytes32.random(),
         randomAttestationData(),
         Bytes32.random(),
-        Bytes32.random(),
         new BLSSignature(Bytes48.random(), Bytes48.random()));
+  }
+
+  public static AttesterSlashing randomAttesterSlashing() {
+    return new AttesterSlashing(randomSlashableAttestation(), randomSlashableAttestation());
   }
 
   public static ProposalSignedData randomProposalSignedData() {
@@ -105,16 +118,12 @@ public final class DataStructureUtil {
         new BLSSignature(Bytes48.random(), Bytes48.random()));
   }
 
-  public static SlashableVoteData randomSlashableVoteData() {
-    return new SlashableVoteData(
-        Arrays.asList(randomInt(), randomInt(), randomInt()),
-        Arrays.asList(randomInt(), randomInt(), randomInt()),
+  public static SlashableAttestation randomSlashableAttestation() {
+    return new SlashableAttestation(
+        Arrays.asList(randomUnsignedLong(), randomUnsignedLong(), randomUnsignedLong()),
         randomAttestationData(),
+        Bytes32.random(),
         new BLSSignature(Bytes48.random(), Bytes48.random()));
-  }
-
-  public static CasperSlashing randomCasperSlashing() {
-    return new CasperSlashing(randomSlashableVoteData(), randomSlashableVoteData());
   }
 
   public static DepositInput randomDepositInput() {
@@ -123,10 +132,7 @@ public final class DataStructureUtil {
   }
 
   public static DepositData randomDepositData() {
-    return new DepositData(
-        randomDepositInput(),
-        UnsignedLong.valueOf(Constants.MAX_DEPOSIT_AMOUNT),
-        randomUnsignedLong());
+    return new DepositData(randomUnsignedLong(), randomUnsignedLong(), randomDepositInput());
   }
 
   public static Deposit randomDeposit() {
@@ -156,7 +162,7 @@ public final class DataStructureUtil {
   public static BeaconBlockBody randomBeaconBlockBody() {
     return new BeaconBlockBody(
         Arrays.asList(randomProposerSlashing(), randomProposerSlashing(), randomProposerSlashing()),
-        Arrays.asList(randomCasperSlashing(), randomCasperSlashing(), randomCasperSlashing()),
+        Arrays.asList(randomAttesterSlashing(), randomAttesterSlashing(), randomAttesterSlashing()),
         Arrays.asList(randomAttestation(), randomAttestation(), randomAttestation()),
         Arrays.asList(randomDeposit(), randomDeposit(), randomDeposit()),
         Arrays.asList(randomExit(), randomExit(), randomExit()));
