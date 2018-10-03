@@ -49,7 +49,7 @@ import tech.devgao.artemis.datastructures.operations.DepositInput;
 import tech.devgao.artemis.datastructures.state.Crosslink;
 import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
 import tech.devgao.artemis.datastructures.state.Fork;
-import tech.devgao.artemis.datastructures.state.PendingAttestationRecord;
+import tech.devgao.artemis.datastructures.state.PendingAttestation;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.statetransition.BeaconState;
 
@@ -113,7 +113,7 @@ public class BeaconStateUtil {
             latest_block_roots,
             latest_index_roots,
             latest_penalized_balances,
-            new ArrayList<PendingAttestationRecord>(),
+            new ArrayList<PendingAttestation>(),
             new ArrayList<Bytes32>(),
 
             // Ethereum 1.0 chain data
