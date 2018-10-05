@@ -50,7 +50,6 @@ import tech.devgao.artemis.datastructures.blocks.Eth1Data;
 import tech.devgao.artemis.datastructures.operations.AttestationData;
 import tech.devgao.artemis.datastructures.state.Fork;
 import tech.devgao.artemis.datastructures.state.Validator;
-import tech.devgao.artemis.datastructures.util.DataStructureUtil;
 import tech.devgao.artemis.statetransition.util.BeaconStateUtil;
 
 @ExtendWith(BouncyCastleExtension.class)
@@ -123,7 +122,7 @@ class BeaconStateTest {
             Bytes32.ZERO,
             Bytes32.ZERO,
             Bytes32.ZERO,
-            DataStructureUtil.randomCrosslink(),
+            Bytes32.ZERO,
             UnsignedLong.ZERO,
             Bytes32.ZERO);
     byte[] participation_bitfield = Bytes32.ZERO.toArrayUnsafe();
