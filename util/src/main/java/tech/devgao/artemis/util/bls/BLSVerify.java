@@ -14,14 +14,13 @@
 package tech.devgao.artemis.util.bls;
 
 import com.google.common.primitives.UnsignedLong;
-import java.util.List;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.bytes.Bytes48;
 
 public class BLSVerify {
 
   public static boolean bls_verify(
-      Bytes48 pubkey, Bytes32 message, List<Bytes48> signature, UnsignedLong domain) {
+      Bytes48 pubkey, Bytes32 message, Signature signature, UnsignedLong domain) {
     return true;
   }
 }
