@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.bytes.Bytes48;
+import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlockBody;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
@@ -32,6 +33,7 @@ import tech.devgao.artemis.datastructures.operations.DepositInput;
 import tech.devgao.artemis.datastructures.operations.Exit;
 import tech.devgao.artemis.datastructures.operations.ProposerSlashing;
 import tech.devgao.artemis.datastructures.operations.SlashableAttestation;
+import tech.devgao.artemis.datastructures.state.Validator;
 
 public final class DataStructureUtil {
 
@@ -159,5 +161,16 @@ public final class DataStructureUtil {
 
   public static BeaconBlock randomBeaconBlock() {
     return randomBeaconBlock(randomLong());
+  }
+
+  public static Validator randomValidator() {
+    return new Validator(
+        Bytes48.random(),
+        Bytes32.random(),
+        Constants.FAR_FUTURE_EPOCH,
+        Constants.FAR_FUTURE_EPOCH,
+        Constants.FAR_FUTURE_EPOCH,
+        Constants.FAR_FUTURE_EPOCH,
+        randomUnsignedLong());
   }
 }
