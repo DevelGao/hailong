@@ -18,16 +18,39 @@ import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.datastructures.state.Validator;
+import tech.devgao.artemis.statetransition.BeaconState;
 
+/** This class is a collection of tree hash root convenience methods */
 public final class TreeHashUtil {
 
-  private TreeHashUtil() {}
-
+  /**
+   * Calculate the hash tree root of the provided value
+   *
+   * @param value
+   * @return
+   */
   public static Bytes32 hash_tree_root(Bytes value) {
     return SSZ.hashTreeRoot(value);
   }
 
+  /**
+   * Calculate the hash tree root of the list of validators provided
+   *
+   * @param validators
+   * @return
+   */
   public static Bytes32 hash_tree_root(List<Validator> validators) {
+    // TODO
+    return Bytes32.ZERO;
+  }
+
+  /**
+   * Calculate the hash tree root of the BeaconState provided
+   *
+   * @param state
+   * @return
+   */
+  public static Bytes32 hash_tree_root(BeaconState state) {
     // TODO
     return Bytes32.ZERO;
   }
