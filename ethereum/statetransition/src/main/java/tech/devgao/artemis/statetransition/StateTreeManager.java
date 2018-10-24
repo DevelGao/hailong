@@ -13,12 +13,12 @@
 
 package tech.devgao.artemis.statetransition;
 
+import static java.util.Objects.requireNonNull;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDeposits;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.primitives.UnsignedLong;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -28,7 +28,6 @@ import org.apache.logging.log4j.Logger;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
-import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.pow.api.ChainStartEvent;
 import tech.devgao.artemis.pow.api.ValidatorRegistrationEvent;
 import tech.devgao.artemis.statetransition.util.BeaconStateUtil;
@@ -42,7 +41,7 @@ public class StateTreeManager {
   private StateTransition stateTransition;
   private BeaconState state;
   private ChainStorageClient storage;
-  private static final Logger LOG = LogManager.getLogger();
+  private static final Logger LOG = LogManager.getLogger(StateTreeManager.class.getName());
 
   public StateTreeManager(EventBus eventBus) {
     this.eventBus = eventBus;
@@ -54,13 +53,16 @@ public class StateTreeManager {
   @Subscribe
   public void onChainStarted(ChainStartEvent event) {
     LOG.info("ChainStart Event Detected");
-    // TODO: Startup Logic: Initial State Data
-    ArrayList<Deposit> deposits = randomDeposits(100);
-    this.state =
-        BeaconStateUtil.get_initial_beacon_state(
-            deposits,
-            UnsignedLong.valueOf(Constants.GENESIS_SLOT),
-            new Eth1Data(Bytes32.ZERO, Bytes32.ZERO));
+    try {
+      this.state =
+          BeaconStateUtil.get_initial_beacon_state(
+              randomDeposits(100),
+              UnsignedLong.valueOf(Constants.GENESIS_SLOT),
+              new Eth1Data(Bytes32.ZERO, Bytes32.ZERO));
+    } catch (IllegalStateException e) {
+      LOG.fatal("IllegalStateException thrown in StateTreeManager.java.");
+      LOG.fatal(e.toString());
+    }
   }
 
   @Subscribe
@@ -71,6 +73,7 @@ public class StateTreeManager {
 
   @Subscribe
   public void onNewSlot(Date date) {
+    requireNonNull(state);
     LOG.info("****** New Slot at: " + date + " ******");
     // TODO: get canonical state
     this.state = BeaconState.deepCopy(state);

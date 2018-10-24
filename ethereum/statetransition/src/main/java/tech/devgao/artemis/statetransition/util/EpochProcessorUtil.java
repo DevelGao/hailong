@@ -32,6 +32,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import net.develgao.cava.bytes.Bytes32;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
 import tech.devgao.artemis.datastructures.blocks.Eth1DataVote;
@@ -43,6 +45,8 @@ import tech.devgao.artemis.statetransition.BeaconState;
 import tech.devgao.artemis.util.bitwise.BitwiseOps;
 
 public class EpochProcessorUtil {
+
+  private static final Logger LOG = LogManager.getLogger(EpochProcessorUtil.class.getName());
 
   /**
    * update eth1Data state fields. spec:
@@ -600,7 +604,7 @@ public class EpochProcessorUtil {
    *
    * @param state
    */
-  public static void currentStateUpdatesAlt1(BeaconState state) {
+  public static void currentStateUpdatesAlt1(BeaconState state) throws IllegalStateException {
     UnsignedLong epoch = BeaconStateUtil.get_next_epoch(state);
     state.setCurrent_calculation_epoch(epoch);
 
@@ -619,7 +623,7 @@ public class EpochProcessorUtil {
    *
    * @param state
    */
-  public static void currentStateUpdatesAlt2(BeaconState state) {
+  public static void currentStateUpdatesAlt2(BeaconState state) throws IllegalStateException {
     UnsignedLong epochs_since_last_registry_update =
         BeaconStateUtil.get_current_epoch(state).minus(state.getValidator_registry_update_epoch());
     if (epochs_since_last_registry_update.compareTo(UnsignedLong.ONE) > 0
