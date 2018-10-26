@@ -14,6 +14,7 @@
 package tech.devgao.artemis.statetransition.util;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
@@ -40,8 +41,12 @@ public final class TreeHashUtil {
    * @return
    */
   public static Bytes32 hash_tree_root(List<Validator> validators) {
-    // TODO
-    return Bytes32.ZERO;
+    return hash_tree_root(
+        SSZ.encode(
+            writer -> {
+              writer.writeBytesList(
+                  validators.stream().map(item -> item.toBytes()).collect(Collectors.toList()));
+            }));
   }
 
   /**
