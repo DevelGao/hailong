@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
+import tech.devgao.artemis.datastructures.operations.AttestationDataAndCustodyBit;
+import tech.devgao.artemis.datastructures.operations.Exit;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.statetransition.BeaconState;
 
@@ -28,17 +30,27 @@ public final class TreeHashUtil {
    * Calculate the hash tree root of the provided value
    *
    * @param value
-   * @return
    */
   public static Bytes32 hash_tree_root(Bytes value) {
     return SSZ.hashTreeRoot(value);
+  }
+
+  /** */
+  public static Bytes32 hash_tree_root(Exit exit) {
+    // todo: check that this is right
+    return SSZ.hashTreeRoot(exit.toBytes());
+  }
+
+  /** @param attestationDataAndCustodyBit */
+  public static Bytes32 hash_tree_root(AttestationDataAndCustodyBit attestationDataAndCustodyBit) {
+    // todo: check that this is right
+    return SSZ.hashTreeRoot(attestationDataAndCustodyBit.toBytes());
   }
 
   /**
    * Calculate the hash tree root of the list of validators provided
    *
    * @param validators
-   * @return
    */
   public static Bytes32 hash_tree_root(List<Validator> validators) {
     return hash_tree_root(
@@ -53,7 +65,6 @@ public final class TreeHashUtil {
    * Calculate the hash tree root of the BeaconState provided
    *
    * @param state
-   * @return
    */
   public static Bytes32 hash_tree_root(BeaconState state) {
     return hash_tree_root(state.toBytes());
