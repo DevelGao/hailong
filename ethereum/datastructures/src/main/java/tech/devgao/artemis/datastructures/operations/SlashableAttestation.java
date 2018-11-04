@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
+import tech.devgao.artemis.util.bls.BLSSignature;
 
 public class SlashableAttestation {
 

@@ -13,23 +13,40 @@
 
 package tech.devgao.artemis.util.bls;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static tech.devgao.artemis.util.mikuli.BLS12381.sign;
+import static tech.devgao.artemis.util.mikuli.BLS12381.verify;
+
 import com.google.common.primitives.UnsignedLong;
 import java.util.List;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.bytes.Bytes48;
+import tech.devgao.artemis.util.mikuli.KeyPair;
+import tech.devgao.artemis.util.mikuli.PublicKey;
+import tech.devgao.artemis.util.mikuli.Signature;
 
 public class BLSVerify {
 
   public static boolean bls_verify(
-      Bytes48 pubkey, Bytes32 message, Signature signature, UnsignedLong domain) {
-    // todo
-    return true;
+      Bytes48 pubkey, Bytes32 message, BLSSignature signature, UnsignedLong domain) {
+
+    // TODO: This is currently faked. Implement it properly
+
+    KeyPair keyPair = KeyPair.random();
+    byte[] m = "Hello".getBytes(UTF_8);
+    Signature s = sign(keyPair, m, 48).signature();
+
+    // TODO: use the real public key
+    PublicKey p = keyPair.publicKey();
+
+    // TODO: return verify() result
+    return verify(p, s, m, 48);
   }
 
   public static boolean bls_verify_multiple(
       List<Bytes48> pubkeys,
       List<Bytes32> messages,
-      Signature aggregateSignature,
+      BLSSignature aggregateSignature,
       UnsignedLong domain) {
     // todo
     return true;

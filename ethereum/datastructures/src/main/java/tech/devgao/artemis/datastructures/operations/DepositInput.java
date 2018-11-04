@@ -18,6 +18,7 @@ import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.bytes.Bytes48;
 import net.develgao.cava.ssz.SSZ;
+import tech.devgao.artemis.util.bls.BLSSignature;
 
 public final class DepositInput {
 

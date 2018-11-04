@@ -17,7 +17,7 @@ import java.util.Objects;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
-import tech.devgao.artemis.datastructures.operations.BLSSignature;
+import tech.devgao.artemis.util.bls.BLSSignature;
 
 public final class BeaconBlock {
 

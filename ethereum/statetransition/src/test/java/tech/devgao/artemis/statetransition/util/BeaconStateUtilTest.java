@@ -31,10 +31,10 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tech.devgao.artemis.datastructures.Constants;
-import tech.devgao.artemis.datastructures.operations.BLSSignature;
 import tech.devgao.artemis.datastructures.state.Fork;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.statetransition.BeaconState;
+import tech.devgao.artemis.util.bls.BLSSignature;
 
 @ExtendWith(BouncyCastleExtension.class)
 class BeaconStateUtilTest {

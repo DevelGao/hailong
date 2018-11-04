@@ -20,15 +20,15 @@ import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomAt
 import java.util.Objects;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.bytes.Bytes48;
 import org.junit.jupiter.api.Test;
+import tech.devgao.artemis.util.bls.BLSSignature;
 
 class AttestationTest {
 
   private Bytes32 aggregationBitfield = Bytes32.random();
   private AttestationData data = randomAttestationData();
   private Bytes32 custodyBitfield = Bytes32.random();
-  private BLSSignature aggregateSignature = new BLSSignature(Bytes48.random(), Bytes48.random());
+  private BLSSignature aggregateSignature = BLSSignature.random();
 
   private Attestation attestation =
       new Attestation(aggregationBitfield, data, custodyBitfield, aggregateSignature);
@@ -81,12 +81,13 @@ class AttestationTest {
 
   @Test
   void equalsReturnsFalseWhenAggregrateSignaturesAreDifferent() {
-    // Create copy of aggregateSignature and reverse to ensure it is different.
-    BLSSignature reverseAggregateSignature =
-        new BLSSignature(aggregateSignature.getC1(), aggregateSignature.getC0());
+    BLSSignature differentAggregateSignature = BLSSignature.random();
+    while (differentAggregateSignature.equals(aggregateSignature)) {
+      differentAggregateSignature = BLSSignature.random();
+    }
 
     Attestation testAttestation =
-        new Attestation(aggregationBitfield, data, custodyBitfield, reverseAggregateSignature);
+        new Attestation(aggregationBitfield, data, custodyBitfield, differentAggregateSignature);
 
     assertNotEquals(attestation, testAttestation);
   }

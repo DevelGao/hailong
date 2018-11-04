@@ -18,6 +18,7 @@ import java.util.Objects;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.datastructures.blocks.ProposalSignedData;
+import tech.devgao.artemis.util.bls.BLSSignature;
 
 public class ProposerSlashing {
 

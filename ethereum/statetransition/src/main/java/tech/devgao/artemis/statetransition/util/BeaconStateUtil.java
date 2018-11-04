@@ -58,7 +58,6 @@ import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
 import tech.devgao.artemis.datastructures.operations.AttestationData;
 import tech.devgao.artemis.datastructures.operations.AttestationDataAndCustodyBit;
-import tech.devgao.artemis.datastructures.operations.BLSSignature;
 import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.operations.DepositInput;
 import tech.devgao.artemis.datastructures.operations.SlashableAttestation;
@@ -68,7 +67,7 @@ import tech.devgao.artemis.datastructures.state.Fork;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.statetransition.BeaconState;
 import tech.devgao.artemis.util.bitwise.BitwiseOps;
-import tech.devgao.artemis.util.bls.Signature;
+import tech.devgao.artemis.util.bls.BLSSignature;
 
 public class BeaconStateUtil {
 
@@ -942,7 +941,7 @@ public class BeaconStateUtil {
                 new AttestationDataAndCustodyBit(slashable_attestation.getData(), false)),
             hash_tree_root(
                 new AttestationDataAndCustodyBit(slashable_attestation.getData(), true)));
-    Signature signature = slashable_attestation.getAggregate_signature();
+    BLSSignature signature = slashable_attestation.getAggregate_signature();
     UnsignedLong domain =
         get_domain(
             state.getFork(),
