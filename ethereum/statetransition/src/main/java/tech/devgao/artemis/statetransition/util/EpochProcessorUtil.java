@@ -37,7 +37,6 @@ import net.develgao.cava.bytes.Bytes32;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tech.devgao.artemis.datastructures.Constants;
-import tech.devgao.artemis.datastructures.blocks.Eth1Data;
 import tech.devgao.artemis.datastructures.blocks.Eth1DataVote;
 import tech.devgao.artemis.datastructures.state.Crosslink;
 import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
@@ -62,13 +61,18 @@ public class EpochProcessorUtil {
             .mod(UnsignedLong.valueOf(Constants.ETH1_DATA_VOTING_PERIOD))
             .compareTo(UnsignedLong.ZERO)
         == 0) {
-      if (state.getEth1_data_votes().size() * 2
-          > Constants.ETH1_DATA_VOTING_PERIOD * EPOCH_LENGTH) {
-        // TODO: this doesn't seem right
-        Eth1Data latest_eth1_data = state.getEth1_data_votes().get(0).getEth1_data();
-        state.setLatest_eth1_data(latest_eth1_data);
-        state.setEth1_data_votes(new ArrayList<Eth1DataVote>());
+      List<Eth1DataVote> eth1_data_votes = state.getEth1_data_votes();
+      for (Eth1DataVote eth1_data_vote : eth1_data_votes) {
+        if (eth1_data_vote
+                .getVote_count()
+                .times(UnsignedLong.valueOf(2))
+                .compareTo(UnsignedLong.valueOf(Constants.ETH1_DATA_VOTING_PERIOD * EPOCH_LENGTH))
+            > 0) {
+          state.setLatest_eth1_data(eth1_data_vote.getEth1_data());
+        }
       }
+
+      state.setEth1_data_votes(new ArrayList<Eth1DataVote>());
     }
   }
 
