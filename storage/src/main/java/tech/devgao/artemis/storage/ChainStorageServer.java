@@ -15,11 +15,8 @@ package tech.devgao.artemis.storage;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import java.util.HashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 import net.develgao.cava.bytes.Bytes;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
-import tech.devgao.artemis.datastructures.operations.Attestation;
 
 /** This class is the ChainStorage server-side logic */
 public class ChainStorageServer extends ChainStorageClient implements ChainStorage {
@@ -27,10 +24,8 @@ public class ChainStorageServer extends ChainStorageClient implements ChainStora
   public ChainStorageServer() {}
 
   public ChainStorageServer(EventBus eventBus) {
-    this.unprocessedBlocks = new LinkedBlockingQueue<BeaconBlock>();
-    this.unprocessedAttestations = new LinkedBlockingQueue<Attestation>();
-    this.processedBlocks = new HashMap<Bytes, Bytes>();
     this.eventBus = eventBus;
+    this.eventBus.register(this);
   }
 
   @Subscribe

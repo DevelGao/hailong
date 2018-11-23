@@ -20,11 +20,12 @@ import com.google.common.primitives.UnsignedLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
-import tech.devgao.artemis.statetransition.util.BeaconStateUtil;
+import tech.devgao.artemis.datastructures.state.BeaconState;
+import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.statetransition.util.BlockProcessorUtil;
 import tech.devgao.artemis.statetransition.util.EpochProcessorUtil;
 import tech.devgao.artemis.statetransition.util.SlotProcessorUtil;
-import tech.devgao.artemis.statetransition.util.TreeHashUtil;
+import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 
 public class StateTransition {
 
@@ -52,7 +53,7 @@ public class StateTransition {
       // state root verification
       if (block != null) {
         checkArgument(
-            block.getState_root().equals(TreeHashUtil.hash_tree_root(state)),
+            block.getState_root().equals(HashTreeUtil.hash_tree_root(state.toBytes())),
             StateTransitionException.class);
       }
     } catch (Exception e) {

@@ -30,7 +30,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
-import tech.devgao.artemis.statetransition.util.BeaconStateUtil;
+import tech.devgao.artemis.datastructures.state.BeaconState;
+import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.statetransition.util.SlotProcessorUtil;
 
 @ExtendWith(BouncyCastleExtension.class)
