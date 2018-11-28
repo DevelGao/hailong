@@ -35,7 +35,9 @@ import tech.devgao.artemis.datastructures.operations.Exit;
 import tech.devgao.artemis.datastructures.operations.ProposerSlashing;
 import tech.devgao.artemis.datastructures.operations.SlashableAttestation;
 import tech.devgao.artemis.datastructures.state.Validator;
+import tech.devgao.artemis.util.bls.BLSKeyPair;
 import tech.devgao.artemis.util.bls.BLSSignature;
+import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 
 public final class DataStructureUtil {
 
@@ -106,7 +108,24 @@ public final class DataStructureUtil {
   }
 
   public static DepositInput randomDepositInput() {
-    return new DepositInput(Bytes48.random(), Bytes32.random(), BLSSignature.random());
+    BLSKeyPair keyPair = BLSKeyPair.random();
+    Bytes48 pubkey = keyPair.publicKeyAsBytes();
+    Bytes32 withdrawal_credentials = Bytes32.random();
+
+    DepositInput proof_of_possession_data =
+        new DepositInput(pubkey, withdrawal_credentials, Constants.EMPTY_SIGNATURE);
+
+    BLSSignature proof_of_possession =
+        BLSSignature.sign(
+            keyPair,
+            HashTreeUtil.hash_tree_root(proof_of_possession_data.toBytes()),
+            Constants.DOMAIN_DEPOSIT);
+
+    // BLSSignature proof_of_possession =
+    //    BLSSignature.sign(keyPair, withdrawal_credentials, Constants.DOMAIN_DEPOSIT);
+
+    return new DepositInput(
+        keyPair.publicKeyAsBytes(), withdrawal_credentials, proof_of_possession);
   }
 
   public static DepositData randomDepositData() {
