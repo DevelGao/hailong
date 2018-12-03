@@ -75,6 +75,7 @@ import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
 import tech.devgao.artemis.datastructures.state.PendingAttestation;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
+import tech.devgao.artemis.util.bls.BLSException;
 
 public class BlockProcessorUtil {
 
@@ -96,9 +97,10 @@ public class BlockProcessorUtil {
    *
    * @param state
    * @param block
+   * @throws BLSException
    */
   public static void verify_signature(BeaconState state, BeaconBlock block)
-      throws IllegalStateException, IllegalArgumentException {
+      throws IllegalStateException, IllegalArgumentException, BLSException {
     // Let block_without_signature_root be the hash_tree_root of block where
     //   block.signature is set to EMPTY_SIGNATURE.
     block.setSignature(EMPTY_SIGNATURE);
