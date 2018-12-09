@@ -1,4 +1,3 @@
-[submodule "web3j"]
-	path = web3j
-	url = https://github.com/web3j/web3j.git
-	branch = master
+[submodule "eth-reference-tests/src/test/resources/eth2.0-tests"]
+	path = eth-reference-tests/src/test/resources/eth2.0-tests
+	url = https://github.com/ethereum/eth2.0-tests.git
