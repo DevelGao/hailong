@@ -362,8 +362,7 @@ public class BlockProcessorUtil {
       checkArgument(
           attestation
                   .getData()
-                  .getLatest_crosslink()
-                  .getShard_block_root()
+                  .getLatest_crosslink_root()
                   .equals(
                       state
                           .getLatest_crosslinks()
