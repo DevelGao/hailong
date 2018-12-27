@@ -37,7 +37,6 @@ public class StateTreeManager {
 
   private BeaconState canonical_state;
   private UnsignedLong nodeTime;
-  private UnsignedLong nodeSlot;
   private final EventBus eventBus;
   private StateTransition stateTransition;
   private ChainStorageClient store;
@@ -53,7 +52,6 @@ public class StateTreeManager {
   @Subscribe
   public void onChainStarted(ChainStartEvent event) {
     LOG.info("******* ChainStart Event Detected *******");
-    this.nodeSlot = UnsignedLong.valueOf(Constants.GENESIS_SLOT);
     this.nodeTime =
         UnsignedLong.valueOf(Constants.GENESIS_SLOT)
             .times(UnsignedLong.valueOf(Constants.SLOT_DURATION));
@@ -86,19 +84,17 @@ public class StateTreeManager {
 
   @Subscribe
   public void onNewSlot(Date date) {
+    this.nodeTime = this.nodeTime.plus(UnsignedLong.valueOf(Constants.SLOT_DURATION));
+    UnsignedLong nodeSlot = nodeTime.dividedBy(UnsignedLong.valueOf(Constants.SLOT_DURATION));
+    LOG.info("******* Slot Event Detected *******");
+    LOG.info("node time: " + nodeTime.longValue());
+    LOG.info("node slot: " + nodeSlot.longValue());
+
+    BeaconState newState = null;
+    Bytes32 newStateRoot = Bytes32.ZERO;
+    Optional<BeaconBlock> block = this.store.getUnprocessedBlock();
     try {
-      this.nodeSlot = this.nodeSlot.plus(UnsignedLong.ONE);
-      this.nodeTime = this.nodeTime.plus(UnsignedLong.valueOf(Constants.SLOT_DURATION));
-
-      LOG.info("******* Slot Event Detected *******");
-      LOG.info("node time: " + nodeTime.longValue());
-      LOG.info("node slot: " + nodeSlot.longValue());
-
-      BeaconState newState = null;
-      Bytes32 newStateRoot = Bytes32.ZERO;
-      Optional<BeaconBlock> block = this.store.getUnprocessedBlock();
-      Boolean shouldProcessBlock = inspectBlock(block);
-      if (shouldProcessBlock) {
+      if (shouldProcessBlock(block)) {
         Bytes32 blockStateRoot = block.get().getState_root();
         Bytes32 blockRoot = HashTreeUtil.hash_tree_root(block.get().toBytes());
         BeaconBlock parentBlock = this.store.getParent(block.get()).get();
@@ -124,7 +120,7 @@ public class StateTreeManager {
           stateTransition.initiate(newState, null, store);
           newStateRoot = HashTreeUtil.hash_tree_root(newState.toBytes());
           this.store.addState(newStateRoot, newState);
-          newState = BeaconState.deepCopy(newState);
+          newState = BeaconState.deepCopy(parentState);
           counter++;
         }
 
@@ -161,13 +157,8 @@ public class StateTreeManager {
           LOG.info("The block's state root does not match the calculated state root!");
           LOG.info("  new state root: " + newStateRoot.toHexString());
           LOG.info("  block state root: " + blockStateRoot.toHexString());
-          shouldProcessBlock = false;
         }
-      }
-      // this conditional evaluates true if:
-      // 1. inspectBlock returns false
-      // 2. state root verification fails on a block
-      if (!shouldProcessBlock) {
+      } else {
         newState = BeaconState.deepCopy(this.canonical_state);
         stateTransition.initiate(newState, null, store);
         newStateRoot = HashTreeUtil.hash_tree_root(newState.toBytes());
@@ -180,7 +171,7 @@ public class StateTreeManager {
     }
   }
 
-  protected Boolean inspectBlock(Optional<BeaconBlock> block) {
+  protected Boolean shouldProcessBlock(Optional<BeaconBlock> block) {
     if (!block.isPresent()) {
       return false;
     }

@@ -16,6 +16,7 @@ package tech.devgao.artemis.networking.p2p;
 import com.google.common.eventbus.EventBus;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import net.develgao.cava.bytes.Bytes32;
 import org.apache.logging.log4j.LogManager;
@@ -96,13 +97,15 @@ public class MockP2PNetwork implements P2PNetwork {
       BeaconBlock block = BeaconBlock.createGenesis(state_root);
       Bytes32 parent_root = HashTreeUtil.hash_tree_root(block.toBytes());
 
+      // state.incrementSlot();
+      // state.incrementSlot();
       // Thread.sleep(6000);
       // ArrayList<Deposit> deposits = DataStructureUtil.newDeposits(100);
       ArrayList<Deposit> deposits = new ArrayList<>();
       while (true) {
-        // Random random = new Random();
-        // long n = 1000L * Integer.toUnsignedLong(random.nextInt(7) + 6);
-        Thread.sleep(6000);
+        Random random = new Random();
+        long n = 1000L * Integer.toUnsignedLong(random.nextInt(7) + 6);
+        Thread.sleep(n);
         // Slot Processing
         state.incrementSlot();
         // Block Processing
