@@ -57,7 +57,6 @@ import java.util.List;
 import java.util.Objects;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.bytes.Bytes48;
 import net.develgao.cava.crypto.Hash;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
@@ -76,6 +75,7 @@ import tech.devgao.artemis.datastructures.state.PendingAttestation;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.util.bls.BLSException;
+import tech.devgao.artemis.util.bls.BLSPublicKey;
 
 public class BlockProcessorUtil {
 
@@ -117,7 +117,7 @@ public class BlockProcessorUtil {
     //   state.slot)].pubkey, message=proposal_root, signature=block.signature,
     //   domain=get_domain(state.fork, state.slot, DOMAIN_PROPOSAL)) is valid.
     int proposerIndex = BeaconStateUtil.get_beacon_proposer_index(state, state.getSlot());
-    Bytes48 pubkey = state.getValidator_registry().get(proposerIndex).getPubkey();
+    BLSPublicKey pubkey = state.getValidator_registry().get(proposerIndex).getPubkey();
     UnsignedLong domain = get_domain(state.getFork(), get_current_epoch(state), DOMAIN_PROPOSAL);
     checkArgument(bls_verify(pubkey, proposalRoot, block.getSignature(), domain));
   }
@@ -155,13 +155,12 @@ public class BlockProcessorUtil {
    */
   public static void update_eth1_data(BeaconState state, BeaconBlock block)
       throws BlockProcessingException {
-    // If there exists an `eth1_data_vote` in `states.eth1_data_votes` for which
-    // `eth1_data_vote.eth1_data == block.eth1_data`
-    //  (there will be at most one), set `eth1_data_vote.vote_count += 1`.
+    // If block.eth1_data equals eth1_data_vote.eth1_data for some eth1_data_vote
+    //   in state.eth1_data_votes, set eth1_data_vote.vote_count += 1.
     boolean exists = false;
     List<Eth1DataVote> votes = state.getEth1_data_votes();
     for (Eth1DataVote vote : votes) {
-      if (vote.getEth1_data().equals(block.getEth1_data())) {
+      if (block.getEth1_data().equals(vote.getEth1_data())) {
         exists = true;
         UnsignedLong voteCount = vote.getVote_count();
         vote.setVote_count(voteCount.plus(UnsignedLong.ONE));
@@ -363,8 +362,7 @@ public class BlockProcessorUtil {
       checkArgument(
           attestation
                   .getData()
-                  .getLatest_crosslink()
-                  .getShard_block_root()
+                  .getLatest_crosslink_root()
                   .equals(
                       state
                           .getLatest_crosslinks()
@@ -460,12 +458,12 @@ public class BlockProcessorUtil {
       }
     }
 
-    List<Bytes48> pubkey0 = new ArrayList<>();
+    List<BLSPublicKey> pubkey0 = new ArrayList<>();
     for (int i = 0; i < custody_bit_0_participants.size(); i++) {
       pubkey0.add(state.getValidator_registry().get(i).getPubkey());
     }
 
-    List<Bytes48> pubkey1 = new ArrayList<>();
+    List<BLSPublicKey> pubkey1 = new ArrayList<>();
     for (int i = 0; i < custody_bit_1_participants.size(); i++) {
       pubkey1.add(state.getValidator_registry().get(i).getPubkey());
     }

@@ -51,7 +51,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.bytes.Bytes48;
 import net.develgao.cava.crypto.Hash;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -69,6 +68,7 @@ import tech.devgao.artemis.datastructures.state.Fork;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.util.bitwise.BitwiseOps;
 import tech.devgao.artemis.util.bls.BLSException;
+import tech.devgao.artemis.util.bls.BLSPublicKey;
 import tech.devgao.artemis.util.bls.BLSSignature;
 
 public class BeaconStateUtil {
@@ -303,8 +303,7 @@ public class BeaconStateUtil {
     Bytes32 randao_mix =
         get_randao_mix(state, epoch.minus(UnsignedLong.valueOf(Constants.SEED_LOOKAHEAD)));
     Bytes32 index_root = get_active_index_root(state, epoch);
-    Bytes epochBytes = Bytes.ofUnsignedLong(epoch.longValue());
-    return Hash.keccak256(Bytes.wrap(Bytes.wrap(randao_mix, index_root), epochBytes));
+    return Hash.keccak256(Bytes.wrap(randao_mix, index_root));
   }
 
   public static Bytes32 get_active_index_root(BeaconState state, UnsignedLong epoch) {
@@ -739,7 +738,7 @@ public class BeaconStateUtil {
    */
   public static void process_deposit(
       BeaconState state,
-      Bytes48 pubkey,
+      BLSPublicKey pubkey,
       UnsignedLong amount,
       BLSSignature proof_of_possession,
       Bytes32 withdrawal_credentials) {
@@ -753,7 +752,7 @@ public class BeaconStateUtil {
         validate_proof_of_possession(state, pubkey, proof_of_possession, withdrawal_credentials));
 
     // Retrieve the list of validator's public keys from the current state.
-    List<Bytes48> validator_pubkeys =
+    List<BLSPublicKey> validator_pubkeys =
         validatorRegistry.stream()
             .map(validator -> validator.getPubkey())
             .collect(Collectors.toList());
@@ -830,7 +829,7 @@ public class BeaconStateUtil {
    */
   static boolean validate_proof_of_possession(
       BeaconState state,
-      Bytes48 pubkey,
+      BLSPublicKey pubkey,
       BLSSignature proof_of_possession,
       Bytes32 withdrawal_credentials) {
     // Create a new DepositInput with the pubkey and withdrawal_credentials.
@@ -889,7 +888,7 @@ public class BeaconStateUtil {
   public static boolean verify_bitfield(Bytes bitfield, int committee_size) {
     if (bitfield.size() != (committee_size + 7) / 8) return false;
 
-    for (int i = committee_size; i < bitfield.bitLength() * 8; i++) {
+    for (int i = committee_size + 1; i < committee_size - committee_size % 8 + 8; i++) {
       if (get_bitfield_bit(bitfield, i) == 0b1) return false;
     }
     return true;
@@ -937,16 +936,16 @@ public class BeaconStateUtil {
       }
     }
 
-    ArrayList<Bytes48> custody_bit_0_pubkeys = new ArrayList<>();
+    ArrayList<BLSPublicKey> custody_bit_0_pubkeys = new ArrayList<>();
     for (int i = 0; i < custody_bit_0_indices.size(); i++) {
       custody_bit_0_pubkeys.add(state.getValidator_registry().get(i).getPubkey());
     }
-    ArrayList<Bytes48> custody_bit_1_pubkeys = new ArrayList<>();
+    ArrayList<BLSPublicKey> custody_bit_1_pubkeys = new ArrayList<>();
     for (int i = 0; i < custody_bit_1_indices.size(); i++) {
       custody_bit_1_pubkeys.add(state.getValidator_registry().get(i).getPubkey());
     }
 
-    List<Bytes48> pubkeys =
+    List<BLSPublicKey> pubkeys =
         Arrays.asList(
             bls_aggregate_pubkeys(custody_bit_0_pubkeys),
             bls_aggregate_pubkeys(custody_bit_1_pubkeys));

@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.bytes.Bytes48;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlockBody;
@@ -39,9 +38,9 @@ import tech.devgao.artemis.datastructures.operations.Exit;
 import tech.devgao.artemis.datastructures.operations.ProposerSlashing;
 import tech.devgao.artemis.datastructures.operations.SlashableAttestation;
 import tech.devgao.artemis.datastructures.state.BeaconState;
-import tech.devgao.artemis.datastructures.state.Crosslink;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.util.bls.BLSKeyPair;
+import tech.devgao.artemis.util.bls.BLSPublicKey;
 import tech.devgao.artemis.util.bls.BLSSignature;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 
@@ -81,14 +80,12 @@ public final class DataStructureUtil {
     return Bytes32.random();
   }
 
-  public static Bytes48 randomBytes48(long seed) {
-    ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-    buffer.putLong(seed);
-    return Bytes48.random(new SecureRandom(buffer.array()));
+  public static BLSPublicKey randomPublicKey() {
+    return BLSPublicKey.random();
   }
 
-  public static Bytes48 randomBytes48() {
-    return Bytes48.random();
+  public static BLSPublicKey randomPublicKey(int seed) {
+    return BLSPublicKey.random(seed);
   }
 
   public static Eth1Data randomEth1Data() {
@@ -99,14 +96,6 @@ public final class DataStructureUtil {
     return new Eth1Data(randomBytes32(seed), randomBytes32(seed + 1));
   }
 
-  public static Crosslink randomCrosslink() {
-    return new Crosslink(randomUnsignedLong(), randomBytes32());
-  }
-
-  public static Crosslink randomCrosslink(int seed) {
-    return new Crosslink(randomUnsignedLong(seed), randomBytes32(seed + 1));
-  }
-
   public static AttestationData randomAttestationData(long slotNum) {
     return new AttestationData(
         UnsignedLong.valueOf(slotNum),
@@ -114,7 +103,7 @@ public final class DataStructureUtil {
         randomBytes32(),
         randomBytes32(),
         randomBytes32(),
-        randomCrosslink(),
+        randomBytes32(),
         randomUnsignedLong(),
         randomBytes32());
   }
@@ -126,7 +115,7 @@ public final class DataStructureUtil {
         randomBytes32(seed++),
         randomBytes32(seed++),
         randomBytes32(seed++),
-        randomCrosslink(seed++),
+        randomBytes32(seed++),
         randomUnsignedLong(seed++),
         randomBytes32(seed++));
   }
@@ -199,7 +188,7 @@ public final class DataStructureUtil {
 
   public static DepositInput randomDepositInput() {
     BLSKeyPair keyPair = BLSKeyPair.random();
-    Bytes48 pubkey = keyPair.publicKeyAsBytes();
+    BLSPublicKey pubkey = keyPair.getPublicKey();
     Bytes32 withdrawal_credentials = Bytes32.random();
 
     DepositInput proof_of_possession_data =
@@ -211,15 +200,12 @@ public final class DataStructureUtil {
             HashTreeUtil.hash_tree_root(proof_of_possession_data.toBytes()),
             Constants.DOMAIN_DEPOSIT);
 
-    // BLSSignature proof_of_possession =
-    //    BLSSignature.sign(keyPair, withdrawal_credentials, Constants.DOMAIN_DEPOSIT);
-
-    return new DepositInput(
-        keyPair.publicKeyAsBytes(), withdrawal_credentials, proof_of_possession);
+    return new DepositInput(keyPair.getPublicKey(), withdrawal_credentials, proof_of_possession);
   }
 
   public static DepositInput randomDepositInput(int seed) {
-    return new DepositInput(randomBytes48(seed), randomBytes32(seed++), BLSSignature.random(seed));
+    return new DepositInput(
+        randomPublicKey(seed), randomBytes32(seed++), BLSSignature.random(seed));
   }
 
   public static DepositData randomDepositData() {
@@ -316,7 +302,7 @@ public final class DataStructureUtil {
 
     for (int i = 0; i < numDeposits; i++) {
       DepositInput deposit_input =
-          new DepositInput(Bytes48.ZERO, Bytes32.ZERO, BLSSignature.empty());
+          new DepositInput(BLSPublicKey.empty(), Bytes32.ZERO, BLSSignature.empty());
       UnsignedLong timestamp = UnsignedLong.valueOf(i);
       DepositData deposit_data =
           new DepositData(UnsignedLong.valueOf(MAX_DEPOSIT_AMOUNT), timestamp, deposit_input);
@@ -355,7 +341,7 @@ public final class DataStructureUtil {
 
   public static Validator randomValidator() {
     return new Validator(
-        randomBytes48(),
+        randomPublicKey(),
         randomBytes32(),
         Constants.FAR_FUTURE_EPOCH,
         Constants.FAR_FUTURE_EPOCH,
@@ -366,7 +352,7 @@ public final class DataStructureUtil {
 
   public static Validator randomValidator(int seed) {
     return new Validator(
-        randomBytes48(seed),
+        randomPublicKey(seed),
         randomBytes32(seed++),
         Constants.FAR_FUTURE_EPOCH,
         Constants.FAR_FUTURE_EPOCH,

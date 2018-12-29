@@ -42,7 +42,6 @@ import java.util.Collections;
 import java.util.List;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.bytes.Bytes48;
 import net.develgao.cava.crypto.Hash;
 import net.develgao.cava.junit.BouncyCastleExtension;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -52,6 +51,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
 import tech.devgao.artemis.datastructures.operations.AttestationData;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
+import tech.devgao.artemis.util.bls.BLSPublicKey;
 
 @ExtendWith(BouncyCastleExtension.class)
 class BeaconStateTest {
@@ -134,7 +134,7 @@ class BeaconStateTest {
             Bytes32.ZERO,
             Bytes32.ZERO,
             Bytes32.ZERO,
-            new Crosslink(UnsignedLong.ZERO, Bytes32.ZERO),
+            Bytes32.ZERO,
             UnsignedLong.ZERO,
             Bytes32.ZERO);
     byte[] aggregation_bitfield = Bytes32.ZERO.toArrayUnsafe();
@@ -263,7 +263,7 @@ class BeaconStateTest {
             Collections.nCopies(
                 12,
                 new Validator(
-                    Bytes48.ZERO,
+                    BLSPublicKey.empty(),
                     Bytes32.ZERO,
                     UnsignedLong.ZERO,
                     UnsignedLong.valueOf(GENESIS_EPOCH),
@@ -456,9 +456,7 @@ class BeaconStateTest {
           .isEqualTo(
               Hash.keccak256(
                   Bytes.wrap(
-                      Bytes.wrap(
-                          Bytes32.fromHexString("0x029a"), get_active_index_root(state, epoch)),
-                      Bytes.ofUnsignedLong(epoch.longValue()))));
+                      Bytes32.fromHexString("0x029a"), get_active_index_root(state, epoch))));
     } catch (IllegalStateException e) {
       fail(e.toString());
     }
