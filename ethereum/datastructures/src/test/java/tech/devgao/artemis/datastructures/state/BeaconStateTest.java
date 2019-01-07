@@ -134,7 +134,7 @@ class BeaconStateTest {
             Bytes32.ZERO,
             Bytes32.ZERO,
             Bytes32.ZERO,
-            new Crosslink(UnsignedLong.ZERO, Bytes32.ZERO),
+            Bytes32.ZERO,
             UnsignedLong.ZERO,
             Bytes32.ZERO);
     byte[] aggregation_bitfield = Bytes32.ZERO.toArrayUnsafe();
@@ -456,9 +456,7 @@ class BeaconStateTest {
           .isEqualTo(
               Hash.keccak256(
                   Bytes.wrap(
-                      Bytes.wrap(
-                          Bytes32.fromHexString("0x029a"), get_active_index_root(state, epoch)),
-                      Bytes.ofUnsignedLong(epoch.longValue()))));
+                      Bytes32.fromHexString("0x029a"), get_active_index_root(state, epoch))));
     } catch (IllegalStateException e) {
       fail(e.toString());
     }

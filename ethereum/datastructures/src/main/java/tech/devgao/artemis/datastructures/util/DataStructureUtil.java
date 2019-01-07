@@ -38,7 +38,6 @@ import tech.devgao.artemis.datastructures.operations.Exit;
 import tech.devgao.artemis.datastructures.operations.ProposerSlashing;
 import tech.devgao.artemis.datastructures.operations.SlashableAttestation;
 import tech.devgao.artemis.datastructures.state.BeaconState;
-import tech.devgao.artemis.datastructures.state.Crosslink;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.util.bls.BLSKeyPair;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
@@ -97,14 +96,6 @@ public final class DataStructureUtil {
     return new Eth1Data(randomBytes32(seed), randomBytes32(seed + 1));
   }
 
-  public static Crosslink randomCrosslink() {
-    return new Crosslink(randomUnsignedLong(), randomBytes32());
-  }
-
-  public static Crosslink randomCrosslink(int seed) {
-    return new Crosslink(randomUnsignedLong(seed), randomBytes32(seed + 1));
-  }
-
   public static AttestationData randomAttestationData(long slotNum) {
     return new AttestationData(
         UnsignedLong.valueOf(slotNum),
@@ -112,7 +103,7 @@ public final class DataStructureUtil {
         randomBytes32(),
         randomBytes32(),
         randomBytes32(),
-        randomCrosslink(),
+        randomBytes32(),
         randomUnsignedLong(),
         randomBytes32());
   }
@@ -124,7 +115,7 @@ public final class DataStructureUtil {
         randomBytes32(seed++),
         randomBytes32(seed++),
         randomBytes32(seed++),
-        randomCrosslink(seed++),
+        randomBytes32(seed++),
         randomUnsignedLong(seed++),
         randomBytes32(seed++));
   }

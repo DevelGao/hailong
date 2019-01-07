@@ -155,13 +155,12 @@ public class BlockProcessorUtil {
    */
   public static void update_eth1_data(BeaconState state, BeaconBlock block)
       throws BlockProcessingException {
-    // If there exists an `eth1_data_vote` in `states.eth1_data_votes` for which
-    // `eth1_data_vote.eth1_data == block.eth1_data`
-    //  (there will be at most one), set `eth1_data_vote.vote_count += 1`.
+    // If block.eth1_data equals eth1_data_vote.eth1_data for some eth1_data_vote
+    //   in state.eth1_data_votes, set eth1_data_vote.vote_count += 1.
     boolean exists = false;
     List<Eth1DataVote> votes = state.getEth1_data_votes();
     for (Eth1DataVote vote : votes) {
-      if (vote.getEth1_data().equals(block.getEth1_data())) {
+      if (block.getEth1_data().equals(vote.getEth1_data())) {
         exists = true;
         UnsignedLong voteCount = vote.getVote_count();
         vote.setVote_count(voteCount.plus(UnsignedLong.ONE));
@@ -363,8 +362,7 @@ public class BlockProcessorUtil {
       checkArgument(
           attestation
                   .getData()
-                  .getLatest_crosslink()
-                  .getShard_block_root()
+                  .getLatest_crosslink_root()
                   .equals(
                       state
                           .getLatest_crosslinks()
