@@ -35,7 +35,7 @@ public class StateTransition {
 
   public StateTransition() {}
 
-  public void initiate(BeaconState state, BeaconBlock block)
+  public void initiate(BeaconState state, BeaconBlock block, ChainStorageClient store)
       throws StateTransitionException {
     LOG.info("Begin state transition");
     // per-slot processing
@@ -50,7 +50,7 @@ public class StateTransition {
         .plus(UnsignedLong.ONE)
         .mod(UnsignedLong.valueOf(EPOCH_LENGTH))
         .equals(UnsignedLong.ZERO)) {
-      epochProcessor(state, block);
+      epochProcessor(state, block, store);
     }
     LOG.info("End state transition");
   }
@@ -96,6 +96,8 @@ public class StateTransition {
         BlockProcessorUtil.processDeposits(state, block);
         // Process Exits
         BlockProcessorUtil.processExits(state, block);
+        // Process Transfers
+        BlockProcessorUtil.processTransfers(state, block);
       } catch (BlockProcessingException e) {
         LOG.warn("  Block processing error: " + e);
       } catch (Exception e) {
@@ -106,12 +108,12 @@ public class StateTransition {
     }
   }
 
-  protected void epochProcessor(BeaconState state, BeaconBlock block) {
+  protected void epochProcessor(BeaconState state, BeaconBlock block, ChainStorageClient store) {
     try {
       LOG.info("  Processing new epoch: " + BeaconStateUtil.get_current_epoch(state));
 
       EpochProcessorUtil.updateEth1Data(state);
-      EpochProcessorUtil.updateJustification(state, block);
+      EpochProcessorUtil.updateJustification(state, block, store);
       EpochProcessorUtil.updateCrosslinks(state);
 
       UnsignedLong previous_total_balance = BeaconStateUtil.previous_total_balance(state);

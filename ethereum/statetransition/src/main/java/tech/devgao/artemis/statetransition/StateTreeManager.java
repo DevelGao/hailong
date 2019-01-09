@@ -20,18 +20,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-
-import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.state.BeaconState;
-import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.datastructures.util.DataStructureUtil;
-import tech.devgao.artemis.pow.api.DepositEvent;
-import tech.devgao.artemis.pow.api.Eth2GenesisEvent;
+import tech.devgao.artemis.pow.api.ChainStartEvent;
+import tech.devgao.artemis.pow.api.ValidatorRegistrationEvent;
 import tech.devgao.artemis.storage.ChainStorage;
 import tech.devgao.artemis.storage.ChainStorageClient;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
@@ -52,19 +49,7 @@ public class StateTreeManager {
     this.stateTransition = new StateTransition();
     this.eventBus.register(this);
     this.store = ChainStorage.Create(ChainStorageClient.class, eventBus);
-  }
 
-  @Subscribe
-  public void onEth2GenesisEvent(Eth2GenesisEvent event) {
-    LOG.info(
-        "******* Eth2Genesis Event detected ******* : "
-            + ((tech.devgao.artemis.pow.event.Eth2Genesis) event).getDeposit_root().toString());
-    this.nodeSlot = UnsignedLong.valueOf(Constants.GENESIS_SLOT);
-    this.nodeTime =
-        UnsignedLong.valueOf(Constants.GENESIS_SLOT)
-            .times(UnsignedLong.valueOf(Constants.SLOT_DURATION));
-    LOG.info("node slot: " + nodeSlot.longValue());
-    LOG.info("node time: " + nodeTime.longValue());
     try {
       BeaconState initial_state = DataStructureUtil.createInitialBeaconState();
       Bytes32 initial_state_root = HashTreeUtil.hash_tree_root(initial_state.toBytes());
@@ -73,21 +58,30 @@ public class StateTreeManager {
       LOG.info("Initial State:");
       LOG.info("  initial state root is " + initial_state_root.toHexString());
       this.store.addState(initial_state_root, initial_state);
-      this.store.addProcessedBlock(initial_state_root, genesis_block);
       this.store.addProcessedBlock(genesis_block_root, genesis_block);
-      this.head = genesis_block;
-      this.store.addProcessedBlock(genesis_block_root, genesis_block);
-      this.eventBus.post(true);
+      this.store.setJustifiedHead(initial_state, genesis_block);
     } catch (IllegalStateException e) {
       LOG.fatal(e);
     }
   }
 
   @Subscribe
-  public void onDepositEvent(DepositEvent event) {
-    LOG.info(
-        "Deposit Event detected: "
-            + ((tech.devgao.artemis.pow.event.Deposit) event).getDeposit_root().toString());
+  public void onChainStarted(ChainStartEvent event) {
+    LOG.info("******* ChainStart Event Detected *******");
+    this.nodeSlot = UnsignedLong.valueOf(Constants.GENESIS_SLOT);
+    this.nodeTime =
+        UnsignedLong.valueOf(Constants.GENESIS_SLOT)
+            .times(UnsignedLong.valueOf(Constants.SLOT_DURATION));
+    LOG.info("node slot: " + nodeSlot.longValue());
+    LOG.info("node time: " + nodeTime.longValue());
+    boolean result = true;
+    this.eventBus.post(result);
+  }
+
+  @Subscribe
+  public void onValidatorRegistered(ValidatorRegistrationEvent event) {
+    LOG.info("Validator Registration Event detected");
+    LOG.info("   Validator Number: " + event.getResponse().log.toString());
   }
 
   @Subscribe
@@ -103,31 +97,19 @@ public class StateTreeManager {
         this.store.getUnprocessedBlocksUntilSlot(nodeSlot);
     unprocessedBlocks.forEach((block) -> processFork(block));
 
-    // If it is the genesis epoch, keep the justified state root as genesis state root
-    // because get_block _root gives an error if the slot is not less than state.slot
-    Bytes justifiedStateRoot;
-    if (BeaconStateUtil.get_epoch_start_slot(BeaconStateUtil.slot_to_epoch(nodeSlot)).compareTo(UnsignedLong.valueOf(Constants.GENESIS_SLOT)) == 0) {
-      justifiedStateRoot = head.getState_root();
-    } else {
-      BeaconState headState = store.getState(head.getState_root()).get();
-      justifiedStateRoot = BeaconStateUtil.get_block_root(headState, BeaconStateUtil.get_epoch_start_slot(headState.getJustified_epoch()));
-    }
-
-    if (!store.getProcessedBlock(justifiedStateRoot).isPresent()) throw new StateTransitionException("Justified block not found");
-    if (!store.getState(justifiedStateRoot).isPresent()) throw new StateTransitionException("Justified block state not found");
-
     // Run lmd_ghost to get the head
     try {
       this.head =
           LmdGhost.lmd_ghost(
-                  store, store.getState(justifiedStateRoot).get(), store.getProcessedBlock(justifiedStateRoot).get());
+              store, store.get_justified_head_state(), store.get_justified_head_block());
     } catch (StateTransitionException e) {
       LOG.fatal(e);
     }
 
     // Run state transition from the new head to node.slot
-    Bytes32 newStateRoot = this.head.getState_root();
-    BeaconState newState = store.getState(newStateRoot).get();
+    Bytes32 head_block_root = this.head.getState_root();
+    BeaconState newState = store.getState(head_block_root).get();
+    Bytes32 newStateRoot = HashTreeUtil.hash_tree_root(newState.toBytes());
     boolean firstLoop = true;
     while (newState.getSlot().compareTo(nodeSlot) < 0) {
       if (firstLoop) {
@@ -135,14 +117,12 @@ public class StateTreeManager {
         firstLoop = false;
       }
       newState = BeaconState.deepCopy(newState);
-      stateTransition.initiate(newState, null);
+      stateTransition.initiate(newState, null, store);
       newStateRoot = HashTreeUtil.hash_tree_root(newState.toBytes());
       this.store.addState(newStateRoot, newState);
     }
-    LOG.info("LMD Ghost Head Block Root:        " + HashTreeUtil.hash_tree_root(this.head.toBytes()).toHexString());
-    LOG.info("LMD Ghost Head Parent Block Root: " + this.head.getParent_root().toHexString());
-    LOG.info("LMD Ghost Head State Root:        " + this.head.getState_root().toHexString());
-    LOG.info("Updated Head State Root:          " + newStateRoot.toHexString());
+    LOG.info("latest head block root: " + head_block_root);
+    LOG.info("latest head state root: " + newStateRoot.toHexString());
   }
 
   protected Boolean inspectBlock(Optional<BeaconBlock> block) {
@@ -204,29 +184,27 @@ public class StateTreeManager {
                     + UnsignedLong.valueOf(block.getSlot() - 1));
             firstLoop = false;
           }
-          stateTransition.initiate(currentState, null);
+          stateTransition.initiate(currentState, null, store);
           currentStateRoot = HashTreeUtil.hash_tree_root(currentState.toBytes());
           this.store.addState(currentStateRoot, currentState);
           currentState = BeaconState.deepCopy(currentState);
         }
 
         // Run state transition using the block
-        stateTransition.initiate(currentState, block);
+        stateTransition.initiate(currentState, block, store);
         currentStateRoot = HashTreeUtil.hash_tree_root(currentState.toBytes());
 
         // Verify that the state root we have computed is the state root that block is
         // claiming us we should reach, save the block and the state if its correct.
         if (blockStateRoot.equals(currentStateRoot)) {
           LOG.info("The fork_head's state root matches the calculated state root!");
+          LOG.info("  new state root: " + currentStateRoot.toHexString());
+          LOG.info("  fork_head state root: " + blockStateRoot.toHexString());
           // TODO: storing fork_head and state together as a tuple would be more convenient
           this.store.addProcessedBlock(blockStateRoot, block);
           this.store.addProcessedBlock(blockRoot, block);
           this.store.addState(currentStateRoot, currentState);
-        } else {
-          LOG.info("The fork_head's state root does NOT matches the calculated state root!");
         }
-        LOG.info("  new state root: " + currentStateRoot.toHexString());
-        LOG.info("  fork_head state root: " + blockStateRoot.toHexString());
       }
     } catch (NoSuchElementException | IllegalArgumentException | StateTransitionException e) {
       LOG.warn(e);
