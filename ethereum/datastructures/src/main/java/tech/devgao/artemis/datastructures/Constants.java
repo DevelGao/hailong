@@ -54,7 +54,6 @@ public final class Constants {
   public static final int ENTRY_EXIT_DELAY = 4; // 2^2 epochs 25.6 minutes
   public static final int ETH1_DATA_VOTING_PERIOD = 16; // 2^4 epochs ~1.7 hours
   public static final int MIN_VALIDATOR_WITHDRAWAL_EPOCHS = 256; // 2^8 epochs ~27 hours
-  public static final int MIN_EXIT_EPOCHS_BEFORE_TRANSFER = 8192; // 2^13 epochs ~36 days
 
   // State list lengths
   public static final int LATEST_BLOCK_ROOTS_LENGTH = 8192; // 2^13 slots ~13 hours
@@ -78,7 +77,6 @@ public final class Constants {
   public static final int MAX_ATTESTATIONS = 128; // 2^7
   public static final int MAX_DEPOSITS = 16; // 2^4
   public static final int MAX_EXITS = 16; // 2^4
-  public static final int MAX_TRANSFERS = 16; // 2^4
 
   // Signature domains
   public static final int DOMAIN_DEPOSIT = 0; //
@@ -86,7 +84,10 @@ public final class Constants {
   public static final int DOMAIN_PROPOSAL = 2; //
   public static final int DOMAIN_EXIT = 3; //
   public static final int DOMAIN_RANDAO = 4; //
-  public static final int DOMAIN_TRANSFER = 5; //
+
+  // Artemis specific
+  public static final String SIM_DEPOSIT_VALUE = "1000000000000000000";
+  public static final int DEPOSIT_DATA_SIZE = 512; //
 
   private static long slot_to_epoch(long slot) {
     return slot / Constants.EPOCH_LENGTH;

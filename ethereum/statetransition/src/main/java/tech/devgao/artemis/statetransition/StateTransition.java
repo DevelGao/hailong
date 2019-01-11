@@ -27,7 +27,6 @@ import tech.devgao.artemis.statetransition.util.EpochProcessingException;
 import tech.devgao.artemis.statetransition.util.EpochProcessorUtil;
 import tech.devgao.artemis.statetransition.util.SlotProcessingException;
 import tech.devgao.artemis.statetransition.util.SlotProcessorUtil;
-import tech.devgao.artemis.storage.ChainStorageClient;
 
 public class StateTransition {
 
@@ -35,8 +34,7 @@ public class StateTransition {
 
   public StateTransition() {}
 
-  public void initiate(BeaconState state, BeaconBlock block, ChainStorageClient store)
-      throws StateTransitionException {
+  public void initiate(BeaconState state, BeaconBlock block) throws StateTransitionException {
     LOG.info("Begin state transition");
     // per-slot processing
     slotProcessor(state, block);
@@ -50,7 +48,7 @@ public class StateTransition {
         .plus(UnsignedLong.ONE)
         .mod(UnsignedLong.valueOf(EPOCH_LENGTH))
         .equals(UnsignedLong.ZERO)) {
-      epochProcessor(state, block, store);
+      epochProcessor(state, block);
     }
     LOG.info("End state transition");
   }
@@ -96,8 +94,6 @@ public class StateTransition {
         BlockProcessorUtil.processDeposits(state, block);
         // Process Exits
         BlockProcessorUtil.processExits(state, block);
-        // Process Transfers
-        BlockProcessorUtil.processTransfers(state, block);
       } catch (BlockProcessingException e) {
         LOG.warn("  Block processing error: " + e);
       } catch (Exception e) {
@@ -108,12 +104,12 @@ public class StateTransition {
     }
   }
 
-  protected void epochProcessor(BeaconState state, BeaconBlock block, ChainStorageClient store) {
+  protected void epochProcessor(BeaconState state, BeaconBlock block) {
     try {
       LOG.info("  Processing new epoch: " + BeaconStateUtil.get_current_epoch(state));
 
       EpochProcessorUtil.updateEth1Data(state);
-      EpochProcessorUtil.updateJustification(state, block, store);
+      EpochProcessorUtil.updateJustification(state, block);
       EpochProcessorUtil.updateCrosslinks(state);
 
       UnsignedLong previous_total_balance = BeaconStateUtil.previous_total_balance(state);

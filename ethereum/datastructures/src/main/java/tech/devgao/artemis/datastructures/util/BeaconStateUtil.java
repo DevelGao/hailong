@@ -303,8 +303,7 @@ public class BeaconStateUtil {
     Bytes32 randao_mix =
         get_randao_mix(state, epoch.minus(UnsignedLong.valueOf(Constants.SEED_LOOKAHEAD)));
     Bytes32 index_root = get_active_index_root(state, epoch);
-    Bytes epochBytes = Bytes.ofUnsignedLong(epoch.longValue());
-    return Hash.keccak256(Bytes.wrap(Bytes.wrap(randao_mix, index_root), epochBytes));
+    return Hash.keccak256(Bytes.wrap(randao_mix, index_root));
   }
 
   public static Bytes32 get_active_index_root(BeaconState state, UnsignedLong epoch) {
@@ -426,7 +425,6 @@ public class BeaconStateUtil {
    * by the output.
    *
    * @param epoch
-   * @return
    */
   public static UnsignedLong get_entry_exit_effect_epoch(UnsignedLong epoch) {
     return epoch.plus(UnsignedLong.ONE).plus(UnsignedLong.valueOf(ENTRY_EXIT_DELAY));
@@ -889,7 +887,7 @@ public class BeaconStateUtil {
   public static boolean verify_bitfield(Bytes bitfield, int committee_size) {
     if (bitfield.size() != (committee_size + 7) / 8) return false;
 
-    for (int i = committee_size; i < bitfield.bitLength() * 8; i++) {
+    for (int i = committee_size + 1; i < committee_size - committee_size % 8 + 8; i++) {
       if (get_bitfield_bit(bitfield, i) == 0b1) return false;
     }
     return true;
@@ -1043,7 +1041,6 @@ public class BeaconStateUtil {
    * Return the smallest integer r such that r * div >= 8.
    *
    * @param div
-   * @return
    */
   private static int ceil_div8(int div) {
     checkArgument(div > 0, "Expected positive div but got %s", div);
