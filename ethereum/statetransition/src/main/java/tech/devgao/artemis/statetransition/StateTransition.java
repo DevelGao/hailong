@@ -13,7 +13,7 @@
 
 package tech.devgao.artemis.statetransition;
 
-import static tech.devgao.artemis.datastructures.Constants.EPOCH_LENGTH;
+import static tech.devgao.artemis.datastructures.Constants.SLOTS_PER_EPOCH;
 
 import com.google.common.primitives.UnsignedLong;
 import org.apache.logging.log4j.LogManager;
@@ -27,6 +27,7 @@ import tech.devgao.artemis.statetransition.util.EpochProcessingException;
 import tech.devgao.artemis.statetransition.util.EpochProcessorUtil;
 import tech.devgao.artemis.statetransition.util.SlotProcessingException;
 import tech.devgao.artemis.statetransition.util.SlotProcessorUtil;
+import tech.devgao.artemis.storage.ChainStorageClient;
 
 public class StateTransition {
 
@@ -34,7 +35,8 @@ public class StateTransition {
 
   public StateTransition() {}
 
-  public void initiate(BeaconState state, BeaconBlock block) throws StateTransitionException {
+  public void initiate(BeaconState state, BeaconBlock block, ChainStorageClient store)
+      throws StateTransitionException {
     LOG.info("Begin state transition");
     // per-slot processing
     slotProcessor(state, block);
@@ -46,9 +48,9 @@ public class StateTransition {
     if (state
         .getSlot()
         .plus(UnsignedLong.ONE)
-        .mod(UnsignedLong.valueOf(EPOCH_LENGTH))
+        .mod(UnsignedLong.valueOf(SLOTS_PER_EPOCH))
         .equals(UnsignedLong.ZERO)) {
-      epochProcessor(state, block);
+      epochProcessor(state, block, store);
     }
     LOG.info("End state transition");
   }
@@ -94,6 +96,8 @@ public class StateTransition {
         BlockProcessorUtil.processDeposits(state, block);
         // Process Exits
         BlockProcessorUtil.processExits(state, block);
+        // Process Transfers
+        BlockProcessorUtil.processTransfers(state, block);
       } catch (BlockProcessingException e) {
         LOG.warn("  Block processing error: " + e);
       } catch (Exception e) {
@@ -104,12 +108,12 @@ public class StateTransition {
     }
   }
 
-  protected void epochProcessor(BeaconState state, BeaconBlock block) {
+  protected void epochProcessor(BeaconState state, BeaconBlock block, ChainStorageClient store) {
     try {
       LOG.info("  Processing new epoch: " + BeaconStateUtil.get_current_epoch(state));
 
       EpochProcessorUtil.updateEth1Data(state);
-      EpochProcessorUtil.updateJustification(state, block);
+      EpochProcessorUtil.updateJustification(state, block, store);
       EpochProcessorUtil.updateCrosslinks(state);
 
       UnsignedLong previous_total_balance = BeaconStateUtil.previous_total_balance(state);

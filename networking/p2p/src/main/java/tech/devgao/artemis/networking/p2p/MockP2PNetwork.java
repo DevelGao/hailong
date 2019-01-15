@@ -14,8 +14,6 @@
 package tech.devgao.artemis.networking.p2p;
 
 import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
-import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -27,9 +25,6 @@ import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.util.DataStructureUtil;
 import tech.devgao.artemis.networking.p2p.api.P2PNetwork;
-import tech.devgao.artemis.pow.api.Eth2GenesisEvent;
-import tech.devgao.artemis.statetransition.StateTransition;
-import tech.devgao.artemis.statetransition.StateTransitionException;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 
 public class MockP2PNetwork implements P2PNetwork {
@@ -39,7 +34,6 @@ public class MockP2PNetwork implements P2PNetwork {
 
   public MockP2PNetwork(EventBus eventBus) {
     this.eventBus = eventBus;
-    this.eventBus.register(this);
   }
 
   /**
@@ -86,45 +80,40 @@ public class MockP2PNetwork implements P2PNetwork {
   }
 
   @Override
-  public void run() {}
+  public void run() {
+    this.simulateNewMessages();
+  }
 
   @Override
   public void close() {
     this.stop();
   }
 
-  @Subscribe
-  public void onEth2GenesisEvent(Eth2GenesisEvent event) {
-    simulateNewMessages();
-  }
-
   private void simulateNewMessages() {
     try {
-      StateTransition stateTransition = new StateTransition();
       BeaconState state = DataStructureUtil.createInitialBeaconState();
       Bytes32 state_root = HashTreeUtil.hash_tree_root(state.toBytes());
       BeaconBlock block = BeaconBlock.createGenesis(state_root);
       Bytes32 parent_root = HashTreeUtil.hash_tree_root(block.toBytes());
 
-      Thread.sleep(6000);
+      // Thread.sleep(6000);
       // ArrayList<Deposit> deposits = DataStructureUtil.newDeposits(100);
       ArrayList<Deposit> deposits = new ArrayList<>();
       while (true) {
-
-        state = BeaconState.deepCopy(state);
-        block =
-            DataStructureUtil.newBeaconBlock(
-                state.getSlot().plus(UnsignedLong.ONE), parent_root, state_root, deposits);
-        LOG.info("In MockP2PNetwork");
-        stateTransition.initiate(state, block);
+        // Random random = new Random();
+        // long n = 1000L * Integer.toUnsignedLong(random.nextInt(7) + 6);
+        Thread.sleep(6000);
+        // Slot Processing
+        state.incrementSlot();
+        // Block Processing
         state_root = HashTreeUtil.hash_tree_root(state.toBytes());
-        block.setState_root(state_root);
 
+        block =
+            DataStructureUtil.newBeaconBlock(state.getSlot(), parent_root, state_root, deposits);
         parent_root = HashTreeUtil.hash_tree_root(block.toBytes());
         this.eventBus.post(block);
-        Thread.sleep(6000);
       }
-    } catch (InterruptedException | StateTransitionException e) {
+    } catch (InterruptedException e) {
       LOG.warn(e.toString());
     }
   }

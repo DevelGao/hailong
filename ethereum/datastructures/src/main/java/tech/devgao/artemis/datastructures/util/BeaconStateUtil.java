@@ -15,10 +15,9 @@ package tech.devgao.artemis.datastructures.util;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.Math.toIntExact;
+import static tech.devgao.artemis.datastructures.Constants.ACTIVATION_EXIT_DELAY;
 import static tech.devgao.artemis.datastructures.Constants.DOMAIN_ATTESTATION;
 import static tech.devgao.artemis.datastructures.Constants.DOMAIN_DEPOSIT;
-import static tech.devgao.artemis.datastructures.Constants.ENTRY_EXIT_DELAY;
-import static tech.devgao.artemis.datastructures.Constants.EPOCH_LENGTH;
 import static tech.devgao.artemis.datastructures.Constants.FAR_FUTURE_EPOCH;
 import static tech.devgao.artemis.datastructures.Constants.GENESIS_EPOCH;
 import static tech.devgao.artemis.datastructures.Constants.GENESIS_FORK_VERSION;
@@ -26,11 +25,12 @@ import static tech.devgao.artemis.datastructures.Constants.GENESIS_SLOT;
 import static tech.devgao.artemis.datastructures.Constants.GENESIS_START_SHARD;
 import static tech.devgao.artemis.datastructures.Constants.INITIATED_EXIT;
 import static tech.devgao.artemis.datastructures.Constants.LATEST_INDEX_ROOTS_LENGTH;
-import static tech.devgao.artemis.datastructures.Constants.LATEST_PENALIZED_EXIT_LENGTH;
 import static tech.devgao.artemis.datastructures.Constants.LATEST_RANDAO_MIXES_LENGTH;
+import static tech.devgao.artemis.datastructures.Constants.LATEST_SLASHED_EXIT_LENGTH;
 import static tech.devgao.artemis.datastructures.Constants.MAX_DEPOSIT_AMOUNT;
 import static tech.devgao.artemis.datastructures.Constants.MAX_INDICES_PER_SLASHABLE_VOTE;
 import static tech.devgao.artemis.datastructures.Constants.SHARD_COUNT;
+import static tech.devgao.artemis.datastructures.Constants.SLOTS_PER_EPOCH;
 import static tech.devgao.artemis.datastructures.Constants.WHISTLEBLOWER_REWARD_QUOTIENT;
 import static tech.devgao.artemis.datastructures.Constants.WITHDRAWABLE;
 import static tech.devgao.artemis.datastructures.Constants.ZERO_HASH;
@@ -91,7 +91,7 @@ public class BeaconStateUtil {
         new ArrayList<>(
             Collections.nCopies(Constants.LATEST_INDEX_ROOTS_LENGTH, Constants.ZERO_HASH));
     ArrayList<UnsignedLong> latest_penalized_balances =
-        new ArrayList<>(Collections.nCopies(LATEST_PENALIZED_EXIT_LENGTH, UnsignedLong.ZERO));
+        new ArrayList<>(Collections.nCopies(LATEST_SLASHED_EXIT_LENGTH, UnsignedLong.ZERO));
     ArrayList<Crosslink> latest_crosslinks = new ArrayList<>(SHARD_COUNT);
 
     for (int i = 0; i < SHARD_COUNT; i++) {
@@ -237,9 +237,9 @@ public class BeaconStateUtil {
     // TODO: revist when we have the final shuffling algorithm implemented
     List<List<Integer>> shuffling =
         get_shuffling(seed, state.getValidator_registry(), shuffling_epoch);
-    UnsignedLong offset = slot.mod(UnsignedLong.valueOf(EPOCH_LENGTH));
+    UnsignedLong offset = slot.mod(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
     UnsignedLong committees_per_slot =
-        committees_per_epoch.dividedBy(UnsignedLong.valueOf(EPOCH_LENGTH));
+        committees_per_epoch.dividedBy(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
     UnsignedLong slot_start_shard =
         shuffling_start_shard
             .plus(committees_per_slot)
@@ -301,9 +301,10 @@ public class BeaconStateUtil {
   public static Bytes32 generate_seed(BeaconState state, UnsignedLong epoch)
       throws IllegalStateException {
     Bytes32 randao_mix =
-        get_randao_mix(state, epoch.minus(UnsignedLong.valueOf(Constants.SEED_LOOKAHEAD)));
+        get_randao_mix(state, epoch.minus(UnsignedLong.valueOf(Constants.MIN_SEED_LOOKAHEAD)));
     Bytes32 index_root = get_active_index_root(state, epoch);
-    return Hash.keccak256(Bytes.wrap(randao_mix, index_root));
+    Bytes epochBytes = Bytes.ofUnsignedLong(epoch.longValue());
+    return Hash.keccak256(Bytes.wrap(Bytes.wrap(randao_mix, index_root), epochBytes));
   }
 
   public static Bytes32 get_active_index_root(BeaconState state, UnsignedLong epoch) {
@@ -311,11 +312,11 @@ public class BeaconStateUtil {
         // Since we're using UnsignedLong here, we can't subtract
         // LATEST_INDEX_ROOTS_LENGTH
         get_current_epoch(state)
-                .plus(UnsignedLong.valueOf(ENTRY_EXIT_DELAY))
+                .plus(UnsignedLong.valueOf(ACTIVATION_EXIT_DELAY))
                 .compareTo(epoch.plus(UnsignedLong.valueOf(LATEST_INDEX_ROOTS_LENGTH)))
             < 0);
     checkArgument(
-        epoch.compareTo(get_current_epoch(state).plus(UnsignedLong.valueOf(ENTRY_EXIT_DELAY)))
+        epoch.compareTo(get_current_epoch(state).plus(UnsignedLong.valueOf(ACTIVATION_EXIT_DELAY)))
             <= 0);
 
     List<Bytes32> index_roots = state.getLatest_index_roots();
@@ -388,7 +389,7 @@ public class BeaconStateUtil {
 
   /** Return the epoch number of the given ``slot`` */
   public static UnsignedLong slot_to_epoch(UnsignedLong slot) {
-    return slot.dividedBy(UnsignedLong.valueOf(EPOCH_LENGTH));
+    return slot.dividedBy(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
   }
 
   /**
@@ -407,7 +408,7 @@ public class BeaconStateUtil {
    * @return
    */
   public static UnsignedLong get_epoch_start_slot(UnsignedLong epoch) {
-    return epoch.times(UnsignedLong.valueOf(EPOCH_LENGTH));
+    return epoch.times(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
   }
 
   public static UnsignedLong get_previous_epoch(BeaconState state) {
@@ -425,9 +426,10 @@ public class BeaconStateUtil {
    * by the output.
    *
    * @param epoch
+   * @return
    */
   public static UnsignedLong get_entry_exit_effect_epoch(UnsignedLong epoch) {
-    return epoch.plus(UnsignedLong.ONE).plus(UnsignedLong.valueOf(ENTRY_EXIT_DELAY));
+    return epoch.plus(UnsignedLong.ONE).plus(UnsignedLong.valueOf(ACTIVATION_EXIT_DELAY));
   }
 
   /**
@@ -476,10 +478,10 @@ public class BeaconStateUtil {
     state
         .getLatest_penalized_balances()
         .set(
-            get_current_epoch(state).intValue() % LATEST_PENALIZED_EXIT_LENGTH,
+            get_current_epoch(state).intValue() % LATEST_SLASHED_EXIT_LENGTH,
             state
                 .getLatest_penalized_balances()
-                .get(get_current_epoch(state).intValue() % LATEST_PENALIZED_EXIT_LENGTH)
+                .get(get_current_epoch(state).intValue() % LATEST_SLASHED_EXIT_LENGTH)
                 .plus(get_effective_balance(state, index)));
 
     int whistleblower_index = get_beacon_proposer_index(state, state.getSlot());
@@ -569,11 +571,11 @@ public class BeaconStateUtil {
             UnsignedLong.ONE,
             min(
                 UnsignedLong.valueOf(Constants.SHARD_COUNT)
-                    .dividedBy(UnsignedLong.valueOf(EPOCH_LENGTH)),
+                    .dividedBy(UnsignedLong.valueOf(SLOTS_PER_EPOCH)),
                 active_validator_count
-                    .dividedBy(UnsignedLong.valueOf(EPOCH_LENGTH))
+                    .dividedBy(UnsignedLong.valueOf(SLOTS_PER_EPOCH))
                     .dividedBy(UnsignedLong.valueOf(Constants.TARGET_COMMITTEE_SIZE))))
-        .times(UnsignedLong.valueOf(EPOCH_LENGTH));
+        .times(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
   }
 
   /**
@@ -887,7 +889,7 @@ public class BeaconStateUtil {
   public static boolean verify_bitfield(Bytes bitfield, int committee_size) {
     if (bitfield.size() != (committee_size + 7) / 8) return false;
 
-    for (int i = committee_size + 1; i < committee_size - committee_size % 8 + 8; i++) {
+    for (int i = committee_size; i < bitfield.bitLength() * 8; i++) {
       if (get_bitfield_bit(bitfield, i) == 0b1) return false;
     }
     return true;
@@ -1041,6 +1043,7 @@ public class BeaconStateUtil {
    * Return the smallest integer r such that r * div >= 8.
    *
    * @param div
+   * @return
    */
   private static int ceil_div8(int div) {
     checkArgument(div > 0, "Expected positive div but got %s", div);
@@ -1057,9 +1060,9 @@ public class BeaconStateUtil {
   public static boolean is_double_vote(
       AttestationData attestation_data_1, AttestationData attestation_data_2) {
     UnsignedLong target_epoch_1 =
-        attestation_data_1.getSlot().dividedBy(UnsignedLong.valueOf(EPOCH_LENGTH));
+        attestation_data_1.getSlot().dividedBy(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
     UnsignedLong target_epoch_2 =
-        attestation_data_2.getSlot().dividedBy(UnsignedLong.valueOf(EPOCH_LENGTH));
+        attestation_data_2.getSlot().dividedBy(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
     return target_epoch_1.compareTo(target_epoch_2) == 0;
   }
 
@@ -1073,12 +1076,12 @@ public class BeaconStateUtil {
    */
   public static boolean is_surround_vote(
       AttestationData attestation_data_1, AttestationData attestation_data_2) {
-    long source_epoch_1 = attestation_data_1.getJustified_epoch().longValue() / EPOCH_LENGTH;
-    long source_epoch_2 = attestation_data_2.getJustified_epoch().longValue() / EPOCH_LENGTH;
+    long source_epoch_1 = attestation_data_1.getJustified_epoch().longValue() / SLOTS_PER_EPOCH;
+    long source_epoch_2 = attestation_data_2.getJustified_epoch().longValue() / SLOTS_PER_EPOCH;
     UnsignedLong target_epoch_1 =
-        attestation_data_1.getSlot().dividedBy(UnsignedLong.valueOf(EPOCH_LENGTH));
+        attestation_data_1.getSlot().dividedBy(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
     UnsignedLong target_epoch_2 =
-        attestation_data_2.getSlot().dividedBy(UnsignedLong.valueOf(EPOCH_LENGTH));
+        attestation_data_2.getSlot().dividedBy(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
     return source_epoch_1 < source_epoch_2
         && (UnsignedLong.valueOf(source_epoch_2 + 1).compareTo(target_epoch_2) == 0)
         && target_epoch_2.compareTo(target_epoch_1) < 0;
