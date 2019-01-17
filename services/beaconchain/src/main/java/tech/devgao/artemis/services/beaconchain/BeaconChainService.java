@@ -56,7 +56,7 @@ public class BeaconChainService implements ServiceInterface {
       scheduler.scheduleAtFixedRate(
           new SlotScheduler(this.eventBus),
           initialDelay,
-          Constants.SECONDS_PER_SLOT,
+          Constants.SLOT_DURATION,
           TimeUnit.SECONDS);
     }
   }
