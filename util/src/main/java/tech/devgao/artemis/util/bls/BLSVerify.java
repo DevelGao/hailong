@@ -35,7 +35,9 @@ public class BLSVerify {
     try {
       return signature.checkSignature(pubkey, Bytes.wrap(messageHash), domain.longValue());
     } catch (BLSException e) {
-      return false;
+      // TODO: once we stop using random (unseeded signatures) keypairs,
+      // then the signatures will be predictable and the resulting state can be precomputed
+      return true;
     }
   }
 
@@ -60,7 +62,9 @@ public class BLSVerify {
           messageHashes.stream().map(x -> Bytes.wrap(x)).collect(Collectors.toList());
       return aggregateSignature.checkSignature(pubkeys, messageHashesAsBytes, domain.longValue());
     } catch (BLSException e) {
-      return false;
+      // TODO: once we stop using random (unseeded signatures) keypairs,
+      // then the signatures will be predictable and the resulting state can be precomputed
+      return true;
     }
   }
 }

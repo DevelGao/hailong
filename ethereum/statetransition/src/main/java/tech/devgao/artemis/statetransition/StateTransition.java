@@ -13,10 +13,9 @@
 
 package tech.devgao.artemis.statetransition;
 
-import static tech.devgao.artemis.datastructures.Constants.EPOCH_LENGTH;
+import static tech.devgao.artemis.datastructures.Constants.SLOTS_PER_EPOCH;
 
 import com.google.common.primitives.UnsignedLong;
-import net.develgao.cava.bytes.Bytes32;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
@@ -28,23 +27,17 @@ import tech.devgao.artemis.statetransition.util.EpochProcessingException;
 import tech.devgao.artemis.statetransition.util.EpochProcessorUtil;
 import tech.devgao.artemis.statetransition.util.SlotProcessingException;
 import tech.devgao.artemis.statetransition.util.SlotProcessorUtil;
+import tech.devgao.artemis.storage.ChainStorageClient;
 
 public class StateTransition {
 
   private static final Logger LOG = LogManager.getLogger(StateTransition.class.getName());
-  private final String logPrefix;
 
-  public StateTransition(String... logPrefix) {
-    if (logPrefix.length == 0) {
-      this.logPrefix = "";
-    } else {
-      this.logPrefix = logPrefix[0];
-    }
-  }
+  public StateTransition() {}
 
-  public void initiate(BeaconState state, BeaconBlock block) throws StateTransitionException {
-    LOG.info(logPrefix + "Begin state transition");
-
+  public void initiate(BeaconState state, BeaconBlock block, ChainStorageClient store)
+      throws StateTransitionException {
+    LOG.info("Begin state transition");
     // per-slot processing
     slotProcessor(state, block);
     // per-block processing
@@ -55,50 +48,44 @@ public class StateTransition {
     if (state
         .getSlot()
         .plus(UnsignedLong.ONE)
-        .mod(UnsignedLong.valueOf(EPOCH_LENGTH))
+        .mod(UnsignedLong.valueOf(SLOTS_PER_EPOCH))
         .equals(UnsignedLong.ZERO)) {
-      epochProcessor(state, block);
+      epochProcessor(state, block, store);
     }
-    LOG.info(logPrefix + "End state transition");
+    LOG.info("End state transition");
   }
 
   protected void slotProcessor(BeaconState state, BeaconBlock block) {
     try {
       state.incrementSlot();
-      LOG.info(logPrefix + "  Processing new slot: " + state.getSlot());
+      LOG.info("  Processing new slot: " + state.getSlot());
       // Slots the proposer has skipped (i.e. layers of RANDAO expected)
       // should be in Validator.randao_skips
       SlotProcessorUtil.updateLatestRandaoMixes(state);
       SlotProcessorUtil.updateRecentBlockHashes(state, block);
     } catch (SlotProcessingException e) {
-      LOG.warn(logPrefix + "  Slot processing error: " + e);
+      LOG.warn("  Slot processing error: " + e);
     } catch (Exception e) {
-      LOG.warn(logPrefix + "  Unexpected slot processing error: " + e);
+      LOG.warn("  Unexpected slot processing error: " + e);
     }
   }
 
   protected void blockProcessor(BeaconState state, BeaconBlock block) {
     if (BlockProcessorUtil.verify_slot(state, block)) {
       try {
-        LOG.info(logPrefix + "  Processing new block with state root: " + block.getState_root());
+        LOG.info("  Processing new block with state root: " + block.getState_root());
 
         // Block Header
-        LOG.info(logPrefix + "  Processing block header.");
-
-        // Only verify the proposer's signature if we are processing blocks (not proposing them)
-        if (!block.getState_root().equals(Bytes32.ZERO)) {
-          // Verify Proposer Signature
-          BlockProcessorUtil.verify_signature(state, block);
-        }
-
-        // TODO: figure out why randao works, but messes up the block state root verification
+        LOG.info("  Processing block header.");
+        // Verify Proposer Signature
+        BlockProcessorUtil.verify_signature(state, block);
         // Verify and Update RANDAO
         BlockProcessorUtil.verify_and_update_randao(state, block);
-
         // Update Eth1 Data
         BlockProcessorUtil.update_eth1_data(state, block);
 
         // Block Body - Operations
+        LOG.info("  Processing block body.");
         // Execute Proposer Slashings
         BlockProcessorUtil.proposer_slashing(state, block);
         // Execute Attester Slashings
@@ -109,22 +96,24 @@ public class StateTransition {
         BlockProcessorUtil.processDeposits(state, block);
         // Process Exits
         BlockProcessorUtil.processExits(state, block);
+        // Process Transfers
+        BlockProcessorUtil.processTransfers(state, block);
       } catch (BlockProcessingException e) {
-        LOG.warn(logPrefix + "  Block processing error: " + e);
+        LOG.warn("  Block processing error: " + e);
       } catch (Exception e) {
-        LOG.warn(logPrefix + "  Unexpected block processing error: " + e);
+        LOG.warn("  Unexpected block processing error: " + e);
       }
     } else {
-      LOG.info(logPrefix + "  Skipping block processing for this slot.");
+      LOG.info("  Skipping block processing for this slot.");
     }
   }
 
-  protected void epochProcessor(BeaconState state, BeaconBlock block) {
+  protected void epochProcessor(BeaconState state, BeaconBlock block, ChainStorageClient store) {
     try {
       LOG.info("  Processing new epoch: " + BeaconStateUtil.get_current_epoch(state));
 
       EpochProcessorUtil.updateEth1Data(state);
-      EpochProcessorUtil.updateJustification(state, block);
+      EpochProcessorUtil.updateJustification(state, block, store);
       EpochProcessorUtil.updateCrosslinks(state);
 
       UnsignedLong previous_total_balance = BeaconStateUtil.previous_total_balance(state);

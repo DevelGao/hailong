@@ -26,8 +26,6 @@ tmp/
 build/
 out/
 web3j/
-ganache-cli/
-pow/src/main/resources/keys.json
 
 *.vscode/
 pow/truffle/.vscode/

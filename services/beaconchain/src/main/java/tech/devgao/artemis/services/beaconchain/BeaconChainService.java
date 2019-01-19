@@ -21,13 +21,13 @@ import java.util.concurrent.TimeUnit;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.services.ServiceInterface;
 import tech.devgao.artemis.statetransition.SlotScheduler;
-import tech.devgao.artemis.statetransition.StateProcessor;
+import tech.devgao.artemis.statetransition.StateTreeManager;
 
 public class BeaconChainService implements ServiceInterface {
 
   private EventBus eventBus;
   private ScheduledExecutorService scheduler;
-  private StateProcessor stateProcessor;
+  private StateTreeManager stateTreeManager;
 
   public BeaconChainService() {}
 
@@ -35,7 +35,7 @@ public class BeaconChainService implements ServiceInterface {
   public void init(EventBus eventBus) {
     this.eventBus = eventBus;
     this.scheduler = Executors.newScheduledThreadPool(1);
-    this.stateProcessor = new StateProcessor(this.eventBus);
+    this.stateTreeManager = new StateTreeManager(this.eventBus);
     this.eventBus.register(this);
   }
 
@@ -56,7 +56,7 @@ public class BeaconChainService implements ServiceInterface {
       scheduler.scheduleAtFixedRate(
           new SlotScheduler(this.eventBus),
           initialDelay,
-          Constants.SLOT_DURATION,
+          Constants.SECONDS_PER_SLOT,
           TimeUnit.SECONDS);
     }
   }
