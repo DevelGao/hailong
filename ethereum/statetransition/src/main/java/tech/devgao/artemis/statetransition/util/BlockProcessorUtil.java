@@ -60,6 +60,8 @@ import java.util.Objects;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.crypto.Hash;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.blocks.Eth1DataVote;
@@ -79,9 +81,12 @@ import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.util.bls.BLSException;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
+import tech.devgao.artemis.util.bls.BLSSignature;
+import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 
 public class BlockProcessorUtil {
 
+  private static final Logger LOG = LogManager.getLogger(BlockProcessorUtil.class.getName());
   /**
    * Spec: https://github.com/ethereum/eth2.0-specs/blob/v0.1/specs/core/0_beacon-chain.md#slot-1
    *
@@ -106,8 +111,10 @@ public class BlockProcessorUtil {
           BlockProcessingException {
     // Let block_without_signature_root be the hash_tree_root of block where
     //   block.signature is set to EMPTY_SIGNATURE.
+    BLSSignature blockSig = block.getSignature();
     block.setSignature(EMPTY_SIGNATURE);
     Bytes32 blockWithoutSignatureRootHash = hash_tree_root(block.toBytes());
+    block.setSignature(blockSig);
 
     // Let proposal_root = hash_tree_root(ProposalSignedData(state.slot,
     //   BEACON_CHAIN_SHARD_NUMBER, block_without_signature_root)).
@@ -122,7 +129,17 @@ public class BlockProcessorUtil {
     int proposerIndex = BeaconStateUtil.get_beacon_proposer_index(state, state.getSlot());
     BLSPublicKey pubkey = state.getValidator_registry().get(proposerIndex).getPubkey();
     UnsignedLong domain = get_domain(state.getFork(), get_current_epoch(state), DOMAIN_PROPOSAL);
-    checkArgument(bls_verify(pubkey, proposalRoot, block.getSignature(), domain));
+
+    LOG.info("In Verify Signatures");
+    LOG.info("Proposer pubkey: " + pubkey);
+    LOG.info("state: " + HashTreeUtil.hash_tree_root(state.toBytes()));
+    LOG.info("proposal root: " + proposalRoot.toHexString());
+    LOG.info("block signature: " + block.getSignature().toString());
+    LOG.info("slot: " + state.getSlot().longValue());
+    LOG.info("domain: " + domain);
+
+    checkArgument(
+        bls_verify(pubkey, proposalRoot, block.getSignature(), domain), "verify signature failed");
   }
 
   /**
@@ -140,7 +157,8 @@ public class BlockProcessorUtil {
     // - Verify that bls_verify(pubkey=proposer.pubkey,
     //    message=int_to_bytes32(get_current_epoch(state)), signature=block.randao_reveal,
     //    domain=get_domain(state.fork, get_current_epoch(state), DOMAIN_RANDAO)).
-    checkArgument(verify_randao(state, block, currentEpoch, currentEpochBytes));
+    checkArgument(
+        verify_randao(state, block, currentEpoch, currentEpochBytes), "verify randao failed");
 
     // - Set state.latest_randao_mixes[get_current_epoch(state) % LATEST_RANDAO_MIXES_LENGTH]
     //    = xor(get_randao_mix(state, get_current_epoch(state)), hash(block.randao_reveal)).
