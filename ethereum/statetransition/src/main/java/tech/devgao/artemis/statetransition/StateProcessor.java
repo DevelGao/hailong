@@ -23,7 +23,6 @@ import java.util.Optional;
 import net.develgao.cava.bytes.Bytes32;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import tech.devgao.artemis.data.RawRecord;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.state.BeaconState;
@@ -62,7 +61,7 @@ public class StateProcessor {
     this.nodeSlot = UnsignedLong.valueOf(Constants.GENESIS_SLOT);
     this.nodeTime =
         UnsignedLong.valueOf(Constants.GENESIS_SLOT)
-            .times(UnsignedLong.valueOf(Constants.SLOT_DURATION));
+            .times(UnsignedLong.valueOf(Constants.SECONDS_PER_SLOT));
     LOG.info("node slot: " + nodeSlot.longValue());
     LOG.info("node time: " + nodeTime.longValue());
     try {
@@ -77,10 +76,6 @@ public class StateProcessor {
       this.headBlock = genesis_block;
       this.justifiedStateRoot = initial_state_root;
       this.eventBus.post(true);
-      RawRecord record =
-          new RawRecord(
-              this.nodeTime.longValue(), this.nodeSlot.longValue(), initial_state, genesis_block);
-      this.eventBus.post(record);
     } catch (IllegalStateException e) {
       LOG.fatal(e);
     }
@@ -96,7 +91,7 @@ public class StateProcessor {
   @Subscribe
   public void onNewSlot(Date date) throws StateTransitionException {
     this.nodeSlot = this.nodeSlot.plus(UnsignedLong.ONE);
-    this.nodeTime = this.nodeTime.plus(UnsignedLong.valueOf(Constants.SLOT_DURATION));
+    this.nodeTime = this.nodeTime.plus(UnsignedLong.valueOf(Constants.SECONDS_PER_SLOT));
 
     LOG.info("******* Slot Event Detected *******");
     LOG.info("node time: " + nodeTime.longValue());
@@ -132,9 +127,6 @@ public class StateProcessor {
     LOG.info("LMD Ghost Head Parent Block Root: " + this.headBlock.getParent_root().toHexString());
     LOG.info("LMD Ghost Head State Root:        " + this.headBlock.getState_root().toHexString());
     LOG.info("Updated Head State Root:          " + newStateRoot.toHexString());
-    RawRecord record =
-        new RawRecord(this.nodeTime.longValue(), this.nodeSlot.longValue(), newState, headBlock);
-    this.eventBus.post(record);
   }
 
   protected Boolean inspectBlock(Optional<BeaconBlock> block) {
@@ -146,7 +138,7 @@ public class StateProcessor {
     }
     UnsignedLong blockTime =
         UnsignedLong.valueOf(block.get().getSlot())
-            .times(UnsignedLong.valueOf(Constants.SLOT_DURATION));
+            .times(UnsignedLong.valueOf(Constants.SECONDS_PER_SLOT));
     // TODO: Here we reject block because time is not there,
     // however, the block is already removed from queue, so
     // we're losing a valid block here.
