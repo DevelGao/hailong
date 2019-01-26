@@ -68,7 +68,7 @@ class AttestationDataAndCustodyBitTest {
   }
 
   @Test
-  void roundtripSSZ() {
+  void rountripSSZ() {
     Bytes sszAttestationDataAndCustodyBitBytes = attestationDataAndCustodyBit.toBytes();
     assertEquals(
         attestationDataAndCustodyBit,
