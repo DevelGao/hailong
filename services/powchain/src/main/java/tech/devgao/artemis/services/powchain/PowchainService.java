@@ -21,7 +21,8 @@ import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import net.develgao.cava.bytes.Bytes;
-import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.web3j.protocol.core.methods.response.Log;
 import tech.devgao.artemis.ganache.GanacheController;
 import tech.devgao.artemis.pow.DepositContractListener;
@@ -31,12 +32,11 @@ import tech.devgao.artemis.pow.contract.DepositContract;
 import tech.devgao.artemis.pow.contract.DepositContract.Eth2GenesisEventResponse;
 import tech.devgao.artemis.pow.event.Eth2Genesis;
 import tech.devgao.artemis.services.ServiceInterface;
-import tech.devgao.artemis.util.alogger.ALogger;
 
 public class PowchainService implements ServiceInterface {
 
   private EventBus eventBus;
-  private static final ALogger LOG = new ALogger();
+  private static final Logger LOG = LogManager.getLogger();
 
   private GanacheController controller;
   private DepositContractListener listener;
@@ -89,16 +89,14 @@ public class PowchainService implements ServiceInterface {
       try {
         contract.deposit(bytes.toArray(), new BigInteger(SIM_DEPOSIT_VALUE)).send();
       } catch (Exception e) {
-        LOG.log(
-            Level.WARN,
+        LOG.warn(
             "PowchainService.simulateDepositActivity: Exception thrown when attempting to send a deposit transaction during a deposit simulation\n"
                 + e);
       }
       try {
         Thread.sleep(10000);
       } catch (InterruptedException e) {
-        LOG.log(
-            Level.WARN,
+        LOG.warn(
             "PowchainService.simulateDepositActivity: Exception thrown when attempting a thread sleep during a deposit simulation\n"
                 + e);
       }

@@ -7,11 +7,11 @@ jar {
 }
 
 dependencies {
-  implementation project(':data')
   implementation project(':pow')
   implementation project(':util')
   implementation project(':storage')
   implementation project(':ethereum:datastructures')
+  implementation project(':validatorclient')
 
   implementation 'net.develgao.cava:cava-crypto'
   implementation 'net.develgao.cava:cava-units'
