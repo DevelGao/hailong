@@ -16,20 +16,21 @@ package tech.devgao.artemis.datastructures.state;
 import com.google.common.primitives.UnsignedLong;
 import java.util.Objects;
 import net.develgao.cava.bytes.Bytes;
+import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.datastructures.operations.AttestationData;
 
 public class PendingAttestation {
 
-  private Bytes aggregation_bitfield;
+  private Bytes32 aggregation_bitfield;
   private AttestationData data;
-  private Bytes custody_bitfield;
+  private Bytes32 custody_bitfield;
   private UnsignedLong slot_included;
 
   public PendingAttestation(
-      Bytes aggregation_bitfield,
+      Bytes32 aggregation_bitfield,
       AttestationData data,
-      Bytes custody_bitfield,
+      Bytes32 custody_bitfield,
       UnsignedLong slot_included) {
     this.aggregation_bitfield = aggregation_bitfield;
     this.data = data;
@@ -42,9 +43,9 @@ public class PendingAttestation {
         bytes,
         reader ->
             new PendingAttestation(
-                Bytes.wrap(reader.readBytes()),
+                Bytes32.wrap(reader.readBytes()),
                 AttestationData.fromBytes(reader.readBytes()),
-                Bytes.wrap(reader.readBytes()),
+                Bytes32.wrap(reader.readBytes()),
                 UnsignedLong.fromLongBits(reader.readUInt64())));
   }
 
@@ -85,11 +86,11 @@ public class PendingAttestation {
   }
 
   /** ******************* * GETTERS & SETTERS * * ******************* */
-  public Bytes getAggregation_bitfield() {
+  public Bytes32 getAggregation_bitfield() {
     return aggregation_bitfield;
   }
 
-  public void setAggregation_bitfield(Bytes aggregation_bitfield) {
+  public void setAggregation_bitfield(Bytes32 aggregation_bitfield) {
     this.aggregation_bitfield = aggregation_bitfield;
   }
 
@@ -101,11 +102,11 @@ public class PendingAttestation {
     this.data = data;
   }
 
-  public Bytes getCustody_bitfield() {
+  public Bytes32 getCustody_bitfield() {
     return custody_bitfield;
   }
 
-  public void setCustody_bitfield(Bytes custody_bitfield) {
+  public void setCustody_bitfield(Bytes32 custody_bitfield) {
     this.custody_bitfield = custody_bitfield;
   }
 
