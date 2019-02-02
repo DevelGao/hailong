@@ -19,14 +19,12 @@ import static tech.devgao.artemis.datastructures.Constants.LATEST_RANDAO_MIXES_L
 
 import com.google.common.primitives.UnsignedLong;
 import java.util.List;
-import java.util.Objects;
 import net.develgao.cava.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.statetransition.StateTransitionException;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 
 public class SlotProcessorUtil {
   public static void updateLatestRandaoMixes(BeaconState state) {
@@ -40,21 +38,22 @@ public class SlotProcessorUtil {
 
   public static void updateRecentBlockHashes(BeaconState state, BeaconBlock block)
       throws Exception {
-
     Bytes32 previous_block_root = Bytes32.ZERO;
     if (state.getSlot().compareTo(UnsignedLong.valueOf(Constants.GENESIS_SLOT)) > 0) {
       previous_block_root =
           BeaconStateUtil.get_block_root(state, state.getSlot().minus(UnsignedLong.ONE));
-    } else if (!Objects.isNull(block)) {
-      previous_block_root = HashTreeUtil.hash_tree_root(block.toBytes());
     }
-
-    if (!previous_block_root.equals(Bytes32.ZERO)) {
-      long index = state.getSlot().minus(UnsignedLong.ONE).longValue() % LATEST_BLOCK_ROOTS_LENGTH;
+    if (previous_block_root != null) {
       List<Bytes32> latest_block_roots = state.getLatest_block_roots();
 
-      latest_block_roots.set(toIntExact(index), previous_block_root);
+      latest_block_roots.set(
+          toIntExact(state.getSlot().intValue() - 1) % Constants.LATEST_BLOCK_ROOTS_LENGTH,
+          previous_block_root);
       state.setLatest_block_roots(latest_block_roots);
+    } else {
+      throw new StateTransitionException(
+          "StateTransitionException: BeaconState cannot be updated due to "
+              + "previous_block_root returning a null");
     }
 
     if (state
