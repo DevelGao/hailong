@@ -71,7 +71,7 @@ class ExitTest {
   }
 
   @Test
-  void roundtripSSZ() {
+  void rountripSSZ() {
     Bytes sszExitBytes = exit.toBytes();
     assertEquals(exit, Exit.fromBytes(sszExitBytes));
   }
