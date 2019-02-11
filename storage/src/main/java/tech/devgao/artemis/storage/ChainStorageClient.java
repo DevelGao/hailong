@@ -24,14 +24,17 @@ import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import net.develgao.cava.bytes.Bytes;
+import org.apache.logging.log4j.Level;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.util.AttestationUtil;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
+import tech.devgao.artemis.util.alogger.ALogger;
 
 /** This class is the ChainStorage client-side logic */
 public class ChainStorageClient implements ChainStorage {
+  static final ALogger LOG = new ALogger(ChainStorageClient.class.getName());
 
   protected final HashMap<Integer, Attestation> latestAttestations = new HashMap<>();
   protected final PriorityQueue<BeaconBlock> unprocessedBlocks =
@@ -99,7 +102,6 @@ public class ChainStorageClient implements ChainStorage {
    * @return
    */
   public Optional<BeaconBlock> getProcessedBlock(Bytes state_root) {
-
     return ChainStorage.<Bytes, BeaconBlock, HashMap<Bytes, BeaconBlock>>get(
         state_root, this.processedBlockLookup);
   }
@@ -159,15 +161,34 @@ public class ChainStorageClient implements ChainStorage {
         unprocessedAttestations);
   }
 
+  /**
+   * Returns a validator's latest attestation
+   *
+   * @param validatorIndex
+   * @return
+   */
+  public Optional<Attestation> getLatestAttestation(int validatorIndex) {
+    Attestation attestation = latestAttestations.get(validatorIndex);
+    if (attestation == null) {
+      return Optional.ofNullable(null);
+    } else {
+      return Optional.of(attestation);
+    }
+  }
+
+  public HashMap<Bytes, BeaconBlock> getProcessedBlockLookup() {
+    return processedBlockLookup;
+  }
+
   @Subscribe
   public void onNewUnprocessedBlock(BeaconBlock block) {
-    LOG.info("ChainStorage: new unprocessed BeaconBlock detected");
+    LOG.log(Level.INFO, "ChainStorage: new unprocessed BeaconBlock detected");
     addUnprocessedBlock(block);
   }
 
   @Subscribe
   public void onNewUnprocessedAttestation(Attestation attestation) {
-    LOG.info("ChainStorage: new unprocessed Attestation detected");
+    LOG.log(Level.INFO, "ChainStorage: new unprocessed Attestation detected");
     addUnprocessedAttestation(attestation);
 
     // TODO: verify the assumption below:
@@ -195,18 +216,5 @@ public class ChainStorageClient implements ChainStorage {
         }
       }
     }
-  }
-
-  public Optional<Attestation> getLatestAttestation(int validatorIndex) {
-    Attestation attestation = latestAttestations.get(validatorIndex);
-    if (attestation == null) {
-      return Optional.ofNullable(null);
-    } else {
-      return Optional.of(attestation);
-    }
-  }
-
-  public HashMap<Bytes, BeaconBlock> getProcessedBlockLookup() {
-    return processedBlockLookup;
   }
 }
