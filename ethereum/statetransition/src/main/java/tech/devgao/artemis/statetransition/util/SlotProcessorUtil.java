@@ -15,27 +15,45 @@ package tech.devgao.artemis.statetransition.util;
 
 import static java.lang.Math.toIntExact;
 import static tech.devgao.artemis.datastructures.Constants.LATEST_BLOCK_ROOTS_LENGTH;
+import static tech.devgao.artemis.datastructures.Constants.LATEST_RANDAO_MIXES_LENGTH;
 
 import com.google.common.primitives.UnsignedLong;
 import java.util.List;
 import net.develgao.cava.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.Constants;
+import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.statetransition.StateTransitionException;
 
 public class SlotProcessorUtil {
+  public static void updateLatestRandaoMixes(BeaconState state) {
+    // TODO: change values to UnsignedLong
+    int currSlot = state.getSlot().intValue();
+    List<Bytes32> latestRandaoMixes = state.getLatest_randao_mixes();
+    int index = (currSlot - 1) % LATEST_RANDAO_MIXES_LENGTH;
+    Bytes32 prevSlotRandaoMix = latestRandaoMixes.get(index);
+    latestRandaoMixes.set(currSlot % LATEST_RANDAO_MIXES_LENGTH, prevSlotRandaoMix);
+  }
 
-  public static void updateBlockRoots(BeaconState state, Bytes32 previous_block_root)
+  public static void updateRecentBlockHashes(BeaconState state, BeaconBlock block)
       throws Exception {
-
+    Bytes32 previous_block_root = Bytes32.ZERO;
     if (state.getSlot().compareTo(UnsignedLong.valueOf(Constants.GENESIS_SLOT)) > 0) {
+      previous_block_root =
+          BeaconStateUtil.get_block_root(state, state.getSlot().minus(UnsignedLong.ONE));
+    }
+    if (previous_block_root != null) {
       List<Bytes32> latest_block_roots = state.getLatest_block_roots();
 
       latest_block_roots.set(
           toIntExact(state.getSlot().intValue() - 1) % Constants.LATEST_BLOCK_ROOTS_LENGTH,
           previous_block_root);
       state.setLatest_block_roots(latest_block_roots);
+    } else {
+      throw new StateTransitionException(
+          "StateTransitionException: BeaconState cannot be updated due to "
+              + "previous_block_root returning a null");
     }
 
     if (state

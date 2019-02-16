@@ -14,15 +14,16 @@
 package tech.devgao.artemis.services.chainstorage;
 
 import com.google.common.eventbus.EventBus;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import tech.devgao.artemis.services.ServiceInterface;
 import tech.devgao.artemis.storage.ChainStorage;
 import tech.devgao.artemis.storage.ChainStorageServer;
-import tech.devgao.artemis.util.alogger.ALogger;
 
 public class ChainStorageService implements ServiceInterface {
   private EventBus eventBus;
   private ChainStorageServer chainStore;
-  private static final ALogger LOG = new ALogger(ChainStorageService.class.getName());
+  private static final Logger LOG = LogManager.getLogger(ChainStorageService.class.getName());
 
   public ChainStorageService() {}
 

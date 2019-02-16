@@ -14,30 +14,53 @@
 package tech.devgao.artemis;
 
 import java.security.Security;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import picocli.CommandLine;
+import tech.devgao.artemis.services.ServiceController;
+import tech.devgao.artemis.services.beaconchain.BeaconChainService;
+import tech.devgao.artemis.services.beaconnode.BeaconNodeService;
+import tech.devgao.artemis.services.chainstorage.ChainStorageService;
+import tech.devgao.artemis.services.powchain.PowchainService;
 import tech.devgao.artemis.util.cli.CommandLineArguments;
 
 public final class Artemis {
 
   public static void main(final String... args) {
-    Security.addProvider(new BouncyCastleProvider());
-    // Process Command Line Args
-    CommandLineArguments cliArgs = new CommandLineArguments();
-    CommandLine commandLine = new CommandLine(cliArgs);
-    commandLine.parse(args);
-    BeaconNode node = new BeaconNode(commandLine, cliArgs);
-    node.start();
-
-    // Detect SIGTERM
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread() {
-              @Override
-              public void run() {
-                System.out.println("Artemis is shutting down");
-                node.stop();
-              }
-            });
+    try {
+      Security.addProvider(new BouncyCastleProvider());
+      // Process Command Line Args
+      CommandLineArguments cliArgs = new CommandLineArguments();
+      CommandLine commandLine = new CommandLine(cliArgs);
+      commandLine.parse(args);
+      if (commandLine.isUsageHelpRequested()) {
+        commandLine.usage(System.out);
+        return;
+      }
+      // set log level per CLI flags
+      System.out.println("Setting logging level to " + cliArgs.getLoggingLevel().name());
+      Configurator.setAllLevels("", cliArgs.getLoggingLevel());
+      // Detect SIGTERM
+      Runtime.getRuntime()
+          .addShutdownHook(
+              new Thread() {
+                @Override
+                public void run() {
+                  System.out.println("Artemis is shutting down");
+                  ServiceController.stopAll(cliArgs);
+                }
+              });
+      // Initialize services
+      ServiceController.initAll(
+          cliArgs,
+          BeaconChainService.class,
+          PowchainService.class,
+          BeaconNodeService.class,
+          ChainStorageService.class);
+      // Start services
+      ServiceController.startAll(cliArgs);
+    } catch (Exception e) {
+      System.out.println(e.toString());
+    }
   }
 }

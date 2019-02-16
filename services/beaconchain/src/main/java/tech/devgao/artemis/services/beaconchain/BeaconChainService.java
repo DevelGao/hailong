@@ -18,6 +18,7 @@ import com.google.common.eventbus.Subscribe;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.services.ServiceInterface;
 import tech.devgao.artemis.statetransition.SlotScheduler;
 import tech.devgao.artemis.statetransition.StateProcessor;
@@ -55,8 +56,7 @@ public class BeaconChainService implements ServiceInterface {
       scheduler.scheduleAtFixedRate(
           new SlotScheduler(this.eventBus),
           initialDelay,
-          // Constants.SLOT_DURATION,
-          6,
+          Constants.SECONDS_PER_SLOT,
           TimeUnit.SECONDS);
     }
   }
