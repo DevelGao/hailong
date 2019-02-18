@@ -19,10 +19,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import tech.devgao.artemis.util.alogger.ALogger;
 
 public class GanacheController {
 
@@ -44,7 +44,7 @@ public class GanacheController {
   private List<Account> accounts;
   private String provider;
 
-  private static final ALogger LOG = new ALogger();
+  private static final Logger LOG = LogManager.getLogger();
 
   public GanacheController(int accountSize, int balance) {
     this(DEFAULT_HOST_NAME, DEFAULT_PORT, accountSize, balance);
@@ -79,8 +79,7 @@ public class GanacheController {
             }
           };
     } catch (IOException e) {
-      LOG.log(
-          Level.FATAL,
+      LOG.fatal(
           "GanacheController.constructor: IOException thrown when attempting \""
               + pb.command()
               + "\" to start ganache-cli instance\n"
@@ -101,8 +100,7 @@ public class GanacheController {
     try {
       pb.start();
     } catch (IOException e) {
-      LOG.log(
-          Level.WARN,
+      LOG.warn(
           "GanacheController.cleanUp: IOException thrown when attempting \""
               + pb.command()
               + "\" cleanup of hung ganache-cli instance\n"
@@ -128,12 +126,9 @@ public class GanacheController {
           (JSONObject) ((JSONObject) parser.parse(new FileReader(keysPath))).get("private_keys");
     } catch (Exception e) {
       if (!keyFile.exists())
-        LOG.log(
-            Level.FATAL,
-            "GanacheController.initkeys: Timedout when waiting for keys.json filet\n" + e);
+        LOG.fatal("GanacheController.initkeys: Timedout when waiting for keys.json filet\n" + e);
       else
-        LOG.log(
-            Level.FATAL,
+        LOG.fatal(
             "GanacheController.initkeys: Exception thrown when reading/parsing keys.json file\n"
                 + e);
     }
