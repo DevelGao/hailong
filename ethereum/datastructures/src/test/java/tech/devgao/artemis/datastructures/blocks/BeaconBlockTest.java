@@ -137,7 +137,7 @@ class BeaconBlockTest {
   }
 
   @Test
-  void roundtripSSZ() {
+  void rountripSSZ() {
     Bytes sszBeaconBlockBytes = beaconBlock.toBytes();
     assertEquals(beaconBlock, BeaconBlock.fromBytes(sszBeaconBlockBytes));
   }

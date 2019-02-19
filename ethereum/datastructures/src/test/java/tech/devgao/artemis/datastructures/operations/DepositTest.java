@@ -87,7 +87,7 @@ class DepositTest {
   }
 
   @Test
-  void roundtripSSZ() {
+  void rountripSSZ() {
     Bytes sszDepositBytes = deposit.toBytes();
     assertEquals(deposit, Deposit.fromBytes(sszDepositBytes));
   }
