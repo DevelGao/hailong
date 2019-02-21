@@ -18,7 +18,7 @@ import com.google.common.eventbus.Subscribe;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import tech.devgao.artemis.datastructures.Constants;
+import tech.devgao.artemis.services.ServiceConfig;
 import tech.devgao.artemis.services.ServiceInterface;
 import tech.devgao.artemis.statetransition.SlotScheduler;
 import tech.devgao.artemis.statetransition.StateProcessor;
@@ -32,11 +32,12 @@ public class BeaconChainService implements ServiceInterface {
   public BeaconChainService() {}
 
   @Override
-  public void init(EventBus eventBus) {
-    this.eventBus = eventBus;
-    this.scheduler = Executors.newScheduledThreadPool(1);
-    this.stateProcessor = new StateProcessor(this.eventBus);
+  public void init(ServiceConfig config) {
+    this.eventBus = config.getEventBus();
     this.eventBus.register(this);
+    this.scheduler = Executors.newScheduledThreadPool(1);
+    this.stateProcessor =
+        new StateProcessor(this.eventBus, config.getConfig(), config.getKeyPair().publicKey());
   }
 
   @Override
@@ -56,7 +57,8 @@ public class BeaconChainService implements ServiceInterface {
       scheduler.scheduleAtFixedRate(
           new SlotScheduler(this.eventBus),
           initialDelay,
-          Constants.SECONDS_PER_SLOT,
+          // Constants.SLOT_DURATION,
+          6,
           TimeUnit.SECONDS);
     }
   }

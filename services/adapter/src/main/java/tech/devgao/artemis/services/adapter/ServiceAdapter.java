@@ -19,6 +19,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.MethodDescriptor;
 import java.util.HashSet;
 import java.util.Set;
+import tech.devgao.artemis.services.ServiceConfig;
 import tech.devgao.artemis.services.ServiceInterface;
 import tech.devgao.artemis.services.adapter.dto.RemoteCallResponse;
 import tech.devgao.artemis.services.adapter.event.OutboundEvent;
@@ -68,8 +69,8 @@ public class ServiceAdapter implements ServiceInterface {
   }
 
   @Override
-  public void init(EventBus eventBus) {
-    this.eventBus = eventBus;
+  public void init(ServiceConfig config) {
+    this.eventBus = config.getEventBus();
     eventForwarders.forEach(forwarder -> forwarder.init(eventBus));
   }
 

@@ -13,10 +13,12 @@
 
 package tech.devgao.artemis.datastructures.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.is_power_of_two;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDepositInput;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomUnsignedLong;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomValidator;
@@ -25,7 +27,6 @@ import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.junit.BouncyCastleExtension;
 import org.junit.jupiter.api.Disabled;
@@ -34,7 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.operations.DepositInput;
 import tech.devgao.artemis.datastructures.state.BeaconState;
-import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
 import tech.devgao.artemis.datastructures.state.Fork;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
@@ -299,38 +299,18 @@ class BeaconStateUtilTest {
   }
 
   @Test
-  void getTotalBalanceAddsAndReturnsEffectiveTotalBalancesCorrectly() {
-    // Data Setup
-    BeaconState state = createBeaconState();
-    CrosslinkCommittee crosslinkCommittee =
-        new CrosslinkCommittee(UnsignedLong.ONE, Arrays.asList(0, 1, 2));
-
-    // Calculate Expected Results
-    UnsignedLong expectedBalance = UnsignedLong.ZERO;
-    for (UnsignedLong balance : state.getValidator_balances()) {
-      if (balance.compareTo(UnsignedLong.valueOf(Constants.MAX_DEPOSIT_AMOUNT)) < 0) {
-        expectedBalance = expectedBalance.plus(balance);
-      } else {
-        expectedBalance = expectedBalance.plus(UnsignedLong.valueOf(Constants.MAX_DEPOSIT_AMOUNT));
-      }
-    }
-
-    assertEquals(expectedBalance, BeaconStateUtil.get_total_balance(state, crosslinkCommittee));
-  }
-
-  @Test
   @Disabled // Pending resolution of Issue #347.
   void penalizeValidatorDecrementsBadActorAndIncrementsWhistleblower() {
     // Actual Data Setup
     BeaconState beaconState = createBeaconState();
     int validatorIndex = 1;
 
-    beaconState.setCurrent_shuffling_epoch(Constants.FAR_FUTURE_EPOCH);
-    beaconState.setPrevious_shuffling_epoch(Constants.FAR_FUTURE_EPOCH);
+    beaconState.setCurrent_calculation_epoch(Constants.FAR_FUTURE_EPOCH);
+    beaconState.setPrevious_calculation_epoch(Constants.FAR_FUTURE_EPOCH);
     List<UnsignedLong> latestPenalizedBalances =
         new ArrayList<>(
             Arrays.asList(randomUnsignedLong(), randomUnsignedLong(), randomUnsignedLong()));
-    beaconState.setLatest_slashed_balances(latestPenalizedBalances);
+    beaconState.setLatest_penalized_balances(latestPenalizedBalances);
 
     // Expected Data Setup
     int whistleblowerIndex =
@@ -354,98 +334,17 @@ class BeaconStateUtilTest {
   }
 
   @Test
-  void succeedsWhenGetPreviousSlotReturnsGenesisSlot1() {
-    BeaconState beaconState = createBeaconState();
-    beaconState.setSlot(UnsignedLong.valueOf(Constants.GENESIS_SLOT));
-    assertEquals(
-        UnsignedLong.valueOf(Constants.GENESIS_EPOCH),
-        BeaconStateUtil.get_previous_epoch(beaconState));
-  }
-
-  @Test
-  void succeedsWhenGetPreviousSlotReturnsGenesisSlot2() {
-    BeaconState beaconState = createBeaconState();
-    beaconState.setSlot(UnsignedLong.valueOf(Constants.GENESIS_SLOT + Constants.SLOTS_PER_EPOCH));
-    assertEquals(
-        UnsignedLong.valueOf(Constants.GENESIS_EPOCH),
-        BeaconStateUtil.get_previous_epoch(beaconState));
-  }
-
-  @Test
-  void succeedsWhenGetPreviousSlotReturnsGenesisSlotPlusOne() {
-    BeaconState beaconState = createBeaconState();
-    beaconState.setSlot(
-        UnsignedLong.valueOf(Constants.GENESIS_SLOT + 2 * Constants.SLOTS_PER_EPOCH));
-    assertEquals(
-        UnsignedLong.valueOf(Constants.GENESIS_EPOCH + 1),
-        BeaconStateUtil.get_previous_epoch(beaconState));
-  }
-
-  @Test
-  void succeedsWhenGetNextEpochReturnsTheEpochPlusOne() {
-    BeaconState beaconState = createBeaconState();
-    beaconState.setSlot(UnsignedLong.valueOf(Constants.GENESIS_SLOT));
-    assertEquals(
-        UnsignedLong.valueOf(Constants.GENESIS_EPOCH + 1),
-        BeaconStateUtil.get_next_epoch(beaconState));
-  }
-
-  @Test
-  void intToBytes() {
-    long value = 0x0123456789abcdefL;
-    assertEquals(Bytes.EMPTY, BeaconStateUtil.int_to_bytes(value, 0));
-    assertEquals(Bytes.fromHexString("0xef"), BeaconStateUtil.int_to_bytes(value, 1));
-    assertEquals(Bytes.fromHexString("0xefcd"), BeaconStateUtil.int_to_bytes(value, 2));
-    assertEquals(Bytes.fromHexString("0xefcdab89"), BeaconStateUtil.int_to_bytes(value, 4));
-    assertEquals(Bytes.fromHexString("0xefcdab8967452301"), BeaconStateUtil.int_to_bytes(value, 8));
-    assertEquals(
-        Bytes.fromHexString("0xefcdab89674523010000000000000000"),
-        BeaconStateUtil.int_to_bytes(value, 16));
-    assertEquals(
-        Bytes.fromHexString("0xefcdab8967452301000000000000000000000000000000000000000000000000"),
-        BeaconStateUtil.int_to_bytes(value, 32));
-  }
-
-  @Test
-  void intToBytes32Long() {
-    assertEquals(
-        Bytes32.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000"),
-        BeaconStateUtil.int_to_bytes32(0L));
-    assertEquals(
-        Bytes32.fromHexString("0x0100000000000000000000000000000000000000000000000000000000000000"),
-        BeaconStateUtil.int_to_bytes32(1L));
-    assertEquals(
-        Bytes32.fromHexString("0xffffffffffffffff000000000000000000000000000000000000000000000000"),
-        BeaconStateUtil.int_to_bytes32(-1L));
-    assertEquals(
-        Bytes32.fromHexString("0xefcdab8967452301000000000000000000000000000000000000000000000000"),
-        BeaconStateUtil.int_to_bytes32(0x0123456789abcdefL));
-  }
-
-  @Test
-  void intToBytes32UnsignedLong() {
-    assertEquals(
-        Bytes32.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000"),
-        BeaconStateUtil.int_to_bytes32(UnsignedLong.ZERO));
-    assertEquals(
-        Bytes32.fromHexString("0x0100000000000000000000000000000000000000000000000000000000000000"),
-        BeaconStateUtil.int_to_bytes32(UnsignedLong.ONE));
-    assertEquals(
-        Bytes32.fromHexString("0xffffffffffffffff000000000000000000000000000000000000000000000000"),
-        BeaconStateUtil.int_to_bytes32(UnsignedLong.MAX_VALUE));
-    assertEquals(
-        Bytes32.fromHexString("0xefcdab8967452301000000000000000000000000000000000000000000000000"),
-        BeaconStateUtil.int_to_bytes32(UnsignedLong.valueOf(0x0123456789abcdefL)));
-  }
-
-  @Test
-  void bytesToInt() {
-    assertEquals(0L, BeaconStateUtil.bytes_to_int(Bytes.fromHexString("0x00")));
-    assertEquals(1L, BeaconStateUtil.bytes_to_int(Bytes.fromHexString("0x01")));
-    assertEquals(1L, BeaconStateUtil.bytes_to_int(Bytes.fromHexString("0x0100000000000000")));
-    assertEquals(
-        0x123456789abcdef0L,
-        BeaconStateUtil.bytes_to_int(Bytes.fromHexString("0xf0debc9a78563412")));
+  void isPowerOfTwo() {
+    // Not powers of two:
+    assertThat(is_power_of_two(UnsignedLong.ZERO)).isEqualTo(false);
+    assertThat(is_power_of_two(UnsignedLong.valueOf(42L))).isEqualTo(false);
+    assertThat(is_power_of_two(UnsignedLong.valueOf(Long.MAX_VALUE))).isEqualTo(false);
+    // Powers of two:
+    assertThat(is_power_of_two(UnsignedLong.ONE)).isEqualTo(true);
+    assertThat(is_power_of_two(UnsignedLong.ONE.plus(UnsignedLong.ONE))).isEqualTo(true);
+    assertThat(is_power_of_two(UnsignedLong.valueOf(0x040000L))).isEqualTo(true);
+    assertThat(is_power_of_two(UnsignedLong.valueOf(0x0100000000L))).isEqualTo(true);
+    assertThat(is_power_of_two(UnsignedLong.fromLongBits(0x8000000000000000L))).isEqualTo(true);
   }
 
   private BeaconState createBeaconState() {
@@ -481,36 +380,4 @@ class BeaconStateUtilTest {
     beaconState.setValidator_balances(balanceList);
     return beaconState;
   }
-
-  // *************** START Shuffling Tests ***************
-
-  // TODO: tests for get_shuffling() - the reference tests are out of date.
-
-  // The following are just sanity checks. The real testing is against the official test vectors,
-  // elsewhere.
-
-  @Test
-  void succeedsWhenGetPermutedIndexReturnsAPermutation() {
-    Bytes32 seed = Bytes32.random();
-    int listSize = 1000;
-    boolean[] done = new boolean[listSize]; // Initialised to false
-    for (int i = 0; i < listSize; i++) {
-      int idx = BeaconStateUtil.get_permuted_index(i, listSize, seed);
-      assertFalse(done[idx]);
-      done[idx] = true;
-    }
-  }
-
-  @Test
-  void succeedsWhenGetPermutedIndexAndShuffleGiveTheSameResults() {
-    Bytes32 seed = Bytes32.random();
-    int listSize = 1 + (int) randomUnsignedLong().longValue() % 1000;
-    int[] shuffling = BeaconStateUtil.shuffle(listSize, seed);
-    for (int i = 0; i < listSize; i++) {
-      int idx = BeaconStateUtil.get_permuted_index(i, listSize, seed);
-      assertEquals(shuffling[i], idx);
-    }
-  }
-
-  // *************** END Shuffling Tests *****************
 }
