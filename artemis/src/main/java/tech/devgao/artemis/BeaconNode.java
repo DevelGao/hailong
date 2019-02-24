@@ -21,9 +21,6 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.config.Configuration;
-import net.develgao.cava.crypto.SECP256K1;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.jetbrains.annotations.NotNull;
@@ -45,6 +42,7 @@ import tech.devgao.artemis.services.chainstorage.ChainStorageService;
 import tech.devgao.artemis.services.powchain.PowchainService;
 import tech.devgao.artemis.util.alogger.ALogger;
 import tech.devgao.artemis.util.cli.CommandLineArguments;
+import tech.devgao.artemis.util.config.ArtemisConfiguration;
 import tech.devgao.artemis.validator.coordinator.ValidatorCoordinator;
 
 public class BeaconNode {
@@ -73,24 +71,23 @@ public class BeaconNode {
   private CommandLine commandLine;
 
   public BeaconNode(CommandLine commandLine, CommandLineArguments cliArgs) {
-    Configuration config = ArtemisConfiguration.fromFile(cliArgs.getConfigFile());
+    ArtemisConfiguration config = ArtemisConfiguration.fromFile(cliArgs.getConfigFile());
     this.eventBus = new AsyncEventBus(threadPool);
-    SECP256K1.KeyPair keyPair =
-        SECP256K1.KeyPair.fromSecretKey(
-            SECP256K1.SecretKey.fromBytes(Bytes32.fromHexString(config.getString("identity"))));
-    if (config.getInteger("networkMode") == 0) {
+    if (config.getNetworkMode() == 0) {
       this.p2pNetwork = new MockP2PNetwork(eventBus);
-    } else if (config.getInteger("networkMode") == 1) {
+    } else if (config.getNetworkMode() == 1) {
       this.p2pNetwork =
           new RLPxP2PNetwork(
               eventBus,
               vertx,
-              keyPair,
-              config.getInteger("port"),
-              config.getInteger("advertisedPort"),
-              config.getString("networkInterface"));
+              config.getKeyPair(),
+              config.getPort(),
+              config.getAdvertisedPort(),
+              config.getNetworkInterface());
+    } else {
+      throw new IllegalArgumentException("Unsupported network mode " + config.getNetworkMode());
     }
-    this.serviceConfig = new ServiceConfig(eventBus, config, keyPair);
+    this.serviceConfig = new ServiceConfig(eventBus, config);
     this.validatorCoordinator = new ValidatorCoordinator(serviceConfig);
     this.cliArgs = cliArgs;
     this.commandLine = commandLine;
