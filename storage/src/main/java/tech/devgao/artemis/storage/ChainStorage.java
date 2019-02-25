@@ -18,13 +18,13 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.Queue;
 import net.develgao.cava.bytes.Bytes;
-import org.apache.logging.log4j.Level;
-import tech.devgao.artemis.util.alogger.ALogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** ChainStorage Interface class */
 public interface ChainStorage {
 
-  static final ALogger LOG = new ALogger(ChainStorage.class.getName());
+  static final Logger LOG = LogManager.getLogger(ChainStorage.class.getName());
 
   /**
    * Instantiate the ChainStorage
@@ -51,7 +51,7 @@ public interface ChainStorage {
     try {
       items.add(item);
     } catch (IllegalStateException e) {
-      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + e.getMessage().toString());
+      LOG.debug(items.getClass().toString() + ": " + e.getMessage().toString());
     }
   }
 
@@ -66,7 +66,7 @@ public interface ChainStorage {
     try {
       items.put(key, value);
     } catch (IllegalStateException e) {
-      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + e.getMessage().toString(), true);
+      LOG.debug(items.getClass().toString() + ": " + e.getMessage().toString());
     }
   }
 
@@ -82,7 +82,7 @@ public interface ChainStorage {
     try {
       result = Optional.of(items.get(key));
     } catch (NullPointerException e) {
-      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + key.toHexString() + " not found.");
+      LOG.debug(items.getClass().toString() + ": " + key.toHexString() + " not found.");
     }
     return result;
   }

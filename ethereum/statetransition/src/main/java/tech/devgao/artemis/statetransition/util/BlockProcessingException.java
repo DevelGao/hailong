@@ -17,8 +17,4 @@ public class BlockProcessingException extends Exception {
   public BlockProcessingException(String err) {
     super(err);
   }
-
-  public BlockProcessingException(RuntimeException e) {
-    super(e.toString());
-  }
 }

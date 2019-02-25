@@ -20,16 +20,9 @@ import picocli.CommandLine.Option;
 @Command(name = "Artemis", mixinStandardHelpOptions = true)
 public class CommandLineArguments {
   @Option(
-      names = {"-p", "--provider"},
-      paramLabel = "<PROVIDER TYPE>",
-      description = "Output provider types: CSV, JSON (default: JSON).")
-  private String providerType = "JSON";
-
-  @Option(
-      names = {"-o", "--output"},
-      paramLabel = "<FILENAME>",
-      description = "Path/filename of the output file")
-  private String outputFile = "";
+      names = {"-p", "--PoWChainServiceDisabled"},
+      description = "If this option is enabled then the PoW Chain service is disabled.")
+  private Boolean PoWChainServiceDisabled = false;
 
   @Option(
       names = {"-l", "--logging"},
@@ -39,29 +32,11 @@ public class CommandLineArguments {
           "Logging verbosity levels: OFF, FATAL, WARN, INFO, DEBUG, TRACE, ALL (default: INFO).")
   private Level logLevel = Level.INFO;
 
-  @Option(
-      names = {"-c", "--config"},
-      paramLabel = "<FILENAME>",
-      description = "Path/filename of the config file")
-  private String configFile = "./config/config.toml";
-
-  public String getProviderType() {
-    return this.providerType;
-  }
-
-  public String getOutputFile() {
-    return this.outputFile;
-  }
-
-  public Boolean isOutputEnabled() {
-    return this.outputFile.length() > 0;
+  public Boolean getPoWChainServiceDisabled() {
+    return this.PoWChainServiceDisabled;
   }
 
   public Level getLoggingLevel() {
     return this.logLevel;
-  }
-
-  public String getConfigFile() {
-    return configFile;
   }
 }

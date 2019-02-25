@@ -32,7 +32,6 @@ import org.web3j.protocol.core.methods.response.Log;
 import tech.devgao.artemis.pow.contract.DepositContract;
 import tech.devgao.artemis.pow.event.Deposit;
 import tech.devgao.artemis.pow.event.Eth2Genesis;
-import tech.devgao.artemis.services.ServiceConfig;
 import tech.devgao.artemis.services.adapter.event.OutboundEvent;
 
 public class ServiceAdapterTest {
@@ -47,9 +46,8 @@ public class ServiceAdapterTest {
 
     final EventBus eventBus1 = new EventBus("bus1");
     eventBus1.register(this);
-    ServiceConfig config = new ServiceConfig();
-    config.setEventBus(eventBus1);
-    adapter1.init(config);
+
+    adapter1.init(eventBus1);
     adapter1.run();
 
     final OutboundEvent<Deposit> outboundEvent =
@@ -59,9 +57,7 @@ public class ServiceAdapterTest {
         new ServiceAdapter(Collections.emptySet(), Collections.singleton(outboundEvent));
 
     final EventBus eventBus2 = new EventBus("bus2");
-    ServiceConfig config2 = new ServiceConfig();
-    config2.setEventBus(eventBus2);
-    adapter2.init(config2);
+    adapter2.init(eventBus2);
     adapter2.run();
 
     final Deposit validatorRegistration = createValidatorRegistration(1);
@@ -83,9 +79,8 @@ public class ServiceAdapterTest {
 
     final EventBus eventBus1 = new EventBus("bus1");
     eventBus1.register(this);
-    ServiceConfig config = new ServiceConfig();
-    config.setEventBus(eventBus1);
-    adapter1.init(config);
+
+    adapter1.init(eventBus1);
     adapter1.run();
 
     final OutboundEvent<Deposit> outboundEvent2to1 =
@@ -95,9 +90,7 @@ public class ServiceAdapterTest {
         new ServiceAdapter(30003, Collections.emptySet(), Collections.singleton(outboundEvent2to1));
 
     final EventBus eventBus2 = new EventBus("bus2");
-    ServiceConfig config2 = new ServiceConfig();
-    config2.setEventBus(eventBus2);
-    adapter2.init(config2);
+    adapter2.init(eventBus2);
     adapter2.run();
 
     Integer index = 1;

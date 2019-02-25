@@ -8,7 +8,6 @@ jar {
 
 dependencies {
   implementation project(':ethereum:datastructures')
-  implementation project(':util')
 
   implementation 'net.develgao.cava:cava-kv'
   implementation 'net.develgao.cava:cava-bytes'

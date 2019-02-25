@@ -13,11 +13,12 @@
 
 package tech.devgao.artemis.statetransition;
 
-import static tech.devgao.artemis.datastructures.Constants.EPOCH_LENGTH;
+import static tech.devgao.artemis.datastructures.Constants.SLOTS_PER_EPOCH;
 
 import com.google.common.primitives.UnsignedLong;
 import net.develgao.cava.bytes.Bytes32;
-import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
@@ -27,26 +28,25 @@ import tech.devgao.artemis.statetransition.util.EpochProcessingException;
 import tech.devgao.artemis.statetransition.util.EpochProcessorUtil;
 import tech.devgao.artemis.statetransition.util.SlotProcessingException;
 import tech.devgao.artemis.statetransition.util.SlotProcessorUtil;
-import tech.devgao.artemis.util.alogger.ALogger;
 
 public class StateTransition {
 
-  private static final ALogger LOG = new ALogger(StateTransition.class.getName());
+  private static final Logger LOG = LogManager.getLogger(StateTransition.class.getName());
+  private final String logPrefix;
 
-  private boolean printEnabled = true;
-
-  public StateTransition() {}
-
-  public StateTransition(boolean printEnabled) {
-    this.printEnabled = printEnabled;
+  public StateTransition(String... logPrefix) {
+    if (logPrefix.length == 0) {
+      this.logPrefix = "";
+    } else {
+      this.logPrefix = logPrefix[0];
+    }
   }
 
-  public void initiate(BeaconState state, BeaconBlock block, Bytes32 previous_block_root)
-      throws StateTransitionException {
-    LOG.log(Level.INFO, "Begin state transition", printEnabled);
+  public void initiate(BeaconState state, BeaconBlock block) throws StateTransitionException {
+    LOG.info(logPrefix + "Begin state transition");
 
     // per-slot processing
-    slotProcessor(state, previous_block_root);
+    slotProcessor(state, block);
     // per-block processing
     if (block != null) {
       blockProcessor(state, block);
@@ -55,35 +55,35 @@ public class StateTransition {
     if (state
         .getSlot()
         .plus(UnsignedLong.ONE)
-        .mod(UnsignedLong.valueOf(EPOCH_LENGTH))
+        .mod(UnsignedLong.valueOf(SLOTS_PER_EPOCH))
         .equals(UnsignedLong.ZERO)) {
       epochProcessor(state, block);
     }
-    LOG.log(Level.INFO, "End state transition", printEnabled);
+    LOG.info(logPrefix + "End state transition");
   }
 
-  protected void slotProcessor(BeaconState state, Bytes32 previous_block_root) {
+  protected void slotProcessor(BeaconState state, BeaconBlock block) {
     try {
       state.incrementSlot();
-      LOG.log(Level.INFO, "  Processing new slot: " + state.getSlot(), printEnabled);
+      LOG.info(logPrefix + "  Processing new slot: " + state.getSlot());
       // Slots the proposer has skipped (i.e. layers of RANDAO expected)
       // should be in Validator.randao_skips
-      SlotProcessorUtil.updateBlockRoots(state, previous_block_root);
+      SlotProcessorUtil.updateLatestRandaoMixes(state);
+      SlotProcessorUtil.updateRecentBlockHashes(state, block);
     } catch (SlotProcessingException e) {
-      LOG.log(Level.WARN, "  Slot processing error: " + e, printEnabled);
+      LOG.warn(logPrefix + "  Slot processing error: " + e);
+    } catch (Exception e) {
+      LOG.warn(logPrefix + "  Unexpected slot processing error: " + e);
     }
   }
 
-  private void blockProcessor(BeaconState state, BeaconBlock block) {
+  protected void blockProcessor(BeaconState state, BeaconBlock block) {
     if (BlockProcessorUtil.verify_slot(state, block)) {
       try {
-        LOG.log(
-            Level.INFO,
-            "  Processing new block with state root: " + block.getState_root(),
-            printEnabled);
+        LOG.info(logPrefix + "  Processing new block with state root: " + block.getState_root());
 
         // Block Header
-        LOG.log(Level.INFO, "  Processing block header.", printEnabled);
+        LOG.info(logPrefix + "  Processing block header.");
 
         // Only verify the proposer's signature if we are processing blocks (not proposing them)
         if (!block.getState_root().equals(Bytes32.ZERO)) {
@@ -91,6 +91,7 @@ public class StateTransition {
           BlockProcessorUtil.verify_signature(state, block);
         }
 
+        // TODO: figure out why randao works, but messes up the block state root verification
         // Verify and Update RANDAO
         BlockProcessorUtil.verify_and_update_randao(state, block);
 
@@ -108,23 +109,21 @@ public class StateTransition {
         BlockProcessorUtil.processDeposits(state, block);
         // Process Exits
         BlockProcessorUtil.processExits(state, block);
-
+        // Process Transfers
+        BlockProcessorUtil.processTransfers(state, block);
       } catch (BlockProcessingException e) {
-        LOG.log(Level.WARN, "  Block processing error: " + e, printEnabled);
+        LOG.warn(logPrefix + "  Block processing error: " + e);
+      } catch (Exception e) {
+        LOG.warn(logPrefix + "  Unexpected block processing error: " + e);
       }
     } else {
-      LOG.log(Level.INFO, "  Skipping block processing for this slot.", printEnabled);
+      LOG.info(logPrefix + "  Skipping block processing for this slot.");
     }
   }
 
-  private void epochProcessor(BeaconState state, BeaconBlock block) {
+  protected void epochProcessor(BeaconState state, BeaconBlock block) {
     try {
-      LOG.log(
-          Level.INFO,
-          "\n ******** \n  Processing new epoch: "
-              + BeaconStateUtil.get_current_epoch(state)
-              + " \n ********* ",
-          printEnabled);
+      LOG.info("  Processing new epoch: " + BeaconStateUtil.get_current_epoch(state));
 
       EpochProcessorUtil.updateEth1Data(state);
       EpochProcessorUtil.updateJustification(state, block);
@@ -147,7 +146,9 @@ public class StateTransition {
       EpochProcessorUtil.process_penalties_and_exits(state);
       EpochProcessorUtil.finalUpdates(state);
     } catch (EpochProcessingException e) {
-      LOG.log(Level.WARN, "  Epoch processing error: " + e, printEnabled);
+      LOG.warn("  Epoch processing error: " + e);
+    } catch (Exception e) {
+      LOG.warn("  Unexpected epoch processing error: " + e);
     }
   }
 }

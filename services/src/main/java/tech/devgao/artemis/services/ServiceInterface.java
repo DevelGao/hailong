@@ -13,8 +13,10 @@
 
 package tech.devgao.artemis.services;
 
+import com.google.common.eventbus.EventBus;
+
 public interface ServiceInterface extends Runnable {
-  void init(ServiceConfig config);
+  void init(EventBus eventBus);
 
   @Override
   void run();
