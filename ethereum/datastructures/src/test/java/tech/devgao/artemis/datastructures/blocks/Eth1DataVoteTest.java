@@ -66,7 +66,7 @@ class Eth1DataVoteTest {
   }
 
   @Test
-  void roundtripSSZ() {
+  void rountripSSZ() {
     Bytes sszEth1DataVoteBytes = eth1DataVote.toBytes();
     assertEquals(eth1DataVote, Eth1DataVote.fromBytes(sszEth1DataVoteBytes));
   }

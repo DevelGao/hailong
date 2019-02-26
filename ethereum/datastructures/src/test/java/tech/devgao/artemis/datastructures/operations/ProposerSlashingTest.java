@@ -143,7 +143,7 @@ class ProposerSlashingTest {
   }
 
   @Test
-  void roundtripSSZ() {
+  void rountripSSZ() {
     Bytes sszProposerSlashingBytes = proposerSlashing.toBytes();
     assertEquals(proposerSlashing, ProposerSlashing.fromBytes(sszProposerSlashingBytes));
   }
