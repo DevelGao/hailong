@@ -23,7 +23,7 @@ import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 
-public class SlotProcessorUtil {
+public final class SlotProcessorUtil {
 
   public static void updateBlockRoots(BeaconState state, Bytes32 previous_block_root)
       throws SlotProcessingException {

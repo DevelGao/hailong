@@ -13,7 +13,7 @@
 
 package tech.devgao.artemis.statetransition.util;
 
-public class SlotProcessingException extends Exception {
+public final class SlotProcessingException extends Exception {
   public SlotProcessingException(String err) {
     super(err);
   }

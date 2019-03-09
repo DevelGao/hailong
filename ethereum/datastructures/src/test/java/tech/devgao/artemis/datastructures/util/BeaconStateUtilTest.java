@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.operations.DepositInput;
 import tech.devgao.artemis.datastructures.state.BeaconState;
+import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
 import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
 import tech.devgao.artemis.datastructures.state.Fork;
 import tech.devgao.artemis.datastructures.state.Validator;
@@ -473,7 +474,7 @@ class BeaconStateUtilTest {
 
   private BeaconState createBeaconState(
       boolean addToList, UnsignedLong amount, Validator knownValidator) {
-    BeaconState beaconState = new BeaconState();
+    BeaconState beaconState = new BeaconStateWithCache();
     beaconState.setSlot(randomUnsignedLong());
     beaconState.setFork(
         new Fork(

@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.state.BeaconState;
+import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.datastructures.util.ValidatorsUtil;
@@ -38,9 +39,9 @@ class EpochProcessingUtilTest {
     ArrayList<Deposit> deposits = randomDeposits(numValidators);
     try {
       // get initial state
-      BeaconState state =
-          BeaconStateUtil.get_initial_beacon_state(
-              deposits, UnsignedLong.valueOf(Constants.GENESIS_SLOT), randomEth1Data());
+      BeaconStateWithCache state = new BeaconStateWithCache();
+      BeaconStateUtil.get_initial_beacon_state(
+          state, deposits, UnsignedLong.valueOf(Constants.GENESIS_SLOT), randomEth1Data());
       UnsignedLong currentEpoch = BeaconStateUtil.get_current_epoch(state);
 
       // set validators to active

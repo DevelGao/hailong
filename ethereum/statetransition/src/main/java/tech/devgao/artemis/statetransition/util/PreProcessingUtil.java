@@ -13,12 +13,13 @@
 
 package tech.devgao.artemis.statetransition.util;
 
-public final class BlockProcessingException extends Exception {
-  public BlockProcessingException(String err) {
-    super(err);
-  }
+import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
+import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 
-  public BlockProcessingException(RuntimeException e) {
-    super(e.toString());
+public final class PreProcessingUtil {
+
+  public static void cacheCurrentBeaconProposerIndex(BeaconStateWithCache state) {
+    int beaconProposerIndex = BeaconStateUtil.get_beacon_proposer_index(state, state.getSlot());
+    state.setCurrentBeaconProposerIndex(beaconProposerIndex);
   }
 }
