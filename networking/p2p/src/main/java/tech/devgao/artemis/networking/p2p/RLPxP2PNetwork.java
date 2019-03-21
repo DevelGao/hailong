@@ -33,6 +33,9 @@ import net.develgao.cava.rlpx.WireConnectionRepository;
 import net.develgao.cava.rlpx.vertx.VertxRLPxService;
 import net.develgao.cava.rlpx.wire.WireConnection;
 import org.logl.log4j2.Log4j2LoggerProvider;
+import tech.devgao.artemis.data.RawRecord;
+import tech.devgao.artemis.data.TimeSeriesRecord;
+import tech.devgao.artemis.data.adapter.TimeSeriesAdapter;
 import tech.devgao.artemis.networking.p2p.api.P2PNetwork;
 
 /**
@@ -50,6 +53,7 @@ public final class RLPxP2PNetwork implements P2PNetwork {
   private final int port;
   private final int advertisedPort;
   private final String networkInterface;
+  private TimeSeriesRecord chainData;
   private final Log4j2LoggerProvider loggerProvider;
   private final EventBus eventBus;
 
@@ -69,6 +73,7 @@ public final class RLPxP2PNetwork implements P2PNetwork {
     this.port = port;
     this.advertisedPort = advertisedPort;
     this.networkInterface = networkInterface;
+    this.chainData = new TimeSeriesRecord();
     this.loggerProvider = new Log4j2LoggerProvider();
   }
 
@@ -155,5 +160,11 @@ public final class RLPxP2PNetwork implements P2PNetwork {
   @Override
   public boolean isListening() {
     return started.get();
+  }
+
+  @Override
+  public synchronized void onDataEvent(RawRecord record) {
+    TimeSeriesAdapter adapter = new TimeSeriesAdapter(record);
+    chainData = adapter.transform();
   }
 }
