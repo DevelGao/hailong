@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.is_power_of_two;
-import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDepositInput;
+import static tech.devgao.artemis.datastructures.util.DataStructureUtil.newDeposits;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomUnsignedLong;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomValidator;
 
@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import tech.devgao.artemis.datastructures.Constants;
+import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.operations.DepositInput;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
@@ -42,6 +43,7 @@ import tech.devgao.artemis.datastructures.state.Fork;
 import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
 import tech.devgao.artemis.util.bls.BLSSignature;
+import tech.devgao.artemis.util.bls.BLSVerify;
 
 @ExtendWith(BouncyCastleExtension.class)
 class BeaconStateUtilTest {
@@ -196,41 +198,59 @@ class BeaconStateUtilTest {
   // *************** END Fork Tests ***************
 
   @Test
-  @Disabled
-  // TODO Fill out and enable this test case when bls_verify is complete.
   void validateProofOfPosessionReturnsTrueIfTheBLSSignatureIsValidForGivenDepositInputData() {
-    BeaconState beaconState = null;
-    BLSPublicKey pubkey = null;
-    BLSSignature proofOfPossession = null;
-    Bytes32 withdrawalCredentials = null;
+    Deposit deposit = newDeposits(1).get(0);
+    BLSPublicKey pubkey = deposit.getDeposit_data().getDeposit_input().getPubkey();
+    BLSSignature proofOfPossession =
+        deposit.getDeposit_data().getDeposit_input().getProof_of_possession();
+    UnsignedLong domain =
+        BeaconStateUtil.get_domain(
+            new Fork(
+                UnsignedLong.valueOf(Constants.GENESIS_FORK_VERSION),
+                UnsignedLong.valueOf(Constants.GENESIS_FORK_VERSION),
+                UnsignedLong.valueOf(Constants.GENESIS_EPOCH)),
+            UnsignedLong.fromLongBits(Constants.GENESIS_EPOCH),
+            Constants.DOMAIN_DEPOSIT);
 
     assertTrue(
-        BeaconStateUtil.validate_proof_of_possession(
-            beaconState, pubkey, proofOfPossession, withdrawalCredentials));
+        BLSVerify.bls_verify(
+            pubkey,
+            deposit.getDeposit_data().getDeposit_input().signedRoot("proof_of_possession"),
+            proofOfPossession,
+            domain));
   }
 
   @Test
-  @Disabled
-  // TODO Fill out and enable this test case when bls_verify is complete.
   void validateProofOfPosessionReturnsFalseIfTheBLSSignatureIsNotValidForGivenDepositInputData() {
-    BeaconState beaconState = null;
-    BLSPublicKey pubkey = null;
-    BLSSignature proofOfPossession = null;
-    Bytes32 withdrawalCredentials = null;
+    Deposit deposit = newDeposits(1).get(0);
+    BLSPublicKey pubkey = BLSPublicKey.random();
+    BLSSignature proofOfPossession =
+        deposit.getDeposit_data().getDeposit_input().getProof_of_possession();
+    UnsignedLong domain =
+        BeaconStateUtil.get_domain(
+            new Fork(
+                UnsignedLong.valueOf(Constants.GENESIS_FORK_VERSION),
+                UnsignedLong.valueOf(Constants.GENESIS_FORK_VERSION),
+                UnsignedLong.valueOf(Constants.GENESIS_EPOCH)),
+            UnsignedLong.fromLongBits(Constants.GENESIS_EPOCH),
+            Constants.DOMAIN_DEPOSIT);
 
     assertFalse(
-        BeaconStateUtil.validate_proof_of_possession(
-            beaconState, pubkey, proofOfPossession, withdrawalCredentials));
+        BLSVerify.bls_verify(
+            pubkey,
+            deposit.getDeposit_data().getDeposit_input().signedRoot("proof_of_possession"),
+            proofOfPossession,
+            domain));
   }
 
   @Test
   void processDepositAddsNewValidatorWhenPubkeyIsNotFoundInRegistry() {
     // Data Setup
-    DepositInput depositInput = randomDepositInput();
+    Deposit deposit = newDeposits(1).get(0);
+    DepositInput depositInput = deposit.getDeposit_data().getDeposit_input();
     BLSPublicKey pubkey = depositInput.getPubkey();
-    BLSSignature proofOfPossession = depositInput.getProof_of_possession();
     Bytes32 withdrawalCredentials = depositInput.getWithdrawal_credentials();
-    UnsignedLong amount = UnsignedLong.valueOf(100L);
+    UnsignedLong amount = deposit.getDeposit_data().getAmount();
 
     BeaconState beaconState = createBeaconState();
 
@@ -238,8 +258,7 @@ class BeaconStateUtilTest {
     int originalValidatorBalancesSize = beaconState.getValidator_balances().size();
 
     // Attempt to process deposit with above data.
-    BeaconStateUtil.process_deposit(
-        beaconState, pubkey, amount, proofOfPossession, withdrawalCredentials);
+    BeaconStateUtil.process_deposit(beaconState, deposit);
 
     assertTrue(
         beaconState.getValidator_registry().size() == (originalValidatorRegistrySize + 1),
@@ -263,11 +282,11 @@ class BeaconStateUtilTest {
   @Test
   void processDepositTopsUpValidatorBalanceWhenPubkeyIsFoundInRegistry() {
     // Data Setup
-    DepositInput depositInput = randomDepositInput();
+    Deposit deposit = newDeposits(1).get(0);
+    DepositInput depositInput = deposit.getDeposit_data().getDeposit_input();
     BLSPublicKey pubkey = depositInput.getPubkey();
-    BLSSignature proofOfPossession = depositInput.getProof_of_possession();
     Bytes32 withdrawalCredentials = depositInput.getWithdrawal_credentials();
-    UnsignedLong amount = UnsignedLong.valueOf(100L);
+    UnsignedLong amount = deposit.getDeposit_data().getAmount();
 
     Validator knownValidator =
         new Validator(
@@ -285,8 +304,7 @@ class BeaconStateUtilTest {
     int originalValidatorBalancesSize = beaconState.getValidator_balances().size();
 
     // Attempt to process deposit with above data.
-    BeaconStateUtil.process_deposit(
-        beaconState, pubkey, amount, proofOfPossession, withdrawalCredentials);
+    BeaconStateUtil.process_deposit(beaconState, deposit);
 
     assertTrue(
         beaconState.getValidator_registry().size() == originalValidatorRegistrySize,
