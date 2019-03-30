@@ -32,6 +32,7 @@ import tech.devgao.artemis.data.provider.CSVProvider;
 import tech.devgao.artemis.data.provider.FileProvider;
 import tech.devgao.artemis.data.provider.JSONProvider;
 import tech.devgao.artemis.data.provider.ProviderTypes;
+import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.networking.p2p.HobbitsP2PNetwork;
 import tech.devgao.artemis.networking.p2p.MockP2PNetwork;
 import tech.devgao.artemis.networking.p2p.RLPxP2PNetwork;
@@ -62,6 +63,7 @@ public class BeaconNode {
 
   private final ServiceController serviceController = new ServiceController();
   private final ServiceConfig serviceConfig;
+  private Constants constants;
   private P2PNetwork p2pNetwork;
   private ValidatorCoordinator validatorCoordinator;
   private EventBus eventBus;
@@ -104,6 +106,7 @@ public class BeaconNode {
     this.validatorCoordinator = new ValidatorCoordinator(serviceConfig);
     this.cliArgs = cliArgs;
     this.commandLine = commandLine;
+    Constants.init(config);
     if (cliArgs.isOutputEnabled()) {
       this.eventBus.register(this);
       this.outputFilename = FileProvider.uniqueFilename(cliArgs.getOutputFile());
