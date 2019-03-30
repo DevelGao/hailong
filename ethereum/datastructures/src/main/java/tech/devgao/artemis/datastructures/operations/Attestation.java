@@ -13,6 +13,7 @@
 
 package tech.devgao.artemis.datastructures.operations;
 
+import com.google.common.primitives.UnsignedLong;
 import java.util.Objects;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.ssz.SSZ;
@@ -114,5 +115,9 @@ public class Attestation {
 
   public void setAggregate_signature(BLSSignature aggregate_signature) {
     this.aggregate_signature = aggregate_signature;
+  }
+
+  public UnsignedLong getSlot() {
+    return data.getSlot();
   }
 }
