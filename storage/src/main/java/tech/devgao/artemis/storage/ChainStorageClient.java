@@ -115,7 +115,7 @@ public class ChainStorageClient implements ChainStorage {
    * @return
    */
   public Optional<BeaconBlock> getParent(BeaconBlock block) {
-    Bytes parent_root = block.getParent_root();
+    Bytes parent_root = block.getPrevious_block_root();
     return this.getProcessedBlock(parent_root);
   }
 
@@ -188,20 +188,7 @@ public class ChainStorageClient implements ChainStorage {
   public void onNewUnprocessedBlock(BeaconBlock block) {
     String ANSI_GREEN = "\u001B[32m";
     String ANSI_RESET = "\033[0m";
-    LOG.log(
-        Level.INFO,
-        ANSI_GREEN + "New BeaconBlock with slot " + block.getSlot() + " detected." + ANSI_RESET);
-    addUnprocessedBlock(block);
-  }
-
-  @Subscribe
-  public void onReceievedUnprocessedBlock(Bytes bytes) {
-    String ANSI_GREEN = "\u001B[32m";
-    String ANSI_RESET = "\033[0m";
-    BeaconBlock block = BeaconBlock.fromBytes(bytes);
-    LOG.log(
-        Level.INFO,
-        ANSI_GREEN + "New BeaconBlock with slot " + block.getSlot() + " received." + ANSI_RESET);
+    LOG.log(Level.INFO, ANSI_GREEN + "New BeaconBlock detected." + ANSI_RESET);
     addUnprocessedBlock(block);
   }
 

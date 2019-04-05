@@ -21,17 +21,18 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.PriorityQueue;
 import net.develgao.cava.bytes.Bytes32;
+import net.develgao.cava.crypto.SECP256K1.PublicKey;
 import org.apache.logging.log4j.Level;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
-import tech.devgao.artemis.datastructures.blocks.Proposal;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
 import tech.devgao.artemis.datastructures.util.AttestationUtil;
+import tech.devgao.artemis.datastructures.util.BeaconBlockUtil;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.datastructures.util.DataStructureUtil;
 import tech.devgao.artemis.services.ServiceConfig;
@@ -51,21 +52,19 @@ public class ValidatorCoordinator {
 
   private StateTransition stateTransition;
   private final Boolean printEnabled = false;
-  private int nodeIdentity;
+  private PublicKey nodeIdentity;
   private int numValidators;
   private int numNodes;
   private BeaconBlock validatorBlock;
   private ArrayList<Deposit> newDeposits = new ArrayList<>();
   private final HashMap<BLSPublicKey, BLSKeyPair> validatorSet = new HashMap<>();
-  static final Integer UNPROCESSED_BLOCKS_LENGTH = 100;
-  private final PriorityBlockingQueue<Attestation> attestationsQueue =
-      new PriorityBlockingQueue<Attestation>(
-          UNPROCESSED_BLOCKS_LENGTH, Comparator.comparing(Attestation::getSlot));
+  private final PriorityQueue<Attestation> attestationsQueue =
+      new PriorityQueue<>(Comparator.comparing(Attestation::getSlot));
 
   public ValidatorCoordinator(ServiceConfig config) {
     this.eventBus = config.getEventBus();
     this.eventBus.register(this);
-    this.nodeIdentity = Integer.decode(config.getConfig().getIdentity());
+    this.nodeIdentity = config.getKeyPair().publicKey();
     this.numValidators = config.getConfig().getNumValidators();
     this.numNodes = config.getConfig().getNumNodes();
 
@@ -75,7 +74,7 @@ public class ValidatorCoordinator {
     BeaconStateWithCache initialBeaconState =
         DataStructureUtil.createInitialBeaconState(numValidators);
     Bytes32 initialStateRoot = HashTreeUtil.hash_tree_root(initialBeaconState.toBytes());
-    BeaconBlock genesisBlock = BeaconBlock.createGenesis(initialStateRoot);
+    BeaconBlock genesisBlock = BeaconBlockUtil.get_empty_block();
 
     createBlockIfNecessary(initialBeaconState, genesisBlock);
   }
@@ -118,15 +117,7 @@ public class ValidatorCoordinator {
   private void initializeValidators() {
     // TODO: make a way to tailor which validators are ours
     // Add all validators to validatorSet hashMap
-
-    int startIndex = nodeIdentity * (numValidators / numNodes);
-    int endIndex =
-        startIndex
-            + (numValidators / numNodes - 1)
-            + (int) Math.floor(nodeIdentity / Math.max(1, numNodes - 1));
-    endIndex = Math.min(endIndex, numValidators - 1);
-    LOG.log(Level.DEBUG, "startIndex: " + startIndex + " endIndex: " + endIndex);
-    for (int i = startIndex; i < endIndex; i++) {
+    for (int i = 0; i < numValidators; i++) {
       BLSKeyPair keypair = BLSKeyPair.random(i);
       validatorSet.put(keypair.getPublicKey(), keypair);
     }
@@ -182,7 +173,7 @@ public class ValidatorCoordinator {
       }
 
       BLSSignature epoch_signature = setEpochSignature(headState, keypair);
-      block.setRandao_reveal(epoch_signature);
+      block.getBody().setRandao_reveal(epoch_signature);
       stateTransition.initiate(headState, block, blockRoot);
       Bytes32 stateRoot = HashTreeUtil.hash_tree_root(headState.toBytes());
       block.setState_root(stateRoot);
@@ -194,7 +185,7 @@ public class ValidatorCoordinator {
       LOG.log(Level.INFO, "ValidatorCoordinator - block.slot: " + block.getSlot(), printEnabled);
       LOG.log(
           Level.INFO,
-          "ValidatorCoordinator - block.parent_root: " + block.getParent_root(),
+          "ValidatorCoordinator - block.parent_root: " + block.getPrevious_block_root(),
           printEnabled);
       LOG.log(
           Level.INFO,
