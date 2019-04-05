@@ -89,9 +89,7 @@ public class BeaconNode {
               config.getKeyPair(),
               config.getPort(),
               config.getAdvertisedPort(),
-              config.getNetworkInterface(),
-              "Artemis 0.1",
-              config.getStaticPeers());
+              config.getNetworkInterface());
     } else if ("hobbits".equals(config.getNetworkMode())) {
       this.p2pNetwork =
           new HobbitsP2PNetwork(
