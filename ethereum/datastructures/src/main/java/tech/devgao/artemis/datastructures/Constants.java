@@ -20,14 +20,13 @@ import tech.devgao.artemis.util.bls.BLSSignature;
 import tech.devgao.artemis.util.config.ArtemisConfiguration;
 
 public class Constants {
-  // TODO: Update config.toml setting of constants for 0.5, non-existing
-  //  getter functions are purposefully being used here, so that we would
-  //  need to create their actual getters before being able to run succesfully.
+  // The constants below are correct as of spec v0.4
 
   // Misc
   public static int SHARD_COUNT = 1024; // 2^10 shards
   public static int TARGET_COMMITTEE_SIZE = 128; // 2^7 validators
   public static int MAX_BALANCE_CHURN_QUOTIENT = 32; // 2^5
+  public static UnsignedLong BEACON_CHAIN_SHARD_NUMBER = UnsignedLong.MAX_VALUE; // 2^64 - 1
   public static int MAX_INDICES_PER_SLASHABLE_VOTE = 4096; // 2^12 votes
   public static int MAX_EXIT_DEQUEUES_PER_EPOCH = 4; // 2^2 withdrawals
   public static int SHUFFLE_ROUND_COUNT = 90;
@@ -49,9 +48,7 @@ public class Constants {
   public static int MIN_SEED_LOOKAHEAD = 1; // 2^0 epochs (6.4 minutes)
   public static int ACTIVATION_EXIT_DELAY = 4; // 2^2 epochs (25.6 minutes)
   public static int EPOCHS_PER_ETH1_VOTING_PERIOD = 16; // 2^4 epochs (~1.7 hours)
-  public static int SLOTS_PER_HISTORICAL_ROOT = 8192; // 2^13 slots (~13 hours)
   public static int MIN_VALIDATOR_WITHDRAWABILITY_DELAY = 256; // 2^8 epochs (~27 hours)
-  public static int PERSISTENT_COMMITTEE_PERIOD = 2048; // 2^11 epochs (~9 days)
 
   // Initial values
   public static int GENESIS_FORK_VERSION = 0;
@@ -64,6 +61,7 @@ public class Constants {
   public static Bytes BLS_WITHDRAWAL_PREFIX_BYTE = Bytes.EMPTY;
 
   // State list lengths
+  public static int LATEST_BLOCK_ROOTS_LENGTH = 8192; // 2^13 slots (~13 hours)
   public static int LATEST_RANDAO_MIXES_LENGTH = 8192; // 2^13 epochs (~36 days)
   public static int LATEST_ACTIVE_INDEX_ROOTS_LENGTH = 8192; // 2^13 epochs (~36 days)
   public static int LATEST_SLASHED_EXIT_LENGTH = 8192; // 2^13 epochs (~36 days)
@@ -84,11 +82,11 @@ public class Constants {
   public static int MAX_TRANSFERS = 16; // 2^4
 
   // Signature domains
-  public static int DOMAIN_BEACON_BLOCK = 0;
-  public static int DOMAIN_RANDAO = 1;
-  public static int DOMAIN_ATTESTATION = 2;
-  public static int DOMAIN_DEPOSIT = 3;
-  public static int DOMAIN_VOLUNTARY_EXIT = 4;
+  public static int DOMAIN_DEPOSIT = 0;
+  public static int DOMAIN_ATTESTATION = 1;
+  public static int DOMAIN_PROPOSAL = 2;
+  public static int DOMAIN_EXIT = 3;
+  public static int DOMAIN_RANDAO = 4;
   public static int DOMAIN_TRANSFER = 5;
 
   // Artemis specific
@@ -109,6 +107,10 @@ public class Constants {
         config.getMaxBalanceChurnQuotient() != Integer.MIN_VALUE
             ? config.getMaxBalanceChurnQuotient()
             : MAX_BALANCE_CHURN_QUOTIENT; // 2^5
+    BEACON_CHAIN_SHARD_NUMBER =
+        !config.getBeaconChainShardNumber().equals(UnsignedLong.MAX_VALUE)
+            ? (UnsignedLong) config.getBeaconChainShardNumber()
+            : BEACON_CHAIN_SHARD_NUMBER; // 2^64 - 1
     MAX_INDICES_PER_SLASHABLE_VOTE =
         config.getMaxIndicesPerSlashableVote() != Integer.MIN_VALUE
             ? config.getMaxIndicesPerSlashableVote()
@@ -175,10 +177,6 @@ public class Constants {
         config.getEpochsPerEth1VotingPeriod() != Integer.MIN_VALUE
             ? config.getEpochsPerEth1VotingPeriod()
             : EPOCHS_PER_ETH1_VOTING_PERIOD; // 2^4 epochs (~1.7 hours)
-    SLOTS_PER_HISTORICAL_ROOT =
-        config.getSlotsPerHistoricalRoot() != Integer.MIN_VALUE
-            ? config.getSlotsPerHistoricalRoot()
-            : SLOTS_PER_HISTORICAL_ROOT;
     MIN_VALIDATOR_WITHDRAWABILITY_DELAY =
         config.getMinValidatorWithdrawabilityDelay() != Integer.MIN_VALUE
             ? config.getMinValidatorWithdrawabilityDelay()
@@ -215,6 +213,10 @@ public class Constants {
             : BLS_WITHDRAWAL_PREFIX_BYTE; // TODO Verify
 
     // State list lengths
+    LATEST_BLOCK_ROOTS_LENGTH =
+        config.getLatestBlockRootsLength() != Integer.MIN_VALUE
+            ? config.getLatestBlockRootsLength()
+            : LATEST_BLOCK_ROOTS_LENGTH; // 2^13 slots (~13 hours)
     LATEST_RANDAO_MIXES_LENGTH =
         config.getLatestRandaoMixesLength() != Integer.MIN_VALUE
             ? config.getLatestRandaoMixesLength()
@@ -277,22 +279,20 @@ public class Constants {
             : MAX_TRANSFERS; // 2^4
 
     // Signature domains
-    DOMAIN_BEACON_BLOCK =
-        config.getDomainBeaconBlock() != Integer.MIN_VALUE
-            ? config.getDomainBeaconBlock()
-            : DOMAIN_BEACON_BLOCK;
-    DOMAIN_RANDAO =
-        config.getDomainRandao() != Integer.MIN_VALUE ? config.getDomainRandao() : DOMAIN_RANDAO;
+    DOMAIN_DEPOSIT =
+        config.getDomainDeposit() != Integer.MIN_VALUE ? config.getDomainDeposit() : DOMAIN_DEPOSIT;
     DOMAIN_ATTESTATION =
         config.getDomainAttestation() != Integer.MIN_VALUE
             ? config.getDomainAttestation()
             : DOMAIN_ATTESTATION;
-    DOMAIN_DEPOSIT =
-        config.getDomainDeposit() != Integer.MIN_VALUE ? config.getDomainDeposit() : DOMAIN_DEPOSIT;
-    DOMAIN_VOLUNTARY_EXIT =
-        config.getDomainVoluntaryExit() != Integer.MIN_VALUE
-            ? config.getDomainVoluntaryExit()
-            : DOMAIN_VOLUNTARY_EXIT;
+    DOMAIN_PROPOSAL =
+        config.getDomainProposal() != Integer.MIN_VALUE
+            ? config.getDomainProposal()
+            : DOMAIN_PROPOSAL;
+    DOMAIN_EXIT =
+        config.getDomainExit() != Integer.MIN_VALUE ? config.getDomainExit() : DOMAIN_EXIT;
+    DOMAIN_RANDAO =
+        config.getDomainRandao() != Integer.MIN_VALUE ? config.getDomainRandao() : DOMAIN_RANDAO;
     DOMAIN_TRANSFER =
         config.getDomainTransfer() != Integer.MIN_VALUE
             ? config.getDomainTransfer()

@@ -18,13 +18,10 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import com.google.common.primitives.UnsignedLong;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.crypto.Hash;
 import net.develgao.cava.ssz.SSZ;
-
 
 /** This class is a collection of tree hash root convenience methods */
 public final class HashTreeUtil {
@@ -39,22 +36,9 @@ public final class HashTreeUtil {
   }
 
   /**
-   * Calculate the hash tree root of the provided value
-   *
-   * @param value
-   */
-  public static Bytes32 hash_tree_root(UnsignedLong val) {
-    return SSZ.hashTreeRoot(
-        SSZ.encode(
-            writer -> {
-              writer.writeUInt64(val.longValue());
-            }));
-  }
-
-  /**
    * Calculate the hash tree root of the list of validators provided
    *
-   * @param list
+   * @param validators
    */
   public static Bytes32 hash_tree_root(List<Bytes> list) {
     return hash_tree_root(
@@ -72,7 +56,7 @@ public final class HashTreeUtil {
    * @param integers
    * @return
    */
-  public static Bytes32 hash_tree_root_list_integers(List<Integer> integers) {
+  public static Bytes32 integerListHashTreeRoot(List<Integer> integers) {
     return hash_tree_root(
         SSZ.encode(
             // TODO This can be replaced with writeUInt64List(List) once implemented in Cava.

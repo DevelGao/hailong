@@ -14,6 +14,7 @@
 package tech.devgao.artemis.networking.p2p;
 
 import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
@@ -31,14 +32,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.concurrent.AsyncCompletion;
 import net.develgao.cava.concurrent.CompletableAsyncCompletion;
-import tech.devgao.artemis.data.RawRecord;
+import org.apache.logging.log4j.Level;
 import tech.devgao.artemis.data.TimeSeriesRecord;
-import tech.devgao.artemis.data.adapter.TimeSeriesAdapter;
+import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.networking.p2p.api.P2PNetwork;
+import tech.devgao.artemis.networking.p2p.hobbits.GossipMethod;
 import tech.devgao.artemis.networking.p2p.hobbits.HobbitsSocketHandler;
 import tech.devgao.artemis.networking.p2p.hobbits.Peer;
+import tech.devgao.artemis.util.alogger.ALogger;
 
 /**
  * Hobbits Ethereum Wire Protocol implementation.
@@ -46,7 +50,7 @@ import tech.devgao.artemis.networking.p2p.hobbits.Peer;
  * <p>This P2P implementation uses clear messages relying on the hobbits wire format.
  */
 public final class HobbitsP2PNetwork implements P2PNetwork {
-
+  private static final ALogger LOG = new ALogger(HobbitsSocketHandler.class.getName());
   private final AtomicBoolean started = new AtomicBoolean(false);
   private final EventBus eventBus;
   private final Vertx vertx;
@@ -127,7 +131,7 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
         peerURI,
         uri -> {
           Peer peer = new Peer(peerURI);
-          return new HobbitsSocketHandler(netSocket, userAgent, peer, chainData);
+          return new HobbitsSocketHandler(eventBus, netSocket, userAgent, peer, chainData);
         });
   }
 
@@ -136,6 +140,11 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
     return handlersMap.values().stream()
         .map(HobbitsSocketHandler::peer)
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public Collection<?> getHandlers() {
+    return handlersMap.values();
   }
 
   CompletableFuture<?> connect(URI peerURI) {
@@ -155,10 +164,10 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
               NetSocket socket = res.result();
               Peer peer = new Peer(peerURI);
               HobbitsSocketHandler handler =
-                  new HobbitsSocketHandler(socket, userAgent, peer, chainData);
+                  new HobbitsSocketHandler(eventBus, socket, userAgent, peer, chainData);
               handlersMap.put(peerURI, handler);
-              handler.sendHello();
-              handler.sendStatus();
+              // handler.sendHello();
+              // handler.sendStatus();
               connected.complete(peer);
             }
           });
@@ -172,7 +181,9 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
   }
 
   @Override
-  public void subscribe(String event) {}
+  public void subscribe(String event) {
+    if (!started.get()) {}
+  }
 
   @Override
   public void stop() {
@@ -209,9 +220,13 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
     stop();
   }
 
-  @Override
-  public synchronized void onDataEvent(RawRecord record) {
-    TimeSeriesAdapter adapter = new TimeSeriesAdapter(record);
-    chainData = adapter.transform();
+  @Subscribe
+  public void onNewUnprocessedBlock(BeaconBlock block) {
+    for (HobbitsSocketHandler handler : handlersMap.values()) {
+      LOG.log(Level.INFO, "Gossiping new block with state root: " + block.getState_root());
+      // TODO: implement messageHash and signature
+      handler.gossipMessage(
+          GossipMethod.GOSSIP, Bytes32.random(), Bytes32.random(), block.toBytes());
+    }
   }
 }

@@ -31,19 +31,18 @@ import net.develgao.cava.crypto.SECP256K1;
 import net.develgao.cava.rlpx.MemoryWireConnectionsRepository;
 import net.develgao.cava.rlpx.WireConnectionRepository;
 import net.develgao.cava.rlpx.vertx.VertxRLPxService;
-import net.develgao.cava.rlpx.wire.WireConnection;
 import org.logl.log4j2.Log4j2LoggerProvider;
-import tech.devgao.artemis.data.RawRecord;
 import tech.devgao.artemis.data.TimeSeriesRecord;
-import tech.devgao.artemis.data.adapter.TimeSeriesAdapter;
 import tech.devgao.artemis.networking.p2p.api.P2PNetwork;
+import tech.devgao.artemis.networking.p2p.hobbits.HobbitsSocketHandler;
+import tech.devgao.artemis.networking.p2p.hobbits.Peer;
 
 /**
  * Peer to peer network for beacon nodes, over a RLPx connection.
  *
  * <p>This service exposes services over the subprotocol "bea".
  *
- * @see BeaconSubprotocolHandler
+ * @see HobbitsSubProtocolHandler
  */
 public final class RLPxP2PNetwork implements P2PNetwork {
 
@@ -53,9 +52,12 @@ public final class RLPxP2PNetwork implements P2PNetwork {
   private final int port;
   private final int advertisedPort;
   private final String networkInterface;
+  private final String userAgent;
+  private final List<URI> staticPeers;
   private TimeSeriesRecord chainData;
   private final Log4j2LoggerProvider loggerProvider;
   private final EventBus eventBus;
+  private final HobbitsSubProtocol subProtocol;
 
   private WireConnectionRepository wireConnectionRepository;
   private VertxRLPxService service;
@@ -66,7 +68,9 @@ public final class RLPxP2PNetwork implements P2PNetwork {
       SECP256K1.KeyPair keyPair,
       int port,
       int advertisedPort,
-      String networkInterface) {
+      String networkInterface,
+      String userAgent,
+      List<URI> staticPeers) {
     this.eventBus = eventBus;
     this.vertx = vertx;
     this.keyPair = keyPair;
@@ -75,6 +79,9 @@ public final class RLPxP2PNetwork implements P2PNetwork {
     this.networkInterface = networkInterface;
     this.chainData = new TimeSeriesRecord();
     this.loggerProvider = new Log4j2LoggerProvider();
+    this.userAgent = userAgent;
+    this.staticPeers = staticPeers;
+    this.subProtocol = new HobbitsSubProtocol(eventBus, userAgent, chainData);
   }
 
   @Override
@@ -89,8 +96,23 @@ public final class RLPxP2PNetwork implements P2PNetwork {
               networkInterface,
               advertisedPort,
               keyPair,
-              Collections.singletonList(new BeaconSubprotocol()),
-              "Artemis 0.1");
+              Collections.singletonList(subProtocol),
+              userAgent);
+      try {
+        service
+            .start()
+            .thenCombine(
+                AsyncCompletion.allOf(
+                    staticPeers.stream()
+                        .map(
+                            enode ->
+                                service.connectTo(
+                                    SECP256K1.PublicKey.fromHexString(enode.getRawUserInfo()),
+                                    new InetSocketAddress(enode.getHost(), enode.getPort())))))
+            .join(20, TimeUnit.SECONDS);
+      } catch (InterruptedException | TimeoutException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
@@ -117,11 +139,17 @@ public final class RLPxP2PNetwork implements P2PNetwork {
     if (!started.get()) {
       throw new IllegalStateException();
     }
-    List<String> peers = new ArrayList<>();
-    for (WireConnection conn : wireConnectionRepository.asIterable()) {
-      peers.add(conn.id());
+
+    List<Peer> peers = new ArrayList<>();
+    for (HobbitsSocketHandler conn : subProtocol.handler().handlers()) {
+      peers.add(conn.peer());
     }
     return peers;
+  }
+
+  @Override
+  public Collection<?> getHandlers() {
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -160,11 +188,5 @@ public final class RLPxP2PNetwork implements P2PNetwork {
   @Override
   public boolean isListening() {
     return started.get();
-  }
-
-  @Override
-  public synchronized void onDataEvent(RawRecord record) {
-    TimeSeriesAdapter adapter = new TimeSeriesAdapter(record);
-    chainData = adapter.transform();
   }
 }
