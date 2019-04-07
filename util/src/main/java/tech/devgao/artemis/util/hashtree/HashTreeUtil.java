@@ -15,16 +15,14 @@ package tech.devgao.artemis.util.hashtree;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
+import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import com.google.common.primitives.UnsignedLong;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.crypto.Hash;
 import net.develgao.cava.ssz.SSZ;
-
 
 /** This class is a collection of tree hash root convenience methods */
 public final class HashTreeUtil {
