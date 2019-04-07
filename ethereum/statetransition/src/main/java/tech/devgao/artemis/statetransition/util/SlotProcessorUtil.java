@@ -13,4 +13,9 @@
 
 package tech.devgao.artemis.statetransition.util;
 
-public final class SlotProcessorUtil {}
+import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
+
+public final class SlotProcessorUtil {
+
+
+}

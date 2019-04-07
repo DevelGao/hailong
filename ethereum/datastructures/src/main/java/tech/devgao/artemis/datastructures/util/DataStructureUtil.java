@@ -29,9 +29,13 @@ import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlockBody;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
 import tech.devgao.artemis.datastructures.operations.Attestation;
+import tech.devgao.artemis.datastructures.operations.AttestationData;
+import tech.devgao.artemis.datastructures.operations.AttesterSlashing;
 import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.operations.DepositData;
 import tech.devgao.artemis.datastructures.operations.DepositInput;
+import tech.devgao.artemis.datastructures.operations.ProposerSlashing;
+import tech.devgao.artemis.datastructures.operations.SlashableAttestation;
 import tech.devgao.artemis.datastructures.operations.Transfer;
 import tech.devgao.artemis.datastructures.operations.VoluntaryExit;
 import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
@@ -115,7 +119,7 @@ public final class DataStructureUtil {
     BLSSignature proof_of_possession =
         BLSSignature.sign(
             keyPair,
-            proof_of_possession_data.signed_root("proof_of_possession"),
+            proof_of_possession_data.signedRoot("proof_of_possession"),
             Constants.DOMAIN_DEPOSIT);
 
     return new DepositInput(keyPair.getPublicKey(), withdrawal_credentials, proof_of_possession);
@@ -213,7 +217,7 @@ public final class DataStructureUtil {
           new DepositInput(keypair.getPublicKey(), Bytes32.ZERO, BLSSignature.empty());
       BLSSignature proof_of_possession =
           BLSSignature.sign(
-              keypair, deposit_input.signed_root("proof_of_possession"), Constants.DOMAIN_DEPOSIT);
+              keypair, deposit_input.signedRoot("proof_of_possession"), Constants.DOMAIN_DEPOSIT);
       deposit_input.setProof_of_possession(proof_of_possession);
 
       UnsignedLong timestamp = UnsignedLong.valueOf(i);
@@ -239,7 +243,10 @@ public final class DataStructureUtil {
         state_root,
         new BeaconBlockBody(
             Constants.EMPTY_SIGNATURE,
-            new Eth1Data(ZERO_HASH, ZERO_HASH),
+            new Eth1Data(
+                    ZERO_HASH,
+                    ZERO_HASH
+            ),
             new ArrayList<>(),
             new ArrayList<>(),
             attestations,

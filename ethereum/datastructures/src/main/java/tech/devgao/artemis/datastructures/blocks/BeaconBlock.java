@@ -13,6 +13,11 @@
 
 package tech.devgao.artemis.datastructures.blocks;
 
+import static tech.devgao.artemis.datastructures.Constants.EMPTY_SIGNATURE;
+import static tech.devgao.artemis.datastructures.Constants.GENESIS_SLOT;
+import static tech.devgao.artemis.datastructures.Constants.ZERO_HASH;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import net.develgao.cava.bytes.Bytes;

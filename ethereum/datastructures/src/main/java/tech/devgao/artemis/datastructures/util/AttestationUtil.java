@@ -13,10 +13,16 @@
 
 package tech.devgao.artemis.datastructures.util;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import com.google.common.primitives.UnsignedLong;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
@@ -28,6 +34,7 @@ import tech.devgao.artemis.datastructures.operations.AttestationDataAndCustodyBi
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.state.Crosslink;
 import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
+import tech.devgao.artemis.datastructures.state.PendingAttestation;
 import tech.devgao.artemis.util.bls.BLSKeyPair;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
 import tech.devgao.artemis.util.bls.BLSSignature;
@@ -100,14 +107,14 @@ public class AttestationUtil {
         // Set attestation data
         AttestationData attestationData =
             new AttestationData(
-                slot,
-                headBlockRoot,
-                sourceEpoch,
-                sourceRoot,
-                epochBoundaryRoot,
-                shard,
-                previousCrosslink,
-                crosslinkDataRoot);
+                    slot,
+                    headBlockRoot,
+                    sourceEpoch,
+                    sourceRoot,
+                    epochBoundaryRoot,
+                    shard,
+                    previousCrosslink,
+                    crosslinkDataRoot);
 
         // Create aggregation bitfield
         int array_length = Math.toIntExact((crosslinkCommittee.getCommittee().size() + 7) / 8);
