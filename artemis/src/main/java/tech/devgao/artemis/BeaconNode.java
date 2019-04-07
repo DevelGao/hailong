@@ -89,9 +89,7 @@ public class BeaconNode {
               config.getKeyPair(),
               config.getPort(),
               config.getAdvertisedPort(),
-              config.getNetworkInterface(),
-              "Artemis 0.1",
-              config.getStaticPeers());
+              config.getNetworkInterface());
     } else if ("hobbits".equals(config.getNetworkMode())) {
       this.p2pNetwork =
           new HobbitsP2PNetwork(
@@ -121,31 +119,27 @@ public class BeaconNode {
   }
 
   public void start() {
-    try {
-      if (commandLine.isUsageHelpRequested()) {
-        commandLine.usage(System.out);
-        return;
-      }
-      // set log level per CLI flags
-      System.out.println("Setting logging level to " + cliArgs.getLoggingLevel().name());
-      Configurator.setAllLevels("", cliArgs.getLoggingLevel());
-
-      // Check output file
-
-      // Initialize services
-      serviceController.initAll(
-          eventBus,
-          serviceConfig,
-          BeaconChainService.class,
-          PowchainService.class,
-          ChainStorageService.class);
-      // Start services
-      serviceController.startAll(cliArgs);
-      // Start p2p adapter
-      this.p2pNetwork.run();
-    } catch (java.util.concurrent.CompletionException e) {
-      LOG.log(Level.FATAL, e.toString());
+    if (commandLine.isUsageHelpRequested()) {
+      commandLine.usage(System.out);
+      return;
     }
+    // set log level per CLI flags
+    System.out.println("Setting logging level to " + cliArgs.getLoggingLevel().name());
+    Configurator.setAllLevels("", cliArgs.getLoggingLevel());
+
+    // Check output file
+
+    // Initialize services
+    serviceController.initAll(
+        eventBus,
+        serviceConfig,
+        BeaconChainService.class,
+        PowchainService.class,
+        ChainStorageService.class);
+    // Start services
+    serviceController.startAll(cliArgs);
+    // Start p2p adapter
+    this.p2pNetwork.run();
   }
 
   public void stop() {

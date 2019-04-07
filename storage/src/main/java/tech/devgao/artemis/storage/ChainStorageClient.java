@@ -115,7 +115,7 @@ public class ChainStorageClient implements ChainStorage {
    * @return
    */
   public Optional<BeaconBlock> getParent(BeaconBlock block) {
-    Bytes parent_root = block.getParent_root();
+    Bytes parent_root = block.getPrevious_block_root();
     return this.getProcessedBlock(parent_root);
   }
 
@@ -188,20 +188,8 @@ public class ChainStorageClient implements ChainStorage {
   public void onNewUnprocessedBlock(BeaconBlock block) {
     String ANSI_GREEN = "\u001B[32m";
     String ANSI_RESET = "\033[0m";
-    LOG.log(
-        Level.INFO,
-        ANSI_GREEN
-            + "New BeaconBlock with state root:  "
-            + block.getState_root().toHexString()
-            + " detected."
-            + ANSI_RESET);
+    LOG.log(Level.INFO, ANSI_GREEN + "New BeaconBlock detected." + ANSI_RESET);
     addUnprocessedBlock(block);
-  }
-
-  @Subscribe
-  public void onReceievedUnprocessedBlock(Bytes bytes) {
-    BeaconBlock block = BeaconBlock.fromBytes(bytes);
-    onNewUnprocessedBlock(block);
   }
 
   @Subscribe
@@ -220,7 +208,7 @@ public class ChainStorageClient implements ChainStorage {
     if (AttestationUtil.verifyAttestation(state, attestation)) {
       List<Integer> attestation_participants =
           BeaconStateUtil.get_attestation_participants(
-              state, attestation.getData(), attestation.getAggregation_bitfield().toArray());
+              state, attestation.getData(), attestation.getAggregation_bitfield());
 
       for (Integer participantIndex : attestation_participants) {
         Optional<Attestation> latest_attestation = getLatestAttestation(participantIndex);
