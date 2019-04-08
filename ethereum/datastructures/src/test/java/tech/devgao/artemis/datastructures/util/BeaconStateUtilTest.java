@@ -93,7 +93,9 @@ class BeaconStateUtilTest {
   void sqrtOfANegativeNumber() {
     assertThrows(
         IllegalArgumentException.class,
-        () -> BeaconStateUtil.integer_squareroot(UnsignedLong.valueOf(-1L)));
+        () -> {
+          BeaconStateUtil.integer_squareroot(UnsignedLong.valueOf(-1L));
+        });
   }
 
   // TODO It may make sense to move these tests to a Fork specific test class in the future.
@@ -334,9 +336,7 @@ class BeaconStateUtilTest {
       }
     }
 
-    assertEquals(
-        expectedBalance,
-        BeaconStateUtil.get_total_balance(state, crosslinkCommittee.getCommittee()));
+    assertEquals(expectedBalance, BeaconStateUtil.get_total_balance(state, crosslinkCommittee));
   }
 
   @Test
@@ -367,7 +367,7 @@ class BeaconStateUtilTest {
     UnsignedLong expectedBadActorBalance = validatorBalance.minus(whistleblowerReward);
 
     // Penalize validator in above beacon state at validatorIndex.
-    //    BeaconStateUtil.penalize_validator(beaconState, validatorIndex);
+    BeaconStateUtil.penalize_validator(beaconState, validatorIndex);
 
     assertEquals(expectedBadActorBalance, beaconState.getValidator_balances().get(validatorIndex));
     assertEquals(

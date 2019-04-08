@@ -25,11 +25,11 @@ import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 public final class DepositInput {
 
   // BLS pubkey
-  private BLSPublicKey pubkey;
+  BLSPublicKey pubkey;
   // Withdrawal credentials
-  private Bytes32 withdrawal_credentials;
+  Bytes32 withdrawal_credentials;
   // A BLS signature of this `DepositInput`
-  private BLSSignature proof_of_possession;
+  BLSSignature proof_of_possession;
 
   public DepositInput(
       BLSPublicKey pubkey, Bytes32 withdrawal_credentials, BLSSignature proof_of_possession) {
