@@ -137,8 +137,7 @@ public final class Signature {
 
   @Override
   public String toString() {
-    // return "Signature [ecp2Point=" + point.toString() + "]";
-    return point.toString();
+    return "Signature [ecp2Point=" + point.toString() + "]";
   }
 
   @Override

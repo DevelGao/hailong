@@ -111,7 +111,7 @@ public final class PublicKey {
 
   @Override
   public String toString() {
-    return point.toString();
+    return "Signature [ecpPoint=" + point.toString() + "]";
   }
 
   @Override

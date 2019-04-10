@@ -8,6 +8,8 @@ Implementation of the Ethereum 2.0 Beacon Chain.
 
 Based on the (evolving) [specification](https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md).
 
+> NOTE:  This repo is still in early development.
+
 ## Build Instructions
 
 To build, clone this repo and run with `gradle` like so:
@@ -19,17 +21,6 @@ $ ./gradlew
 ```
 
 After a successful build, distribution packages will be available in `build/distributions`.
-
-## Run Demo
-
-After building, follow these instructions:
-
-```bash
-$ cd scripts
-$ sh demo.sh
-```
-
-> Note:  You will need tmux installed for this demo to work
 
 ## Code Style
 

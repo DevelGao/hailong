@@ -68,7 +68,7 @@ public class BeaconNode {
   private ValidatorCoordinator validatorCoordinator;
   private EventBus eventBus;
   private String outputFilename;
-  private FileProvider fileProvider;
+  private FileProvider<?> fileProvider;
 
   private CommandLineArguments cliArgs;
   private CommandLine commandLine;
@@ -89,9 +89,7 @@ public class BeaconNode {
               config.getKeyPair(),
               config.getPort(),
               config.getAdvertisedPort(),
-              config.getNetworkInterface(),
-              "Artemis 0.1",
-              config.getStaticPeers());
+              config.getNetworkInterface());
     } else if ("hobbits".equals(config.getNetworkMode())) {
       this.p2pNetwork =
           new HobbitsP2PNetwork(
@@ -106,21 +104,21 @@ public class BeaconNode {
     }
     this.serviceConfig = new ServiceConfig(eventBus, config, cliArgs);
     Constants.init(config);
+    this.validatorCoordinator = new ValidatorCoordinator(serviceConfig);
     this.cliArgs = cliArgs;
     this.commandLine = commandLine;
     if (cliArgs.isOutputEnabled()) {
       this.eventBus.register(this);
-      try {
-        this.outputFilename = FileProvider.uniqueFilename(cliArgs.getOutputFile());
-      } catch (IOException e) {
-        LOG.log(Level.ERROR, e.getMessage());
-      }
+      this.outputFilename = FileProvider.uniqueFilename(cliArgs.getOutputFile());
       if (ProviderTypes.compare(CSVProvider.class, cliArgs.getProviderType())) {
         this.fileProvider = new CSVProvider();
       } else {
-        this.fileProvider = new JSONProvider();
+        this.fileProvider = new JSONProvider(outputFilename);
       }
     }
+  }
+
+  public void start() {
     if (commandLine.isUsageHelpRequested()) {
       commandLine.usage(System.out);
       return;
@@ -128,27 +126,20 @@ public class BeaconNode {
     // set log level per CLI flags
     System.out.println("Setting logging level to " + cliArgs.getLoggingLevel().name());
     Configurator.setAllLevels("", cliArgs.getLoggingLevel());
-    this.validatorCoordinator = new ValidatorCoordinator(serviceConfig);
-  }
 
-  public void start() {
-    try {
-      // Check output file
+    // Check output file
 
-      // Initialize services
-      serviceController.initAll(
-          eventBus,
-          serviceConfig,
-          BeaconChainService.class,
-          PowchainService.class,
-          ChainStorageService.class);
-      // Start services
-      serviceController.startAll(cliArgs);
-      // Start p2p adapter
-      this.p2pNetwork.run();
-    } catch (java.util.concurrent.CompletionException e) {
-      LOG.log(Level.FATAL, e.toString());
-    }
+    // Initialize services
+    serviceController.initAll(
+        eventBus,
+        serviceConfig,
+        BeaconChainService.class,
+        PowchainService.class,
+        ChainStorageService.class);
+    // Start services
+    serviceController.startAll(cliArgs);
+    // Start p2p adapter
+    this.p2pNetwork.run();
   }
 
   public void stop() {
@@ -164,7 +155,8 @@ public class BeaconNode {
   public void onDataEvent(RawRecord record) {
     TimeSeriesAdapter adapter = new TimeSeriesAdapter(record);
     TimeSeriesRecord tsRecord = adapter.transform();
-    fileProvider.output(outputFilename, tsRecord);
+    fileProvider.setRecord(tsRecord);
+    JSONProvider.output(outputFilename, fileProvider);
   }
 
   P2PNetwork p2pNetwork() {
