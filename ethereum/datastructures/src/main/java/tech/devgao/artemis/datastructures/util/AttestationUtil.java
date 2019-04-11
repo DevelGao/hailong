@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.concurrent.PriorityBlockingQueue;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
+import org.apache.logging.log4j.Level;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
@@ -36,6 +37,7 @@ import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.state.Crosslink;
 import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
 import tech.devgao.artemis.datastructures.state.PendingAttestation;
+import tech.devgao.artemis.util.alogger.ALogger;
 import tech.devgao.artemis.util.bls.BLSKeyPair;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
 import tech.devgao.artemis.util.bls.BLSSignature;
@@ -43,6 +45,7 @@ import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 
 public class AttestationUtil {
 
+  private static final ALogger LOG = new ALogger(AttestationUtil.class.getName());
   /**
    * Returns the attestations specific for the specific epoch.
    *
@@ -407,12 +410,10 @@ public class AttestationUtil {
     UnsignedLong previous_epoch = BeaconStateUtil.get_previous_epoch(state);
     List<PendingAttestation> combined_attestations = get_epoch_attestations(state, current_epoch);
     combined_attestations.addAll(get_epoch_attestations(state, previous_epoch));
-
     List<ArrayList<Integer>> validator_index_sets = new ArrayList<>();
-
     for (PendingAttestation attestation : combined_attestations) {
       if (attestation.getData().getShard().compareTo(crosslink_committee.getShard()) == 0
-          && attestation.getData().getCrosslink_data_root() == shard_block_root) {
+          && attestation.getData().getCrosslink_data_root().equals(shard_block_root)) {
         validator_index_sets.add(
             BeaconStateUtil.get_attestation_participants(
                 state, attestation.getData(), attestation.getAggregation_bitfield().toArray()));
@@ -509,6 +510,7 @@ public class AttestationUtil {
   public static UnsignedLong total_attesting_balance(
       BeaconState state, CrosslinkCommittee crosslink_committee) {
     List<Integer> attesting_validators = attesting_validators(state, crosslink_committee);
+    LOG.log(Level.DEBUG, "Attesting validators: " + attesting_validators);
     return BeaconStateUtil.get_total_balance(state, attesting_validators);
   }
 
