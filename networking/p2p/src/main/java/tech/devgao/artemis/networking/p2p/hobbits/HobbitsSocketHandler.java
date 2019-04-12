@@ -13,80 +13,37 @@
 
 package tech.devgao.artemis.networking.p2p.hobbits;
 
-import com.google.common.eventbus.EventBus;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.plumtree.MessageSender;
-import net.develgao.cava.plumtree.State;
 import net.develgao.cava.units.bigints.UInt64;
-import org.apache.logging.log4j.Level;
 import tech.devgao.artemis.data.TimeSeriesRecord;
-import tech.devgao.artemis.networking.p2p.hobbits.Codec.ProtocolType;
-import tech.devgao.artemis.util.alogger.ALogger;
 
 /** TCP persistent connection handler for hobbits messages. */
 public final class HobbitsSocketHandler {
-  private static final ALogger LOG = new ALogger(HobbitsSocketHandler.class.getName());
-  private final EventBus eventBus;
+
+  private final NetSocket netSocket;
   private final String userAgent;
   private final Peer peer;
   private TimeSeriesRecord chainData;
   private final Set<Long> pendingResponses = new HashSet<>();
   private final AtomicBoolean status = new AtomicBoolean(true);
-  private final Consumer<Bytes> messageSender;
-  private final Runnable handlerTermination;
-  private final State p2pState;
-  private final ConcurrentHashMap<String, Boolean> receivedMessages;
 
   public HobbitsSocketHandler(
-      EventBus eventBus,
-      NetSocket netSocket,
-      String userAgent,
-      Peer peer,
-      TimeSeriesRecord chainData,
-      State p2pState,
-      ConcurrentHashMap<String, Boolean> receivedMessages) {
-    this(
-        eventBus,
-        userAgent,
-        peer,
-        chainData,
-        (bytes) -> netSocket.write(Buffer.buffer(bytes.toArrayUnsafe())),
-        netSocket::close,
-        p2pState,
-        receivedMessages);
-    netSocket.handler(this::handleMessage);
-    netSocket.closeHandler(this::closed);
-  }
-
-  public HobbitsSocketHandler(
-      EventBus eventBus,
-      String userAgent,
-      Peer peer,
-      TimeSeriesRecord chainData,
-      Consumer<Bytes> messageSender,
-      Runnable handlerTermination,
-      State state,
-      ConcurrentHashMap<String, Boolean> receivedMessages) {
+      NetSocket netSocket, String userAgent, Peer peer, TimeSeriesRecord chainData) {
+    this.netSocket = netSocket;
     this.userAgent = userAgent;
     this.peer = peer;
     this.chainData = chainData;
-    this.eventBus = eventBus;
-    this.eventBus.register(this);
-    this.messageSender = messageSender;
-    this.handlerTermination = handlerTermination;
-    this.p2pState = state;
-    this.receivedMessages = receivedMessages;
+    netSocket.handler(this::handleMessage);
+    netSocket.closeHandler(this::closed);
   }
 
   private void closed(@Nullable Void nothing) {
@@ -97,27 +54,16 @@ public final class HobbitsSocketHandler {
 
   private Bytes buffer = Bytes.EMPTY;
 
-  public void handleMessage(Buffer message) {
+  private void handleMessage(Buffer message) {
     Bytes messageBytes = Bytes.wrapBuffer(message);
-
     buffer = Bytes.concatenate(buffer, messageBytes);
     while (!buffer.isEmpty()) {
-      ProtocolType protocolType = Codec.protocolType(buffer);
-      if (protocolType == ProtocolType.GOSSIP) {
-        GossipMessage gossipMessage = GossipCodec.decode(buffer);
-        if (gossipMessage == null) {
-          return;
-        }
-        buffer = buffer.slice(gossipMessage.length());
-        handleGossipMessage(gossipMessage);
-      } else if (protocolType == ProtocolType.RPC) {
-        RPCMessage rpcMessage = RPCCodec.decode(buffer);
-        if (rpcMessage == null) {
-          return;
-        }
-        buffer = buffer.slice(rpcMessage.length());
-        handleRPCMessage(rpcMessage);
+      RPCMessage rpcMessage = RPCCodec.decode(buffer);
+      if (rpcMessage == null) {
+        return;
       }
+      buffer = buffer.slice(rpcMessage.length());
+      handleRPCMessage(rpcMessage);
     }
   }
 
@@ -147,30 +93,6 @@ public final class HobbitsSocketHandler {
     }
   }
 
-  private void handleGossipMessage(GossipMessage gossipMessage) {
-    if (!receivedMessages.containsKey(gossipMessage.messageHash().toHexString())) {
-      receivedMessages.put(gossipMessage.messageHash().toHexString(), true);
-      LOG.log(
-          Level.INFO,
-          "Received new gossip message: "
-              + gossipMessage.messageHash().toShortHexString()
-              + " from peer: "
-              + peer.uri());
-      if (GossipMethod.GOSSIP.equals(gossipMessage.method())) {
-        Bytes bytes = gossipMessage.body();
-        peer.setPeerGossip(bytes);
-        this.eventBus.post(bytes);
-        p2pState.receiveGossipMessage(peer, gossipMessage.body());
-      } else if (GossipMethod.PRUNE.equals(gossipMessage.method())) {
-        p2pState.receivePruneMessage(peer);
-      } else if (GossipMethod.GRAFT.equals(gossipMessage.method())) {
-        p2pState.receiveGraftMessage(peer, gossipMessage.messageHash());
-      } else if (GossipMethod.IHAVE.equals(gossipMessage.method())) {
-        p2pState.receiveIHaveMessage(peer, gossipMessage.messageHash());
-      }
-    }
-  }
-
   private void sendReply(RPCMethod method, Object payload, long requestId) {
     sendBytes(RPCCodec.encode(method, payload, requestId));
   }
@@ -180,31 +102,25 @@ public final class HobbitsSocketHandler {
   }
 
   private void sendBytes(Bytes bytes) {
-    messageSender.accept(bytes);
+    netSocket.write(Buffer.buffer(bytes.toArrayUnsafe()));
   }
 
   public void disconnect() {
     if (status.get()) {
-      sendBytes(RPCCodec.createGoodbye());
-      handlerTermination.run();
+      netSocket.write(Buffer.buffer(RPCCodec.createGoodbye().toArrayUnsafe()));
+      netSocket.close();
     }
   }
 
-  public void gossipMessage(
-      MessageSender.Verb method, Bytes messageHash, Bytes32 hashSignature, Bytes payload) {
-    Bytes bytes = GossipCodec.encode(method, messageHash, hashSignature, payload);
-    sendBytes(bytes);
-  }
-
   public void replyHello(long requestId) {
-    RPCCodec.encode(
+    sendReply(
         RPCMethod.HELLO,
         new Hello(
             1,
             1,
-            Bytes32.fromHexString(chainData.getLastFinalizedBlockRoot()),
+            Bytes32.fromHexString(chainData.getFinalizedBlockRoot()),
             UInt64.valueOf(chainData.getEpoch()),
-            Bytes32.fromHexString(chainData.getBlock_root()),
+            Bytes32.fromHexString(chainData.getHeadBlockRoot()),
             UInt64.valueOf(chainData.getSlot())),
         requestId);
   }
@@ -215,9 +131,9 @@ public final class HobbitsSocketHandler {
         new Hello(
             1,
             1,
-            Bytes32.fromHexString(chainData.getLastFinalizedBlockRoot()),
+            Bytes32.fromHexString(chainData.getFinalizedBlockRoot()),
             UInt64.valueOf(chainData.getEpoch()),
-            Bytes32.fromHexString(chainData.getBlock_root()),
+            Bytes32.fromHexString(chainData.getHeadBlockRoot()),
             UInt64.valueOf(chainData.getSlot())));
   }
 

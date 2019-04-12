@@ -24,28 +24,35 @@ import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.operations.ProposerSlashing;
 import tech.devgao.artemis.datastructures.operations.Transfer;
 import tech.devgao.artemis.datastructures.operations.VoluntaryExit;
+import tech.devgao.artemis.util.bls.BLSSignature;
 
 /** A Beacon block body */
 public class BeaconBlockBody {
+  private BLSSignature randao_reveal;
+  private Eth1Data eth1_data;
   private List<ProposerSlashing> proposer_slashings;
   private List<AttesterSlashing> attester_slashings;
   private List<Attestation> attestations;
   private List<Deposit> deposits;
-  private List<VoluntaryExit> voluntaryExits;
+  private List<VoluntaryExit> voluntary_exits;
   private List<Transfer> transfers;
 
   public BeaconBlockBody(
+      BLSSignature randao_reveal,
+      Eth1Data eth1_data,
       List<ProposerSlashing> proposer_slashings,
       List<AttesterSlashing> attester_slashings,
       List<Attestation> attestations,
       List<Deposit> deposits,
-      List<VoluntaryExit> voluntaryExits,
+      List<VoluntaryExit> voluntary_exits,
       List<Transfer> transfers) {
+    this.randao_reveal = randao_reveal;
+    this.eth1_data = eth1_data;
     this.proposer_slashings = proposer_slashings;
     this.attester_slashings = attester_slashings;
     this.attestations = attestations;
     this.deposits = deposits;
-    this.voluntaryExits = voluntaryExits;
+    this.voluntary_exits = voluntary_exits;
     this.transfers = transfers;
   }
 
@@ -54,6 +61,8 @@ public class BeaconBlockBody {
         bytes,
         reader ->
             new BeaconBlockBody(
+                BLSSignature.fromBytes(reader.readBytes()),
+                Eth1Data.fromBytes(reader.readBytes()),
                 reader.readBytesList().stream()
                     .map(ProposerSlashing::fromBytes)
                     .collect(Collectors.toList()),
@@ -84,12 +93,14 @@ public class BeaconBlockBody {
     List<Bytes> depositsBytes =
         deposits.stream().map(item -> item.toBytes()).collect(Collectors.toList());
     List<Bytes> voluntaryExitsBytes =
-        voluntaryExits.stream().map(item -> item.toBytes()).collect(Collectors.toList());
+        voluntary_exits.stream().map(item -> item.toBytes()).collect(Collectors.toList());
     List<Bytes> transfersBytes =
         transfers.stream().map(item -> item.toBytes()).collect(Collectors.toList());
 
     return SSZ.encode(
         writer -> {
+          writer.writeBytes(randao_reveal.toBytes());
+          writer.writeBytes(eth1_data.toBytes());
           writer.writeBytesList(proposerSlashingsBytes);
           writer.writeBytesList(attesterSlashingsBytes);
           writer.writeBytesList(attestationsBytes);
@@ -102,7 +113,14 @@ public class BeaconBlockBody {
   @Override
   public int hashCode() {
     return Objects.hash(
-        proposer_slashings, attester_slashings, attestations, deposits, voluntaryExits, transfers);
+        randao_reveal,
+        eth1_data,
+        proposer_slashings,
+        attester_slashings,
+        attestations,
+        deposits,
+        voluntary_exits,
+        transfers);
   }
 
   @Override
@@ -120,15 +138,33 @@ public class BeaconBlockBody {
     }
 
     BeaconBlockBody other = (BeaconBlockBody) obj;
-    return Objects.equals(this.getProposer_slashings(), other.getProposer_slashings())
+    return Objects.equals(this.getRandao_reveal(), other.getRandao_reveal())
+        && Objects.equals(this.getEth1_data(), other.getEth1_data())
+        && Objects.equals(this.getProposer_slashings(), other.getProposer_slashings())
         && Objects.equals(this.getAttester_slashings(), other.getAttester_slashings())
         && Objects.equals(this.getAttestations(), other.getAttestations())
         && Objects.equals(this.getDeposits(), other.getDeposits())
-        && Objects.equals(this.getVoluntaryExits(), other.getVoluntaryExits())
+        && Objects.equals(this.getVoluntary_exits(), other.getVoluntary_exits())
         && Objects.equals(this.getTransfers(), other.getTransfers());
   }
 
   /** ******************* * GETTERS & SETTERS * * ******************* */
+  public BLSSignature getRandao_reveal() {
+    return randao_reveal;
+  }
+
+  public void setRandao_reveal(BLSSignature randao_reveal) {
+    this.randao_reveal = randao_reveal;
+  }
+
+  public Eth1Data getEth1_data() {
+    return eth1_data;
+  }
+
+  public void setEth1_data(Eth1Data eth1_data) {
+    this.eth1_data = eth1_data;
+  }
+
   public List<Attestation> getAttestations() {
     return attestations;
   }
@@ -161,12 +197,12 @@ public class BeaconBlockBody {
     this.deposits = deposits;
   }
 
-  public List<VoluntaryExit> getVoluntaryExits() {
-    return voluntaryExits;
+  public List<VoluntaryExit> getVoluntary_exits() {
+    return voluntary_exits;
   }
 
-  public void setVoluntaryExits(List<VoluntaryExit> voluntaryExits) {
-    this.voluntaryExits = voluntaryExits;
+  public void setVoluntary_exits(List<VoluntaryExit> voluntary_exits) {
+    this.voluntary_exits = voluntary_exits;
   }
 
   public List<Transfer> getTransfers() {
