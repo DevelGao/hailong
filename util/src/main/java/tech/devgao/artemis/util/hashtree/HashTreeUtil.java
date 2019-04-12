@@ -15,6 +15,7 @@ package tech.devgao.artemis.util.hashtree;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
+import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -36,9 +37,22 @@ public final class HashTreeUtil {
   }
 
   /**
+   * Calculate the hash tree root of the provided value
+   *
+   * @param value
+   */
+  public static Bytes32 hash_tree_root(UnsignedLong val) {
+    return SSZ.hashTreeRoot(
+        SSZ.encode(
+            writer -> {
+              writer.writeUInt64(val.longValue());
+            }));
+  }
+
+  /**
    * Calculate the hash tree root of the list of validators provided
    *
-   * @param validators
+   * @param list
    */
   public static Bytes32 hash_tree_root(List<Bytes> list) {
     return hash_tree_root(
@@ -56,7 +70,7 @@ public final class HashTreeUtil {
    * @param integers
    * @return
    */
-  public static Bytes32 integerListHashTreeRoot(List<Integer> integers) {
+  public static Bytes32 hash_tree_root_list_integers(List<Integer> integers) {
     return hash_tree_root(
         SSZ.encode(
             // TODO This can be replaced with writeUInt64List(List) once implemented in Cava.
