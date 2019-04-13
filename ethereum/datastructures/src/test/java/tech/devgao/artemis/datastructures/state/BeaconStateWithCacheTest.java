@@ -16,7 +16,7 @@ package tech.devgao.artemis.datastructures.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static tech.devgao.artemis.datastructures.Constants.GENESIS_EPOCH;
-import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_genesis_beacon_state;
+import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_initial_beacon_state;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDeposits;
 
 import com.google.common.primitives.UnsignedLong;
@@ -38,7 +38,7 @@ class BeaconStateWithCacheTest {
 
       // Initialize state
       BeaconStateWithCache state = new BeaconStateWithCache();
-      get_genesis_beacon_state(
+      get_initial_beacon_state(
           state,
           randomDeposits(numDeposits),
           UnsignedLong.ZERO,
@@ -46,7 +46,7 @@ class BeaconStateWithCacheTest {
 
       return state;
     } catch (Exception e) {
-      fail("get_genesis_beacon_state() failed");
+      fail("get_initial_beacon_state() failed");
       return null;
     }
   }
