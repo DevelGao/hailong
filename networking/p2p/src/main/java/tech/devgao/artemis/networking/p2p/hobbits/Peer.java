@@ -14,13 +14,15 @@
 package tech.devgao.artemis.networking.p2p.hobbits;
 
 import java.net.URI;
+import net.develgao.cava.bytes.Bytes;
 
 /** A hobbits peer */
-public final class Peer {
+public final class Peer implements net.develgao.cava.plumtree.Peer {
 
   private final URI uri;
   private Hello peerHello;
   private GetStatus peerStatus;
+  private Bytes peerGossip;
   private boolean active = true;
 
   public Peer(URI peer) {
@@ -35,6 +37,10 @@ public final class Peer {
     this.peerStatus = peerStatus;
   }
 
+  public void setPeerGossip(Bytes data) {
+    this.peerGossip = data;
+  }
+
   public void setInactive() {
     active = false;
   }
@@ -45,6 +51,14 @@ public final class Peer {
 
   public Hello peerHello() {
     return peerHello;
+  }
+
+  public Bytes peerGossip() {
+    return this.peerGossip;
+  }
+
+  public URI uri() {
+    return this.uri;
   }
 
   public boolean active() {
