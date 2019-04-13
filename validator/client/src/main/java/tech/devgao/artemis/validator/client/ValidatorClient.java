@@ -14,7 +14,6 @@
 package tech.devgao.artemis.validator.client;
 
 import static tech.devgao.artemis.datastructures.Constants.SLOTS_PER_EPOCH;
-import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_beacon_proposer_index;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_crosslink_committees_at_slot;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_current_epoch;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_epoch_start_slot;
@@ -68,8 +67,10 @@ public class ValidatorClient {
       if (selected_committees.size() > 0) {
         List<Integer> validators = selected_committees.get(0).getCommittee();
         int shard = selected_committees.get(0).getShard().intValue();
+        List<Integer> first_committee_at_slot =
+            crosslink_committees.get(0).getCommittee(); // List[ValidatorIndex]
         boolean is_proposer =
-            validator_index == get_beacon_proposer_index(state, UnsignedLong.valueOf(slot), registry_change);
+            first_committee_at_slot.get(slot % first_committee_at_slot.size()) == validator_index;
 
         return Optional.of(new CommitteeAssignmentTuple(validators, shard, slot, is_proposer));
       }

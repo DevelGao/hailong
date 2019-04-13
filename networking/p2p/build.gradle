@@ -18,8 +18,9 @@ dependencies {
   implementation 'com.google.guava:guava'
 
   implementation 'io.vertx:vertx-core'
-  implementation 'net.develgao.cava:cava-rlpx'
   implementation 'net.develgao.cava:cava-bytes'
+  implementation 'net.develgao.cava:cava-plumtree'
+  implementation 'net.develgao.cava:cava-rlpx'
   implementation 'net.develgao.cava:cava-units'
 
   implementation 'org.apache.logging.log4j:log4j-api'
