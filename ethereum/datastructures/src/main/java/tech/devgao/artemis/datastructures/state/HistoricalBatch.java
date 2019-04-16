@@ -20,12 +20,13 @@ import java.util.stream.Collectors;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
+import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.Copyable;
 
 public class HistoricalBatch implements Copyable<HistoricalBatch> {
 
-  private List<Bytes32> block_roots;
-  private List<Bytes32> state_roots;
+  private List<Bytes32> block_roots; //Bounded by SLOTS_PER_HISTORICAL_ROOT
+  private List<Bytes32> state_roots; //Bounded by SLOTS_PER_HISTORICAL_ROOT
 
   public HistoricalBatch(List<Bytes32> block_roots, List<Bytes32> state_roots) {
     this.block_roots = block_roots;
@@ -42,8 +43,8 @@ public class HistoricalBatch implements Copyable<HistoricalBatch> {
         bytes,
         reader ->
             new HistoricalBatch(
-                reader.readBytesList().stream().map(Bytes32::wrap).collect(Collectors.toList()),
-                reader.readBytesList().stream().map(Bytes32::wrap).collect(Collectors.toList())));
+                reader.readFixedBytesList(Constants.SLOTS_PER_HISTORICAL_ROOT, 32).stream().map(Bytes32::wrap).collect(Collectors.toList()),
+                reader.readFixedBytesList(Constants.SLOTS_PER_HISTORICAL_ROOT, 32).stream().map(Bytes32::wrap).collect(Collectors.toList())));
   }
 
   @Override
@@ -54,8 +55,8 @@ public class HistoricalBatch implements Copyable<HistoricalBatch> {
   public Bytes toBytes() {
     return SSZ.encode(
         writer -> {
-          writer.writeBytesList(block_roots);
-          writer.writeBytesList(state_roots);
+          writer.writeFixedBytesList(Constants.SLOTS_PER_HISTORICAL_ROOT, 32, block_roots);
+          writer.writeFixedBytesList(Constants.SLOTS_PER_HISTORICAL_ROOT, 32, state_roots);
         });
   }
 

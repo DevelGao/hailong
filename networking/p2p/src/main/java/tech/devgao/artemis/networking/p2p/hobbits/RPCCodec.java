@@ -38,7 +38,7 @@ import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.units.bigints.UInt64;
 import org.xerial.snappy.Snappy;
 
-public final class RPCCodec implements Codec {
+public final class RPCCodec {
 
   private static class UInt64Serializer extends JsonSerializer<UInt64> {
 
@@ -182,7 +182,6 @@ public final class RPCCodec implements Codec {
    * @return the payload, decoded
    */
   public static RPCMessage decode(Bytes message) {
-    // TODO: refactor RPC/Gossip decode logic
     Bytes requestLineBytes = null;
     for (int i = 0; i < message.size(); i++) {
       if (message.get(i) == (byte) '\n') {
