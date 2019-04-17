@@ -12,6 +12,7 @@ dependencies {
 
   implementation 'net.develgao.cava:cava-kv'
   implementation 'net.develgao.cava:cava-bytes'
+  implementation 'net.develgao.cava:cava-ssz'
   implementation 'com.google.guava:guava'
   implementation 'org.apache.logging.log4j:log4j-api'
   runtime 'org.apache.logging.log4j:log4j-core'

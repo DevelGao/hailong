@@ -14,9 +14,9 @@
 package tech.devgao.artemis.storage;
 
 import com.google.common.eventbus.EventBus;
-import java.util.HashMap;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 import net.develgao.cava.bytes.Bytes;
 import org.apache.logging.log4j.Level;
 import tech.devgao.artemis.util.alogger.ALogger;
@@ -62,7 +62,7 @@ public interface ChainStorage {
    * @param value
    * @param items
    */
-  static <S extends Bytes, T, U extends HashMap<S, T>> void add(S key, T value, U items) {
+  static <S extends Bytes, T, U extends ConcurrentHashMap<S, T>> void add(S key, T value, U items) {
     try {
       items.put(key, value);
     } catch (IllegalStateException e) {
@@ -77,12 +77,16 @@ public interface ChainStorage {
    * @param items
    * @return
    */
-  static <S extends Bytes, T, U extends HashMap<S, T>> Optional<T> get(S key, U items) {
+  static <S extends Bytes, T, U extends ConcurrentHashMap<S, T>> Optional<T> get(S key, U items) {
     Optional<T> result = Optional.ofNullable(null);
     try {
       result = Optional.of(items.get(key));
     } catch (NullPointerException e) {
-      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + key.toHexString() + " not found.");
+      if (!key.toHexString()
+          .equalsIgnoreCase("0x0000000000000000000000000000000000000000000000000000000000000000")) {
+        LOG.log(
+            Level.DEBUG, items.getClass().toString() + ": " + key.toHexString() + " not found.");
+      }
     }
     return result;
   }
