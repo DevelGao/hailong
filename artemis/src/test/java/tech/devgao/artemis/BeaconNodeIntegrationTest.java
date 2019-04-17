@@ -18,7 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Arrays;
-import net.develgao.cava.bytes.Bytes32;
+import java.util.Objects;
+import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.junit.BouncyCastleExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,36 +39,9 @@ class BeaconNodeIntegrationTest {
     CommandLineArguments cliArgs = new CommandLineArguments();
     CommandLine commandLine = new CommandLine(cliArgs);
 
-    Bytes32 randomId = Bytes32.random();
-
-    ArtemisConfiguration config1 =
-        ArtemisConfiguration.fromString(
-            "node.networkMode=\"hobbits\"\n"
-                + "node.identity=\""
-                + randomId.toHexString()
-                + "\"\n"
-                + "node.networkInterface=\"127.0.0.1\"\n"
-                + "node.port=19000\n"
-                + "node.peers=[\"hobs://abcf@localhost:19001\", \"hobs://abcf@localhost:19002\"]");
-
-    ArtemisConfiguration config2 =
-        ArtemisConfiguration.fromString(
-            "node.networkMode=\"hobbits\"\n"
-                + "node.identity=\""
-                + randomId.toHexString()
-                + "\"\n"
-                + "node.networkInterface=\"127.0.0.1\"\n"
-                + "node.port=19001\n"
-                + "node.peers=[\"hobs://abcf@localhost:19000\", \"hobs://abcf@localhost:19002\"]");
-    ArtemisConfiguration config3 =
-        ArtemisConfiguration.fromString(
-            "node.networkMode=\"hobbits\"\n"
-                + "node.identity=\""
-                + randomId.toHexString()
-                + "\"\n"
-                + "node.networkInterface=\"127.0.0.1\"\n"
-                + "node.port=19002\n"
-                + "node.peers=[\"hobs://abcf@localhost:19001\", \"hobs://abcf@localhost:19000\"]");
+    ArtemisConfiguration config1 = ArtemisConfiguration.fromFile("../config/testConfig.0.toml");
+    ArtemisConfiguration config2 = ArtemisConfiguration.fromFile("../config/testConfig.1.toml");
+    ArtemisConfiguration config3 = ArtemisConfiguration.fromFile("../config/testConfig.2.toml");
 
     BeaconNode node1 = new BeaconNode(commandLine, cliArgs, config1);
     BeaconNode node2 = new BeaconNode(commandLine, cliArgs, config2);
@@ -77,20 +51,64 @@ class BeaconNodeIntegrationTest {
     node2.start();
     node3.start();
 
-    Thread.sleep(5000);
+    Thread.sleep(10000);
 
     P2PNetwork net1 = node1.p2pNetwork();
     P2PNetwork net2 = node2.p2pNetwork();
     P2PNetwork net3 = node3.p2pNetwork();
 
+    Bytes block = null;
     for (P2PNetwork net : Arrays.asList(net1, net2, net3)) {
       for (Object p : net.getPeers()) {
-        assertNotNull(((Peer) p).peerHello());
-        assertNotNull(((Peer) p).peerStatus());
-        System.out.println(mapper.writer().writeValueAsString(((Peer) p).peerStatus()));
+        Peer peer = (Peer) p;
+        Bytes message = peer.peerGossip();
+        if (!Objects.isNull(message)) {
+          block = message;
+          break;
+        }
       }
     }
+    assertNotNull(block);
+    node1.stop();
+    node2.stop();
+    node3.stop();
+  }
 
+  @Test
+  void testThreeNodesWithRLPx() throws InterruptedException, JsonProcessingException {
+    CommandLineArguments cliArgs = new CommandLineArguments();
+    CommandLine commandLine = new CommandLine(cliArgs);
+
+    ArtemisConfiguration config1 = ArtemisConfiguration.fromFile("../config/rlpxConfig.0.toml");
+    ArtemisConfiguration config2 = ArtemisConfiguration.fromFile("../config/rlpxConfig.1.toml");
+    ArtemisConfiguration config3 = ArtemisConfiguration.fromFile("../config/rlpxConfig.2.toml");
+
+    BeaconNode node1 = new BeaconNode(commandLine, cliArgs, config1);
+    BeaconNode node2 = new BeaconNode(commandLine, cliArgs, config2);
+    BeaconNode node3 = new BeaconNode(commandLine, cliArgs, config3);
+
+    node2.start();
+    node3.start();
+    node1.start();
+
+    Thread.sleep(20000);
+
+    P2PNetwork net1 = node1.p2pNetwork();
+    P2PNetwork net2 = node2.p2pNetwork();
+    P2PNetwork net3 = node3.p2pNetwork();
+
+    Bytes block = null;
+    for (P2PNetwork net : Arrays.asList(net1, net2, net3)) {
+      for (Object p : net.getPeers()) {
+        Peer peer = (Peer) p;
+        Bytes message = peer.peerGossip();
+        if (!Objects.isNull(message)) {
+          block = message;
+          break;
+        }
+      }
+    }
+    assertNotNull(block);
     node1.stop();
     node2.stop();
     node3.stop();

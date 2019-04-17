@@ -36,16 +36,14 @@ public final class Eth1Data {
   public static Eth1Data fromBytes(Bytes bytes) {
     return SSZ.decode(
         bytes,
-        reader ->
-            new Eth1Data(
-                Bytes32.wrap(reader.readFixedBytes(32)), Bytes32.wrap(reader.readFixedBytes(32))));
+        reader -> new Eth1Data(Bytes32.wrap(reader.readBytes()), Bytes32.wrap(reader.readBytes())));
   }
 
   public Bytes toBytes() {
     return SSZ.encode(
         writer -> {
-          writer.writeFixedBytes(32, deposit_root);
-          writer.writeFixedBytes(32, block_hash);
+          writer.writeBytes(deposit_root);
+          writer.writeBytes(block_hash);
         });
   }
 

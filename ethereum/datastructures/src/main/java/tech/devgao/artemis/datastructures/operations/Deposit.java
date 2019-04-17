@@ -20,16 +20,15 @@ import java.util.stream.Collectors;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
-import tech.devgao.artemis.datastructures.Constants;
 
 public class Deposit {
 
-  private List<Bytes32> proof; // Bounded by DEPOSIT_CONTRACT_TREE_DEPTH
+  private List<Bytes32> branch;
   private UnsignedLong index;
   private DepositData deposit_data;
 
-  public Deposit(List<Bytes32> proof, UnsignedLong index, DepositData deposit_data) {
-    this.proof = proof;
+  public Deposit(List<Bytes32> branch, UnsignedLong index, DepositData deposit_data) {
+    this.branch = branch;
     this.index = index;
     this.deposit_data = deposit_data;
   }
@@ -39,9 +38,7 @@ public class Deposit {
         bytes,
         reader ->
             new Deposit(
-                reader.readFixedBytesList(Constants.DEPOSIT_CONTRACT_TREE_DEPTH, 32).stream()
-                    .map(Bytes32::wrap)
-                    .collect(Collectors.toList()),
+                reader.readBytesList().stream().map(Bytes32::wrap).collect(Collectors.toList()),
                 UnsignedLong.fromLongBits(reader.readUInt64()),
                 DepositData.fromBytes(reader.readBytes())));
   }
@@ -49,7 +46,7 @@ public class Deposit {
   public Bytes toBytes() {
     return SSZ.encode(
         writer -> {
-          writer.writeFixedBytesList(Constants.DEPOSIT_CONTRACT_TREE_DEPTH, 32, proof);
+          writer.writeBytesList(branch);
           writer.writeUInt64(index.longValue());
           writer.writeBytes(deposit_data.toBytes());
         });
@@ -57,7 +54,7 @@ public class Deposit {
 
   @Override
   public int hashCode() {
-    return Objects.hash(proof, index, deposit_data);
+    return Objects.hash(branch, index, deposit_data);
   }
 
   @Override
@@ -75,18 +72,18 @@ public class Deposit {
     }
 
     Deposit other = (Deposit) obj;
-    return Objects.equals(this.getProof(), other.getProof())
+    return Objects.equals(this.getBranch(), other.getBranch())
         && Objects.equals(this.getIndex(), other.getIndex())
         && Objects.equals(this.getDeposit_data(), other.getDeposit_data());
   }
 
   /** ******************* * GETTERS & SETTERS * * ******************* */
-  public List<Bytes32> getProof() {
-    return proof;
+  public List<Bytes32> getBranch() {
+    return branch;
   }
 
-  public void setProof(List<Bytes32> branch) {
-    this.proof = branch;
+  public void setBranch(List<Bytes32> branch) {
+    this.branch = branch;
   }
 
   public UnsignedLong getIndex() {
