@@ -32,7 +32,6 @@ import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.state.Validator;
-import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.datastructures.util.ValidatorsUtil;
 import tech.devgao.artemis.storage.ChainStorageClient;
 
@@ -85,12 +84,12 @@ public class LmdGhost {
           children.stream()
               .filter(
                   child ->
-                      get_vote_count(start_state, store, child, attestation_targets)
-                              .compareTo(max)
+                      get_vote_count(start_state, store, child, attestation_targets).compareTo(max)
                           == 0)
               .max(
                   Comparator.comparing(
-                      child -> hash_tree_root(child.toBytes()).toLong(ByteOrder.LITTLE_ENDIAN))).get();
+                      child -> hash_tree_root(child.toBytes()).toLong(ByteOrder.LITTLE_ENDIAN)))
+              .get();
     }
   }
 
