@@ -18,49 +18,39 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
-import java.util.stream.Collectors;
 import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.ssz.InvalidSSZTypeException;
 import org.apache.logging.log4j.Level;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.state.BeaconState;
+import tech.devgao.artemis.datastructures.util.AttestationUtil;
+import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.util.alogger.ALogger;
 
 /** This class is the ChainStorage client-side logic */
 public class ChainStorageClient implements ChainStorage {
   static final ALogger LOG = new ALogger(ChainStorageClient.class.getName());
   static final Integer UNPROCESSED_BLOCKS_LENGTH = 100;
-  protected final ConcurrentHashMap<Integer, Attestation> latestAttestations =
-      new ConcurrentHashMap<>();
+  protected final HashMap<Integer, Attestation> latestAttestations = new HashMap<>();
   protected final PriorityBlockingQueue<BeaconBlock> unprocessedBlocks =
       new PriorityBlockingQueue<BeaconBlock>(
           UNPROCESSED_BLOCKS_LENGTH, Comparator.comparing(BeaconBlock::getSlot));
   protected final LinkedBlockingQueue<Attestation> unprocessedAttestations =
       new LinkedBlockingQueue<>();
-  protected final ConcurrentHashMap<Bytes, BeaconBlock> processedBlockLookup =
-      new ConcurrentHashMap<>();
-  protected final ConcurrentHashMap<Bytes, BeaconState> stateLookup = new ConcurrentHashMap<>();
+  protected final HashMap<Bytes, BeaconBlock> processedBlockLookup = new HashMap<>();
+  protected final HashMap<Bytes, BeaconState> stateLookup = new HashMap<>();
   protected EventBus eventBus;
-  protected final Object syncObject;
 
-  public ChainStorageClient() {
-    this.syncObject = new Object();
-  }
+  public ChainStorageClient() {}
 
   public ChainStorageClient(EventBus eventBus) {
-    this();
     this.eventBus = eventBus;
     this.eventBus.register(this);
-  }
-
-  public Object getSyncObject() {
-    return this.syncObject;
   }
 
   /**
@@ -70,7 +60,8 @@ public class ChainStorageClient implements ChainStorage {
    * @param block
    */
   public void addProcessedBlock(Bytes state_root, BeaconBlock block) {
-    ChainStorage.add(state_root, block, this.processedBlockLookup);
+    ChainStorage.<Bytes, BeaconBlock, HashMap<Bytes, BeaconBlock>>add(
+        state_root, block, this.processedBlockLookup);
     // todo: post event to eventbus to notify the server that a new processed block has been added
   }
 
@@ -81,7 +72,8 @@ public class ChainStorageClient implements ChainStorage {
    * @param state
    */
   public void addState(Bytes state_root, BeaconState state) {
-    ChainStorage.add(state_root, state, this.stateLookup);
+    ChainStorage.<Bytes, BeaconState, HashMap<Bytes, BeaconState>>add(
+        state_root, state, this.stateLookup);
     // todo: post event to eventbus to notify the server that a new processed block has been added
   }
 
@@ -91,7 +83,8 @@ public class ChainStorageClient implements ChainStorage {
    * @param block
    */
   public void addUnprocessedBlock(BeaconBlock block) {
-    ChainStorage.add(block, this.unprocessedBlocks);
+    ChainStorage.<BeaconBlock, PriorityBlockingQueue<BeaconBlock>>add(
+        block, this.unprocessedBlocks);
   }
 
   /**
@@ -100,7 +93,8 @@ public class ChainStorageClient implements ChainStorage {
    * @param attestation
    */
   public void addUnprocessedAttestation(Attestation attestation) {
-    ChainStorage.add(attestation, unprocessedAttestations);
+    ChainStorage.<Attestation, LinkedBlockingQueue<Attestation>>add(
+        attestation, unprocessedAttestations);
   }
 
   /**
@@ -110,7 +104,8 @@ public class ChainStorageClient implements ChainStorage {
    * @return
    */
   public Optional<BeaconBlock> getProcessedBlock(Bytes state_root) {
-    return ChainStorage.get(state_root, this.processedBlockLookup);
+    return ChainStorage.<Bytes, BeaconBlock, HashMap<Bytes, BeaconBlock>>get(
+        state_root, this.processedBlockLookup);
   }
 
   /**
@@ -120,7 +115,7 @@ public class ChainStorageClient implements ChainStorage {
    * @return
    */
   public Optional<BeaconBlock> getParent(BeaconBlock block) {
-    Bytes parent_root = block.getParent_root();
+    Bytes parent_root = block.getPrevious_block_root();
     return this.getProcessedBlock(parent_root);
   }
 
@@ -131,16 +126,8 @@ public class ChainStorageClient implements ChainStorage {
    * @return
    */
   public Optional<BeaconState> getState(Bytes state_root) {
-    return ChainStorage.get(state_root, this.stateLookup);
-  }
-
-  /**
-   * Gets unprocessed blocks (LIFO)
-   *
-   * @return
-   */
-  public List<BeaconBlock> getUnprocessedBlocks() {
-    return this.unprocessedBlocks.stream().collect(Collectors.toList());
+    return ChainStorage.<Bytes, BeaconState, HashMap<Bytes, BeaconState>>get(
+        state_root, this.stateLookup);
   }
 
   /**
@@ -174,7 +161,8 @@ public class ChainStorageClient implements ChainStorage {
    * @return
    */
   public Optional<Attestation> getUnprocessedAttestation() {
-    return ChainStorage.remove(unprocessedAttestations);
+    return ChainStorage.<Attestation, LinkedBlockingQueue<Attestation>>remove(
+        unprocessedAttestations);
   }
 
   /**
@@ -192,7 +180,7 @@ public class ChainStorageClient implements ChainStorage {
     }
   }
 
-  public ConcurrentHashMap<Bytes, BeaconBlock> getProcessedBlockLookup() {
+  public HashMap<Bytes, BeaconBlock> getProcessedBlockLookup() {
     return processedBlockLookup;
   }
 
@@ -200,42 +188,40 @@ public class ChainStorageClient implements ChainStorage {
   public void onNewUnprocessedBlock(BeaconBlock block) {
     String ANSI_GREEN = "\u001B[32m";
     String ANSI_RESET = "\033[0m";
-    LOG.log(
-        Level.INFO,
-        ANSI_GREEN
-            + "New BeaconBlock with state root:  "
-            + block.getState_root().toHexString()
-            + " detected."
-            + ANSI_RESET);
+    LOG.log(Level.INFO, ANSI_GREEN + "New BeaconBlock detected." + ANSI_RESET);
     addUnprocessedBlock(block);
-    synchronized (syncObject) {
-      syncObject.notify();
-    }
   }
 
   @Subscribe
   public void onNewUnprocessedAttestation(Attestation attestation) {
-    String ANSI_GREEN = "\u001B[32m";
-    String ANSI_RESET = "\033[0m";
-    LOG.log(
-        Level.INFO,
-        ANSI_GREEN
-            + "New Attestation with block root:  "
-            + attestation.getData().getBeacon_block_root()
-            + " detected."
-            + ANSI_RESET);
+    // LOG.log(Level.INFO, "ChainStorage: new unprocessed Attestation detected");
     addUnprocessedAttestation(attestation);
-  }
 
-  @Subscribe
-  public void onReceievedMessage(Bytes bytes) {
-    try {
-      //
-      Attestation attestation = Attestation.fromBytes(bytes);
-      onNewUnprocessedAttestation(attestation);
-    } catch (InvalidSSZTypeException e) {
-      BeaconBlock block = BeaconBlock.fromBytes(bytes);
-      onNewUnprocessedBlock(block);
+    // TODO: verify the assumption below:
+    // ASSUMPTION: the state with which we can find the attestation participants
+    // using get_attestation_participants is the state associated with the beacon
+    // block being attested in the attestation.
+    BeaconBlock block = processedBlockLookup.get(attestation.getData().getBeacon_block_root());
+    BeaconState state = stateLookup.get(block.getState_root());
+
+    // TODO: verify attestation is stubbed out, needs to be implemented
+    if (AttestationUtil.verifyAttestation(state, attestation)) {
+      List<Integer> attestation_participants =
+          BeaconStateUtil.get_attestation_participants(
+              state, attestation.getData(), attestation.getAggregation_bitfield());
+
+      for (Integer participantIndex : attestation_participants) {
+        Optional<Attestation> latest_attestation = getLatestAttestation(participantIndex);
+        if (!latest_attestation.isPresent()
+            || latest_attestation
+                    .get()
+                    .getData()
+                    .getSlot()
+                    .compareTo(attestation.getData().getSlot())
+                < 0) {
+          latestAttestations.put(participantIndex, attestation);
+        }
+      }
     }
   }
 }

@@ -15,7 +15,6 @@ package tech.devgao.artemis.datastructures.operations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomAttestationData;
 
 import java.util.Objects;
@@ -46,7 +45,7 @@ class AttestationTest {
     Attestation testAttestation =
         new Attestation(aggregationBitfield, data, custodyBitfield, aggregateSignature);
 
-    assertTrue(attestation.equals(testAttestation));
+    assertEquals(attestation, testAttestation);
   }
 
   @Test

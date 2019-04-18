@@ -16,12 +16,13 @@ package tech.devgao.artemis.datastructures.state;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static tech.devgao.artemis.datastructures.Constants.GENESIS_EPOCH;
-import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_initial_beacon_state;
+import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_genesis_beacon_state;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDeposits;
 
 import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import java.util.Collections;
+import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.junit.BouncyCastleExtension;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ class BeaconStateWithCacheTest {
 
       // Initialize state
       BeaconStateWithCache state = new BeaconStateWithCache();
-      get_initial_beacon_state(
+      get_genesis_beacon_state(
           state,
           randomDeposits(numDeposits),
           UnsignedLong.ZERO,
@@ -46,7 +47,7 @@ class BeaconStateWithCacheTest {
 
       return state;
     } catch (Exception e) {
-      fail("get_initial_beacon_state() failed");
+      fail("get_genesis_beacon_state() failed");
       return null;
     }
   }
@@ -61,7 +62,7 @@ class BeaconStateWithCacheTest {
     assertThat(deepCopy.getSlot()).isNotEqualTo(state.getSlot());
 
     // Test fork
-    state.setFork(new Fork(UnsignedLong.valueOf(1), UnsignedLong.ONE, UnsignedLong.ONE));
+    state.setFork(new Fork(Bytes.random(1), Bytes.random(1), UnsignedLong.ONE));
     assertThat(deepCopy.getFork().getPrevious_version())
         .isNotEqualTo(state.getFork().getPrevious_version());
   }

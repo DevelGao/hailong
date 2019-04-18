@@ -25,7 +25,7 @@ import static tech.devgao.artemis.datastructures.Constants.SLOTS_PER_EPOCH;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.generate_seed;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_active_index_root;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_current_epoch;
-import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_initial_beacon_state;
+import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_genesis_beacon_state;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_randao_mix;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.int_to_bytes32;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.split;
@@ -57,7 +57,7 @@ class BeaconStateTest {
 
       // Initialize state
       BeaconStateWithCache state = new BeaconStateWithCache();
-      get_initial_beacon_state(
+      get_genesis_beacon_state(
           state,
           randomDeposits(numDeposits),
           UnsignedLong.ZERO,
@@ -65,7 +65,7 @@ class BeaconStateTest {
 
       return state;
     } catch (Exception e) {
-      fail("get_initial_beacon_state() failed");
+      fail("get_genesis_beacon_state() failed");
       return null;
     }
   }
@@ -76,13 +76,11 @@ class BeaconStateTest {
     int validator_index = 0;
     UnsignedLong activation_epoch;
 
-    BeaconStateUtil.activate_validator(
-        state, state.getValidator_registry().get(validator_index), true);
+    BeaconStateUtil.activate_validator(state, validator_index, true);
     activation_epoch = state.getValidator_registry().get(validator_index).getActivation_epoch();
     assertThat(activation_epoch).isEqualTo(UnsignedLong.valueOf(GENESIS_EPOCH));
 
-    BeaconStateUtil.activate_validator(
-        state, state.getValidator_registry().get(validator_index), false);
+    BeaconStateUtil.activate_validator(state, validator_index, false);
     activation_epoch = state.getValidator_registry().get(validator_index).getActivation_epoch();
     assertThat(activation_epoch)
         .isEqualTo(UnsignedLong.valueOf(GENESIS_EPOCH + 1 + ACTIVATION_EXIT_DELAY));
@@ -118,7 +116,7 @@ class BeaconStateTest {
     assertThat(deepCopy.getSlot()).isNotEqualTo(state.getSlot());
 
     // Test fork
-    state.setFork(new Fork(UnsignedLong.valueOf(1), UnsignedLong.ONE, UnsignedLong.ONE));
+    state.setFork(new Fork(Bytes.random(1), Bytes.random(1), UnsignedLong.ONE));
     assertThat(deepCopy.getFork().getPrevious_version())
         .isNotEqualTo(state.getFork().getPrevious_version());
 
