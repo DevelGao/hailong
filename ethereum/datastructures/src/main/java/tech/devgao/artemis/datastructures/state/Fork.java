@@ -14,10 +14,9 @@
 package tech.devgao.artemis.datastructures.state;
 
 import com.google.common.primitives.UnsignedLong;
+import java.util.Objects;
 import net.develgao.cava.bytes.Bytes;
 import net.develgao.cava.ssz.SSZ;
-
-import java.util.Objects;
 
 public class Fork {
 
