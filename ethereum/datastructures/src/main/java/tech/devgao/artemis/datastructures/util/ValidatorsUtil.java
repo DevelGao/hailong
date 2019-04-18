@@ -27,6 +27,20 @@ import tech.devgao.artemis.datastructures.state.Validator;
 public class ValidatorsUtil {
 
   /**
+   * Check if (this) validator is active in the given epoch.
+   *
+   * @param epoch - The epoch under consideration.
+   * @return A boolean indicating if the validator is active.
+   * @see <a
+   *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.4.0/specs/core/0_beacon-chain.md#is_active_validator">is_active_validator
+   *     - Spec v0.4</a>
+   */
+  public static boolean is_active_validator(Validator validator, UnsignedLong epoch) {
+    return validator.getActivation_epoch().compareTo(epoch) <= 0
+        && epoch.compareTo(validator.getExit_epoch()) < 0;
+  }
+
+  /**
    * Returns the list of active validators from the provided list of validators at the given epoch.
    *
    * <p><b>This method is defined for convenience and is not mentioned in the spec.</b>
@@ -40,7 +54,7 @@ public class ValidatorsUtil {
     List<Validator> active_validators = new ArrayList<>();
     if (validators != null) {
       for (Validator record : validators) {
-        if (record.is_active_validator(epoch)) {
+        if (is_active_validator(record, epoch)) {
           active_validators.add(record);
         }
       }
@@ -49,8 +63,7 @@ public class ValidatorsUtil {
   }
 
   /**
-   * Returns the list of indices of active validators from the provided list of validators at the
-   * given epoch.
+   * Get indices of active validators from ``validators``.
    *
    * @param validators - The list of validators under consideration.
    * @param epoch - The epoch under consideration.
@@ -66,7 +79,7 @@ public class ValidatorsUtil {
         .parallel()
         .forEachOrdered(
             index -> {
-              if (validators.get(index).is_active_validator(epoch)) {
+              if (is_active_validator(validators.get(index), epoch)) {
                 active_validator_indices.add(index);
               }
             });
@@ -85,7 +98,7 @@ public class ValidatorsUtil {
   public static Boolean is_active_validator_index(
       BeaconState state, int index, UnsignedLong epoch) {
     List<Validator> all_validators = state.getValidator_registry();
-    return all_validators.get(index).is_active_validator(epoch);
+    return is_active_validator(all_validators.get(index), epoch);
   }
 
   /**

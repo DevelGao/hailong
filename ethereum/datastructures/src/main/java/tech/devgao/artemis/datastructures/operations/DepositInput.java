@@ -25,11 +25,11 @@ import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 public final class DepositInput {
 
   // BLS pubkey
-  BLSPublicKey pubkey;
+  private BLSPublicKey pubkey;
   // Withdrawal credentials
-  Bytes32 withdrawal_credentials;
+  private Bytes32 withdrawal_credentials;
   // A BLS signature of this `DepositInput`
-  BLSSignature proof_of_possession;
+  private BLSSignature proof_of_possession;
 
   public DepositInput(
       BLSPublicKey pubkey, Bytes32 withdrawal_credentials, BLSSignature proof_of_possession) {
@@ -44,7 +44,7 @@ public final class DepositInput {
         reader ->
             new DepositInput(
                 BLSPublicKey.fromBytes(reader.readBytes()),
-                Bytes32.wrap(reader.readBytes()),
+                Bytes32.wrap(reader.readFixedBytes(32)),
                 BLSSignature.fromBytes(reader.readBytes())));
   }
 
@@ -52,7 +52,7 @@ public final class DepositInput {
     return SSZ.encode(
         writer -> {
           writer.writeBytes(pubkey.toBytes());
-          writer.writeBytes(withdrawal_credentials);
+          writer.writeFixedBytes(32, withdrawal_credentials);
           writer.writeBytes(proof_of_possession.toBytes());
         });
   }
@@ -107,8 +107,8 @@ public final class DepositInput {
     this.proof_of_possession = proof_of_possession;
   }
 
-  public Bytes32 signedRoot(String truncationParam) {
-    if (!truncationParam.equals("proof_of_possession")) {
+  public Bytes32 signed_root(String truncation_param) {
+    if (!truncation_param.equals("proof_of_possession")) {
       throw new UnsupportedOperationException(
           "Only signed_root(proposal, \"proof_of_possession\") is currently supported for type Proposal.");
     }
