@@ -21,7 +21,7 @@ import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.datastructures.Copyable;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
 
-public final class Validator implements Copyable<Validator> {
+public class Validator implements Copyable<Validator> {
 
   // BLS public key
   private BLSPublicKey pubkey;
