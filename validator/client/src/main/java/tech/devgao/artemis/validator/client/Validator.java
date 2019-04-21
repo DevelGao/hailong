@@ -13,8 +13,8 @@
 
 package tech.devgao.artemis.validator.client;
 
-import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.crypto.SECP256K1;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.crypto.SECP256K1;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
 import tech.devgao.artemis.util.mikuli.KeyPair;
 

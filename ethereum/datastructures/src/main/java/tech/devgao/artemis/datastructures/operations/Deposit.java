@@ -17,9 +17,9 @@ import com.google.common.primitives.UnsignedLong;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.ssz.SSZ;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.ssz.SSZ;
 
 public class Deposit {
 

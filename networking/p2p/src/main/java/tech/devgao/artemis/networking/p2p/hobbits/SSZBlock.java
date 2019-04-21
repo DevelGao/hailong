@@ -15,7 +15,7 @@ package tech.devgao.artemis.networking.p2p.hobbits;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import net.develgao.cava.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes;
 
 public final class SSZBlock {
 

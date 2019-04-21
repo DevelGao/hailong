@@ -16,8 +16,8 @@ package tech.devgao.artemis.datastructures.state;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.Copyable;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
 

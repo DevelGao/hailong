@@ -14,8 +14,8 @@
 package tech.devgao.artemis.datastructures;
 
 import com.google.common.primitives.UnsignedLong;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.util.bls.BLSSignature;
 import tech.devgao.artemis.util.config.ArtemisConfiguration;
 

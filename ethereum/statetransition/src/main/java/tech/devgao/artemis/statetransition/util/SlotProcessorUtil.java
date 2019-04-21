@@ -18,7 +18,7 @@ import static tech.devgao.artemis.datastructures.Constants.LATEST_BLOCK_ROOTS_LE
 
 import com.google.common.primitives.UnsignedLong;
 import java.util.List;
-import net.develgao.cava.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;

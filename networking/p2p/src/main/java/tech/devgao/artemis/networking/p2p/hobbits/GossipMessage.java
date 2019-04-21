@@ -13,8 +13,8 @@
 
 package tech.devgao.artemis.networking.p2p.hobbits;
 
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 
 /** Representation of a Gossip message that was received from a remote peer. */
 public final class GossipMessage {

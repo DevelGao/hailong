@@ -13,8 +13,8 @@
 
 package tech.devgao.artemis.pow.event;
 
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.pow.api.Eth2GenesisEvent;
 import tech.devgao.artemis.pow.contract.DepositContract.Eth2GenesisEventResponse;
 

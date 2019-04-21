@@ -24,13 +24,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.config.Configuration;
-import net.develgao.cava.config.ConfigurationError;
-import net.develgao.cava.config.PropertyValidator;
-import net.develgao.cava.config.Schema;
-import net.develgao.cava.config.SchemaBuilder;
-import net.develgao.cava.crypto.SECP256K1;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.config.Configuration;
+import org.apache.tuweni.config.ConfigurationError;
+import org.apache.tuweni.config.PropertyValidator;
+import org.apache.tuweni.config.Schema;
+import org.apache.tuweni.config.SchemaBuilder;
+import org.apache.tuweni.crypto.SECP256K1;
 import tech.devgao.artemis.util.bls.BLSSignature;
 
 /** Configuration of an instance of Artemis. */

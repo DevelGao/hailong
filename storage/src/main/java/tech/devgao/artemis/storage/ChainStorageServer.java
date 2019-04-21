@@ -15,7 +15,7 @@ package tech.devgao.artemis.storage;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import net.develgao.cava.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.util.alogger.ALogger;
 

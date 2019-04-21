@@ -13,7 +13,7 @@
 
 package tech.devgao.artemis.pow.event;
 
-import net.develgao.cava.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes;
 import tech.devgao.artemis.pow.api.DepositEvent;
 import tech.devgao.artemis.pow.contract.DepositContract.DepositEventResponse;
 

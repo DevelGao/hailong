@@ -15,9 +15,9 @@ package tech.devgao.artemis.networking.p2p.hobbits;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.plumtree.MessageSender;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.plumtree.MessageSender;
 import org.junit.jupiter.api.Test;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;

@@ -15,10 +15,10 @@ package tech.devgao.artemis.networking.p2p.hobbits;
 
 import java.net.URI;
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes;
 
 /** A hobbits peer */
-public final class Peer implements net.develgao.cava.plumtree.Peer {
+public final class Peer implements org.apache.tuweni.plumtree.Peer {
 
   private final URI uri;
   private Hello peerHello;

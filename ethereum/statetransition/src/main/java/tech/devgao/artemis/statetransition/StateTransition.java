@@ -16,8 +16,8 @@ package tech.devgao.artemis.statetransition;
 import static tech.devgao.artemis.datastructures.Constants.SLOTS_PER_EPOCH;
 
 import com.google.common.primitives.UnsignedLong;
-import net.develgao.cava.bytes.Bytes32;
 import org.apache.logging.log4j.Level;
+import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;

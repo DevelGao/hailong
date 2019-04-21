@@ -32,15 +32,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.concurrent.AsyncCompletion;
-import net.develgao.cava.concurrent.CompletableAsyncCompletion;
-import net.develgao.cava.crypto.Hash;
-import net.develgao.cava.plumtree.EphemeralPeerRepository;
-import net.develgao.cava.plumtree.MessageSender;
-import net.develgao.cava.plumtree.State;
 import org.apache.logging.log4j.Level;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.concurrent.AsyncCompletion;
+import org.apache.tuweni.concurrent.CompletableAsyncCompletion;
+import org.apache.tuweni.crypto.Hash;
+import org.apache.tuweni.plumtree.EphemeralPeerRepository;
+import org.apache.tuweni.plumtree.MessageSender;
+import org.apache.tuweni.plumtree.State;
 import tech.devgao.artemis.data.TimeSeriesRecord;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
@@ -106,7 +106,7 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
   }
 
   private void sendMessage(
-      MessageSender.Verb verb, net.develgao.cava.plumtree.Peer peer, Bytes hash, Bytes bytes) {
+      MessageSender.Verb verb, org.apache.tuweni.plumtree.Peer peer, Bytes hash, Bytes bytes) {
     if (!started.get()) {
       return;
     }

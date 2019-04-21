@@ -22,7 +22,7 @@ import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.List;
-import net.develgao.cava.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
 import tech.devgao.artemis.util.bls.BLSSignature;
 

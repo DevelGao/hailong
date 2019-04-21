@@ -14,9 +14,9 @@
 package tech.devgao.artemis.datastructures.blocks;
 
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.ssz.SSZ;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.ssz.SSZ;
 
 public final class Eth1Data {
 

@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import net.develgao.cava.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.operations.AttesterSlashing;

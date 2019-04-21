@@ -15,7 +15,7 @@ package tech.devgao.artemis.util.mikuli;
 
 import java.util.List;
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes;
 
 /** This class represents a BLS12-381 public key. */
 public final class PublicKey {

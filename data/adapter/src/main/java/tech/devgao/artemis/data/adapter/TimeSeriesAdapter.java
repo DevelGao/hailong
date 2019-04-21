@@ -17,7 +17,7 @@ import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
-import net.develgao.cava.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.data.RawRecord;
 import tech.devgao.artemis.data.TimeSeriesRecord;
 import tech.devgao.artemis.data.ValidatorJoin;

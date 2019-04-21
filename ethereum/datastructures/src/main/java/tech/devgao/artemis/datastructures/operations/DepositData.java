@@ -15,8 +15,8 @@ package tech.devgao.artemis.datastructures.operations;
 
 import com.google.common.primitives.UnsignedLong;
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.ssz.SSZ;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.ssz.SSZ;
 
 public class DepositData {
 

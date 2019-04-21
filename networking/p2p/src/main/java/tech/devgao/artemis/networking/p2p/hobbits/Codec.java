@@ -16,7 +16,7 @@ package tech.devgao.artemis.networking.p2p.hobbits;
 import com.google.common.base.Splitter;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import net.develgao.cava.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes;
 
 interface Codec {
   enum ProtocolType {

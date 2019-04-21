@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.eventbus.EventBus;
 import java.util.concurrent.ConcurrentHashMap;
-import net.develgao.cava.rlpx.wire.SubProtocolIdentifier;
+import org.apache.tuweni.rlpx.wire.SubProtocolIdentifier;
 import org.junit.jupiter.api.Test;
 import tech.devgao.artemis.data.TimeSeriesRecord;
 

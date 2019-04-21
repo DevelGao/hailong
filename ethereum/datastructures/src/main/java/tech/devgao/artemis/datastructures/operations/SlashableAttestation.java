@@ -17,8 +17,8 @@ import com.google.common.primitives.UnsignedLong;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.ssz.SSZ;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.ssz.SSZ;
 import tech.devgao.artemis.util.bls.BLSSignature;
 
 public class SlashableAttestation {

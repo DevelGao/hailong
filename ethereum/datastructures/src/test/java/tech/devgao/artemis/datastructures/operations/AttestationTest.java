@@ -19,8 +19,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomAttestationData;
 
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 import tech.devgao.artemis.util.bls.BLSSignature;
 
