@@ -26,7 +26,6 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.ssz.InvalidSSZTypeException;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.state.BeaconState;
@@ -225,17 +224,5 @@ public class ChainStorageClient implements ChainStorage {
             + " detected."
             + ANSI_RESET);
     addUnprocessedAttestation(attestation);
-  }
-
-  @Subscribe
-  public void onReceievedMessage(Bytes bytes) {
-    try {
-      //
-      Attestation attestation = Attestation.fromBytes(bytes);
-      onNewUnprocessedAttestation(attestation);
-    } catch (InvalidSSZTypeException e) {
-      BeaconBlock block = BeaconBlock.fromBytes(bytes);
-      onNewUnprocessedBlock(block);
-    }
   }
 }
