@@ -29,7 +29,6 @@ import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.datastructures.util.DataStructureUtil;
-import tech.devgao.artemis.pow.api.DepositEvent;
 import tech.devgao.artemis.pow.api.Eth2GenesisEvent;
 import tech.devgao.artemis.storage.ChainStorage;
 import tech.devgao.artemis.storage.ChainStorageClient;
@@ -101,12 +100,13 @@ public class StateProcessor {
     }
   }
 
-  @Subscribe
-  public void onDepositEvent(DepositEvent event) {
-    LOG.log(
-        Level.INFO,
-        "Deposit Event detected: " + ((tech.devgao.artemis.pow.event.Deposit) event).toString());
-  }
+  //  @Subscribe
+  //  public void onDepositEvent(DepositEvent event) {
+  //    LOG.log(
+  //        Level.INFO,
+  //        "Deposit Event detected: " + ((tech.devgao.artemis.pow.event.Deposit)
+  // event).toString());
+  //  }
 
   @Subscribe
   public void onNewSlot(Date date) throws StateTransitionException, InterruptedException {
