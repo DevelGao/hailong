@@ -21,8 +21,8 @@ import net.develgao.cava.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlockHeader;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
-import tech.devgao.artemis.util.hashtree.Merkleizable;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
+import tech.devgao.artemis.util.hashtree.Merkleizable;
 
 public class ProposerSlashing implements Merkleizable {
 
@@ -110,7 +110,8 @@ public class ProposerSlashing implements Merkleizable {
   public Bytes32 hash_tree_root() {
     return HashTreeUtil.merkleize(
         Arrays.asList(
-            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(proposer_index.longValue())),
+            HashTreeUtil.hash_tree_root(
+                SSZTypes.BASIC, SSZ.encodeUInt64(proposer_index.longValue())),
             header_1.hash_tree_root(),
             header_2.hash_tree_root()));
   }

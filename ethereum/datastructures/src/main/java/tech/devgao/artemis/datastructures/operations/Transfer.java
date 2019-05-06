@@ -22,8 +22,8 @@ import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
 import tech.devgao.artemis.util.bls.BLSSignature;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
-import tech.devgao.artemis.util.hashtree.Merkleizable;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
+import tech.devgao.artemis.util.hashtree.Merkleizable;
 
 public class Transfer implements Merkleizable {
   private UnsignedLong sender;
@@ -174,7 +174,8 @@ public class Transfer implements Merkleizable {
         HashTreeUtil.merkleize(
             Arrays.asList(
                 HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(sender.longValue())),
-                HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(recipient.longValue())),
+                HashTreeUtil.hash_tree_root(
+                    SSZTypes.BASIC, SSZ.encodeUInt64(recipient.longValue())),
                 HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(amount.longValue())),
                 HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(fee.longValue())),
                 HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(slot.longValue())),
