@@ -13,14 +13,12 @@
 
 package tech.devgao.artemis.data;
 
-import java.util.Date;
 import java.util.Objects;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 
 public class RawRecord {
 
-  private Date date;
   private Long index;
   private BeaconState headState;
   private BeaconBlock headBlock;
@@ -38,8 +36,7 @@ public class RawRecord {
       BeaconState justifiedState,
       BeaconBlock justifiedBlock,
       BeaconState finalizedState,
-      BeaconBlock finalizedBlock,
-      Date date) {
+      BeaconBlock finalizedBlock) {
     this.index = index;
     this.headState = headState;
     this.headBlock = headBlock;
@@ -47,11 +44,6 @@ public class RawRecord {
     this.justifiedBlock = justifiedBlock;
     this.finalizedState = finalizedState;
     this.finalizedBlock = finalizedBlock;
-    this.date = date;
-  }
-
-  public Date getDate() {
-    return this.date;
   }
 
   public Long getIndex() {
@@ -152,8 +144,7 @@ public class RawRecord {
       return false;
     }
     RawRecord rawRecord = (RawRecord) o;
-    return Objects.equals(date, rawRecord.date)
-        && Objects.equals(index, rawRecord.index)
+    return Objects.equals(index, rawRecord.index)
         && Objects.equals(headState, rawRecord.headState)
         && Objects.equals(headBlock, rawRecord.headBlock)
         && Objects.equals(justifiedState, rawRecord.justifiedState)
@@ -165,7 +156,6 @@ public class RawRecord {
   @Override
   public int hashCode() {
     return Objects.hash(
-        date,
         index,
         headState,
         headBlock,

@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package devgao.artemis.reference;
+package tech.devgao.artemis.util.mikuli;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -26,22 +26,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import net.develgao.cava.bytes.Bytes;
+import net.develgao.cava.bytes.Bytes32;
+import net.develgao.cava.bytes.Bytes48;
+import net.develgao.cava.io.Resources;
 import org.apache.milagro.amcl.BLS381.BIG;
 import org.apache.milagro.amcl.BLS381.ECP2;
 import org.apache.milagro.amcl.BLS381.FP2;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.Bytes48;
-import org.apache.tuweni.io.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import tech.devgao.artemis.util.mikuli.BLS12381;
-import tech.devgao.artemis.util.mikuli.G2Point;
-import tech.devgao.artemis.util.mikuli.KeyPair;
-import tech.devgao.artemis.util.mikuli.PublicKey;
-import tech.devgao.artemis.util.mikuli.SecretKey;
-import tech.devgao.artemis.util.mikuli.Signature;
 
 /*
  * The "official" BLS reference test data is from https://github.com/ethereum/eth2.0-tests/
@@ -51,7 +45,7 @@ class BLSTestSuite {
 
   // TODO: reinstate the official tests once they have been updated
   // private static String testFile = "**/bls/test_bls.yml";
-  private static final String testFile = "**/test_bls_tmp.yml";
+  private static String testFile = "**/test_bls_tmp.yml";
 
   @ParameterizedTest(name = "{index}. message hash to G2 uncompressed {0} -> {1}")
   @MethodSource("readMessageHashG2Uncompressed")

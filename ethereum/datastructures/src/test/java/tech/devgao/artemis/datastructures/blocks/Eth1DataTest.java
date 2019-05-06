@@ -16,16 +16,16 @@ package tech.devgao.artemis.datastructures.blocks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
+import net.develgao.cava.bytes.Bytes;
+import net.develgao.cava.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 
 class Eth1DataTest {
 
-  private final Bytes32 depositRoot = Bytes32.random();
-  private final Bytes32 blockHash = Bytes32.random();
+  private Bytes32 depositRoot = Bytes32.random();
+  private Bytes32 blockHash = Bytes32.random();
 
-  private final Eth1Data eth1Data = new Eth1Data(depositRoot, blockHash);
+  private Eth1Data eth1Data = new Eth1Data(depositRoot, blockHash);
 
   @Test
   void equalsReturnsTrueWhenObjectAreSame() {
