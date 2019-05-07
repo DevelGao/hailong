@@ -16,8 +16,8 @@ package tech.devgao.artemis.util.mikuli;
 import static tech.devgao.artemis.util.mikuli.G2Point.hashToG2;
 
 import java.util.List;
+import net.develgao.cava.bytes.Bytes;
 import org.apache.milagro.amcl.BLS381.FP12;
-import org.apache.tuweni.bytes.Bytes;
 
 /*
  * Adapted from the DevelGao/mikuli (Apache 2 License) implementation:

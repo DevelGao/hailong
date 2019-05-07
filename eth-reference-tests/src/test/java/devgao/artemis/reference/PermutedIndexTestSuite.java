@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package devgao.artemis.reference;
+package tech.devgao.artemis.datastructures.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -24,20 +24,19 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.io.Resources;
-import org.apache.tuweni.junit.BouncyCastleExtension;
+import net.develgao.cava.bytes.Bytes32;
+import net.develgao.cava.io.Resources;
+import net.develgao.cava.junit.BouncyCastleExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 
 @ExtendWith(BouncyCastleExtension.class)
 public class PermutedIndexTestSuite {
 
   // TODO: point this to the official test file repo when it is available and correct
-  private static final String testFile = "**/test_vector_permutated_index_tmp.yml";
+  private static String testFile = "**/test_vector_permutated_index_tmp.yml";
 
   @ParameterizedTest(name = "{index}. Test permuted index {0}")
   @MethodSource("readPermutedIndexTestVectors")

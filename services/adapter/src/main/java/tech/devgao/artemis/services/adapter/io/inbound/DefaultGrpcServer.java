@@ -33,7 +33,7 @@ public class DefaultGrpcServer implements GrpcServer, BindableService {
 
   private String serviceName;
 
-  private int serverPort;
+  int serverPort;
 
   private Set<MethodDescriptor<?, RemoteCallResponse>> methodDescriptors;
 
@@ -67,7 +67,7 @@ public class DefaultGrpcServer implements GrpcServer, BindableService {
 
   @Override
   public void stop() {
-    server.ifPresent(Server::shutdown);
+    server.ifPresent(theServer -> theServer.shutdown());
     started = false;
   }
 

@@ -1,9 +1,5 @@
 #!/usr/bin/env groovy
 
-import hudson.model.Result
-import hudson.model.Run
-import jenkins.model.CauseOfInterruption.UserInterruption
-
 if (env.BRANCH_NAME == "master") {
     properties([
         buildDiscarder(
@@ -22,26 +18,6 @@ if (env.BRANCH_NAME == "master") {
     ])
 }
 
-def abortPreviousBuilds() {
-    Run previousBuild = currentBuild.rawBuild.getPreviousBuildInProgress()
-
-    while (previousBuild != null) {
-        if (previousBuild.isInProgress()) {
-            def executor = previousBuild.getExecutor()
-            if (executor != null) {
-                echo ">> Aborting older build #${previousBuild.number}"
-                executor.interrupt(Result.ABORTED, new UserInterruption(
-                    "Aborted by newer build #${currentBuild.number}"
-                ))
-            }
-        }
-
-        previousBuild = previousBuild.getPreviousBuildInProgress()
-    }
-}
-
-abortPreviousBuilds()
-
 try {
     node {
         checkout scm
@@ -52,7 +28,8 @@ try {
                 }
                 stage('Test') {
                     sh './gradlew --no-daemon --parallel test'
-                    sh './artemis/src/main/resources/artemisTestScript.sh'
+                    // Disable Artemis Runtime Tests During Upgrade
+                    // sh './artemis/src/main/resources/artemisTestScript.sh'
                 }
             } finally {
                 archiveArtifacts '**/build/reports/**'
@@ -62,7 +39,7 @@ try {
             }
         }
     }
-} catch (ignored) {
+} catch (e) {
     currentBuild.result = 'FAILURE'
 } finally {
     // If we're on master and it failed, notify slack

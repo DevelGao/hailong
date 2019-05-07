@@ -21,6 +21,7 @@ import io.reactivex.disposables.Disposable;
 import org.web3j.abi.EventEncoder;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.request.EthFilter;
+import tech.devgao.artemis.pow.api.DepositEvent;
 import tech.devgao.artemis.pow.contract.DepositContract;
 import tech.devgao.artemis.pow.event.Deposit;
 import tech.devgao.artemis.pow.event.Eth2Genesis;
@@ -59,7 +60,7 @@ public class DepositContractListener {
             .depositEventFlowable(depositEventFilter)
             .subscribe(
                 response -> {
-                  Deposit event = new Deposit(response);
+                  DepositEvent event = new Deposit(response);
                   eventBus.post(event);
                 });
 
