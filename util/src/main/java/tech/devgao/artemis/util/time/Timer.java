@@ -11,25 +11,11 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package tech.devgao.artemis.services;
+package tech.devgao.artemis.util.time;
 
-public class ServiceFactory<T> {
+public interface Timer {
 
-  private final Class<T> type;
+  void start();
 
-  public ServiceFactory(Class<T> type) {
-    this.type = type;
-  }
-
-  public T getInstance() {
-    try {
-      return type.getDeclaredConstructor().newInstance();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public static <S> ServiceFactory<S> getInstance(Class<S> type) {
-    return new ServiceFactory<>(type);
-  }
+  void stop();
 }
