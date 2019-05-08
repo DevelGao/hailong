@@ -14,15 +14,10 @@
 package tech.devgao.artemis.statetransition;
 
 import static tech.devgao.artemis.datastructures.Constants.SLOTS_PER_EPOCH;
-import static tech.devgao.artemis.datastructures.Constants.SLOTS_PER_HISTORICAL_ROOT;
-import static tech.devgao.artemis.datastructures.Constants.ZERO_HASH;
 
-import com.google.common.primitives.UnsignedLong;
-import net.develgao.cava.bytes.Bytes32;
 import org.apache.logging.log4j.Level;
-import tech.devgao.artemis.datastructures.Constants;
+import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
-import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.statetransition.util.BlockProcessingException;
@@ -30,7 +25,10 @@ import tech.devgao.artemis.statetransition.util.BlockProcessorUtil;
 import tech.devgao.artemis.statetransition.util.EpochProcessingException;
 import tech.devgao.artemis.statetransition.util.EpochProcessorUtil;
 import tech.devgao.artemis.statetransition.util.PreProcessingUtil;
+import tech.devgao.artemis.statetransition.util.SlotProcessingException;
+import tech.devgao.artemis.statetransition.util.SlotProcessorUtil;
 import tech.devgao.artemis.util.alogger.ALogger;
+import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 
 public class StateTransition {
 
@@ -46,26 +44,29 @@ public class StateTransition {
 
   public void initiate(BeaconStateWithCache state, BeaconBlock block, Bytes32 previous_block_root)
       throws StateTransitionException {
-    // Client specific optimization
+    state.incrementSlot();
+    // pre-process and cache selected state transition calculations
     preProcessor(state);
-
-    cache_state(state);
-
-    if (state
-        .getSlot()
-        .plus(UnsignedLong.ONE)
-        .mod(UnsignedLong.valueOf(SLOTS_PER_EPOCH))
-        .equals(UnsignedLong.ZERO)) {
-      epochProcessor(state, block);
-    }
-
-    slotProcessor(state);
-
+    // per-slot processing
+    slotProcessor(state, previous_block_root);
+    LOG.log(
+        Level.DEBUG,
+        "State root after slotProcessing: " + HashTreeUtil.hash_tree_root(state.toBytes()));
+    // per-block processing
     if (block != null) {
       blockProcessor(state, block);
     }
-
-    // Client specific optimization
+    LOG.log(
+        Level.DEBUG,
+        "State root after blockProcessing: " + HashTreeUtil.hash_tree_root(state.toBytes()));
+    // per-epoch processing
+    if ((state.getSlot() + 1) % SLOTS_PER_EPOCH == 0) {
+      epochProcessor(state, block);
+      LOG.log(
+          Level.DEBUG,
+          "State root after epochProcessing: " + HashTreeUtil.hash_tree_root(state.toBytes()));
+    }
+    // reset all cached state variables
     state.invalidateCache();
   }
 
@@ -74,50 +75,50 @@ public class StateTransition {
     PreProcessingUtil.cacheCurrentBeaconProposerIndex(state);
   }
 
-  /**
-   * Caches the given state.
-   *
-   * @param state
-   */
-  protected void cache_state(BeaconState state) {
-    Bytes32 previous_slot_state_root = state.hash_tree_root();
-
-    // Store the previous slot's post state transition root
-    int prev_slot_index =
-        state.getSlot().mod(UnsignedLong.valueOf(SLOTS_PER_HISTORICAL_ROOT)).intValue();
-    state.getLatest_state_roots().set(prev_slot_index, previous_slot_state_root);
-
-    // Cache state root in stored latest_block_header if empty
-    if (state.getLatest_block_header().getState_root() == ZERO_HASH) {
-      state.getLatest_block_header().setState_root(previous_slot_state_root);
+  protected void slotProcessor(BeaconStateWithCache state, Bytes32 previous_block_root) {
+    try {
+      // Slots the proposer has skipped (i.e. layers of RANDAO expected)
+      // should be in Validator.randao_skips
+      SlotProcessorUtil.updateBlockRoots(state, previous_block_root);
+    } catch (SlotProcessingException e) {
+      LOG.log(Level.WARN, "  Slot processing error: " + e, printEnabled);
     }
-
-    // Store latest known block for previous slot
-    state
-        .getLatest_block_roots()
-        .set(prev_slot_index, state.getLatest_block_header().signed_root("signature"));
-  }
-
-  protected void slotProcessor(BeaconStateWithCache state) {
-    advance_slot(state);
   }
 
   private void blockProcessor(BeaconStateWithCache state, BeaconBlock block) {
-    try {
+    if (BlockProcessorUtil.verify_slot(state, block)) {
+      try {
 
-      BlockProcessorUtil.process_block_header(state, block);
-      BlockProcessorUtil.process_randao(state, block);
-      BlockProcessorUtil.process_eth1_data(state, block);
-      BlockProcessorUtil.process_proposer_slashings(state, block);
-      BlockProcessorUtil.process_attester_slashings(state, block);
-      BlockProcessorUtil.process_attestations(state, block);
-      BlockProcessorUtil.process_deposits(state, block);
-      BlockProcessorUtil.process_voluntary_exits(state, block);
-      BlockProcessorUtil.process_transfers(state, block);
-      BlockProcessorUtil.verify_block_state_root(state, block);
+        // Only verify the proposer's signature if we are processing blocks (not proposing them)
+        if (!block.getState_root().equals(Bytes32.ZERO)) {
+          // Verify Proposer Signature
+          BlockProcessorUtil.verify_signature(state, block);
+        }
 
-    } catch (BlockProcessingException e) {
-      LOG.log(Level.WARN, "  Block processing error: " + e, printEnabled);
+        // Verify and Update RANDAO
+        BlockProcessorUtil.verify_and_update_randao(state, block);
+
+        // Update Eth1 Data
+        BlockProcessorUtil.update_eth1_data(state, block);
+
+        // Block Body - Operations
+        // Execute Proposer Slashings
+        BlockProcessorUtil.proposer_slashing(state, block);
+        // Execute Attester Slashings
+        BlockProcessorUtil.attester_slashing(state, block);
+        // Process Attestations
+        BlockProcessorUtil.processAttestations(state, block);
+        // Process Deposits
+        BlockProcessorUtil.processDeposits(state, block);
+        // Process Exits
+        BlockProcessorUtil.processVoluntaryExits(state, block);
+        // Process Transfers
+        BlockProcessorUtil.processTransfers(state, block);
+      } catch (BlockProcessingException e) {
+        LOG.log(Level.WARN, "  Block processing error: " + e, printEnabled);
+      }
+    } else {
+      LOG.log(Level.INFO, "  Skipping block processing for this slot.", printEnabled);
     }
   }
 
@@ -133,33 +134,88 @@ public class StateTransition {
 
       LOG.log(
           Level.INFO,
-          "Epoch:                                  "
-              + BeaconStateUtil.get_current_epoch(state)
-              + " |  "
-              + BeaconStateUtil.get_current_epoch(state).longValue() % Constants.GENESIS_EPOCH,
+          "Epoch:                                  " + BeaconStateUtil.get_current_epoch(state),
+          printEnabled);
+      EpochProcessorUtil.updateEth1Data(state);
+      LOG.log(
+          Level.DEBUG,
+          "State root after updateEth1Data(): " + HashTreeUtil.hash_tree_root(state.toBytes()),
+          printEnabled);
+      EpochProcessorUtil.updateJustification(state, block);
+      LOG.log(
+          Level.DEBUG,
+          "State root after updateJustification(): " + HashTreeUtil.hash_tree_root(state.toBytes()),
+          printEnabled);
+      EpochProcessorUtil.updateCrosslinks(state);
+      LOG.log(
+          Level.DEBUG,
+          "State root after updateCrosslinks(): " + HashTreeUtil.hash_tree_root(state.toBytes()),
           printEnabled);
 
-      EpochProcessorUtil.update_justification_and_finalization(state);
-      EpochProcessorUtil.process_crosslinks(state);
-      EpochProcessorUtil.maybe_reset_eth1_period(state);
-      EpochProcessorUtil.apply_rewards(state);
-      EpochProcessorUtil.process_ejections(state);
-      EpochProcessorUtil.update_registry_and_shuffling_data(state);
-      EpochProcessorUtil.process_slashings(state);
-      EpochProcessorUtil.process_exit_queue(state);
-      EpochProcessorUtil.finish_epoch_update(state);
+      long previous_total_balance = BeaconStateUtil.previous_total_balance(state);
+      LOG.log(
+          Level.DEBUG,
+          "State root after justificationAndFinalization(): "
+              + HashTreeUtil.hash_tree_root(state.toBytes()),
+          printEnabled);
+      EpochProcessorUtil.justificationAndFinalization(state, previous_total_balance);
+      LOG.log(
+          Level.DEBUG,
+          "State root after attestionInclusion(): " + HashTreeUtil.hash_tree_root(state.toBytes()),
+          printEnabled);
+      EpochProcessorUtil.attestionInclusion(state, previous_total_balance);
+      LOG.log(
+          Level.DEBUG,
+          "State root after crosslinkRewards(): " + HashTreeUtil.hash_tree_root(state.toBytes()),
+          printEnabled);
+      EpochProcessorUtil.crosslinkRewards(state, previous_total_balance);
 
+      LOG.log(
+          Level.DEBUG,
+          "State root after process_ejections(): " + HashTreeUtil.hash_tree_root(state.toBytes()),
+          printEnabled);
+      EpochProcessorUtil.process_ejections(state);
+
+      LOG.log(
+          Level.DEBUG,
+          "State root after previousStateUpdates(): "
+              + HashTreeUtil.hash_tree_root(state.toBytes()),
+          printEnabled);
+      EpochProcessorUtil.previousStateUpdates(state);
+      if (EpochProcessorUtil.shouldUpdateValidatorRegistry(state)) {
+        LOG.log(
+            Level.DEBUG,
+            "State root after update_validator_registry(): "
+                + HashTreeUtil.hash_tree_root(state.toBytes()),
+            printEnabled);
+        EpochProcessorUtil.update_validator_registry(state);
+        LOG.log(
+            Level.DEBUG,
+            "State root after currentStateUpdatesAlt1(): "
+                + HashTreeUtil.hash_tree_root(state.toBytes()),
+            printEnabled);
+        EpochProcessorUtil.currentStateUpdatesAlt1(state);
+      } else {
+        LOG.log(
+            Level.DEBUG,
+            "State root after currentStateUpdatesAlt2(): "
+                + HashTreeUtil.hash_tree_root(state.toBytes()),
+            printEnabled);
+        EpochProcessorUtil.currentStateUpdatesAlt2(state);
+      }
+      LOG.log(
+          Level.DEBUG,
+          "State root after process_penalties_and_exits(): "
+              + HashTreeUtil.hash_tree_root(state.toBytes()),
+          printEnabled);
+      EpochProcessorUtil.process_penalties_and_exits(state);
+      LOG.log(
+          Level.DEBUG,
+          "State root after finalUpdates(): " + HashTreeUtil.hash_tree_root(state.toBytes()),
+          printEnabled);
+      EpochProcessorUtil.finalUpdates(state);
     } catch (EpochProcessingException e) {
       LOG.log(Level.WARN, "  Epoch processing error: " + e, printEnabled);
     }
-  }
-
-  /**
-   * Runs at every slot > GENESIS_SLOT.
-   *
-   * @param state
-   */
-  private void advance_slot(BeaconStateWithCache state) {
-    state.incrementSlot();
   }
 }

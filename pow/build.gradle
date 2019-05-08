@@ -20,14 +20,16 @@ dependencies {
   api 'org.web3j:core'
   api 'org.web3j:abi'
   api 'org.web3j:crypto'
+  api 'org.bouncycastle:bcprov-jdk15on'
 
   implementation project(':util')
-
+  implementation project(':data')
+  implementation 'com.google.code.gson:gson'
   implementation 'com.google.guava:guava'
   compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1'
 
-  implementation 'net.develgao.cava:cava-crypto'
-  implementation 'net.develgao.cava:cava-units'
+  implementation 'org.apache.tuweni:tuweni-crypto'
+  implementation 'org.apache.tuweni:tuweni-units'
 
   implementation 'org.apache.logging.log4j:log4j-api'
   runtime 'org.apache.logging.log4j:log4j-core'

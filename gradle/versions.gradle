@@ -38,17 +38,17 @@ dependencyManagement {
       entry 'logl-logl'
     }
 
-    dependencySet(group: 'net.develgao.cava', version: '1.0.0-C01FE1-snapshot') {
-      entry 'cava-bytes'
-      entry 'cava-config'
-      entry 'cava-crypto'
-      entry 'cava-junit'
-      entry 'cava-kv'
-      entry 'cava-rlpx'
-      // Commented out in favor of a precompiled jar for v0.5.1 spec
-      // entry 'cava-ssz'
-      entry 'cava-toml'
-      entry 'cava-units'
+    dependencySet(group: 'org.apache.tuweni', version: '1.0.0-SNAPSHOT') {
+      entry 'tuweni-bytes'
+      entry 'tuweni-config'
+      entry 'tuweni-crypto'
+      entry 'tuweni-junit'
+      entry 'tuweni-kv'
+      entry 'tuweni-plumtree'
+      entry 'tuweni-rlpx'
+      entry 'tuweni-ssz'
+      entry 'tuweni-toml'
+      entry 'tuweni-units'
     }
 
     dependency 'org.apache.commons:commons-text:1.6'
