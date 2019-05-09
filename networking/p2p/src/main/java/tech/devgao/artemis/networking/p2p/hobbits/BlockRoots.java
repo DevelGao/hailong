@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.tuweni.bytes.Bytes32;
+import net.develgao.cava.bytes.Bytes32;
 
 @JsonDeserialize(using = BlockRoots.BlockRootsDeserializer.class)
 final class BlockRoots {

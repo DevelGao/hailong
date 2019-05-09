@@ -16,6 +16,7 @@ package tech.devgao.artemis.networking.p2p.api;
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
+import tech.devgao.artemis.data.RawRecord;
 
 // TODO: Finish defining proper return types and params
 
@@ -29,17 +30,10 @@ public interface P2PNetwork extends Closeable, Runnable {
   Collection<?> getPeers();
 
   /**
-   * Returns a snapshot of the socket handlers.
-   *
-   * @return Socket handlers
-   */
-  Collection<?> getHandlers();
-
-  /**
-   * Connects to a Peer.
+   * Connects to a {@link Peer}.
    *
    * @param peer Peer to connect to.
-   * @return Future of the established PeerConnection
+   * @return Future of the established {@link PeerConnection}
    */
   CompletableFuture<?> connect(String peer);
 
@@ -59,4 +53,6 @@ public interface P2PNetwork extends Closeable, Runnable {
    * @return true if the node is listening for network connections, false, otherwise.
    */
   boolean isListening();
+
+  void onDataEvent(RawRecord record);
 }

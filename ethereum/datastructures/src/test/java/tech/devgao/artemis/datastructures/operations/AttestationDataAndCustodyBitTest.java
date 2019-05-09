@@ -18,15 +18,15 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomAttestationData;
 
 import java.util.Objects;
-import org.apache.tuweni.bytes.Bytes;
+import net.develgao.cava.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
 class AttestationDataAndCustodyBitTest {
 
-  private final AttestationData data = randomAttestationData();
-  private final boolean custodyBit = false;
+  private AttestationData data = randomAttestationData();
+  private boolean custodyBit = false;
 
-  private final AttestationDataAndCustodyBit attestationDataAndCustodyBit =
+  private AttestationDataAndCustodyBit attestationDataAndCustodyBit =
       new AttestationDataAndCustodyBit(data, custodyBit);
 
   @Test
