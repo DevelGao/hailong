@@ -13,7 +13,6 @@
 
 package tech.devgao.artemis.util.config;
 
-import com.google.common.primitives.UnsignedLong;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -24,13 +23,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.config.Configuration;
-import net.develgao.cava.config.ConfigurationError;
-import net.develgao.cava.config.PropertyValidator;
-import net.develgao.cava.config.Schema;
-import net.develgao.cava.config.SchemaBuilder;
-import net.develgao.cava.crypto.SECP256K1;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.config.Configuration;
+import org.apache.tuweni.config.ConfigurationError;
+import org.apache.tuweni.config.PropertyValidator;
+import org.apache.tuweni.config.Schema;
+import org.apache.tuweni.config.SchemaBuilder;
+import org.apache.tuweni.crypto.SECP256K1;
 import tech.devgao.artemis.util.bls.BLSSignature;
 
 /** Configuration of an instance of Artemis. */
@@ -43,8 +42,9 @@ public final class ArtemisConfiguration {
                 "node.networkMode",
                 "mock",
                 "represents what network to use",
-                PropertyValidator.anyOf("mock", "rlpx", "hobbits"));
-    builder.addString("node.identity", null, "Identity of the peer", PropertyValidator.isPresent());
+                PropertyValidator.anyOf("mock", "hobbits"));
+    builder.addString("node.identity", null, "Identity of the peer", null);
+    builder.addString("node.timer", "QuartzTimer", "Timer used for slots", null);
     builder.addString("node.networkInterface", "0.0.0.0", "Peer to peer network interface", null);
     builder.addInteger("node.port", 9000, "Peer to peer port", PropertyValidator.inRange(0, 65535));
     builder.addInteger(
@@ -56,33 +56,35 @@ public final class ArtemisConfiguration {
         "sim.numValidators",
         128,
         "represents the total number of validators in the network",
-        PropertyValidator.inRange(1, 16384));
+        PropertyValidator.inRange(1, 65535));
     builder.addInteger(
         "sim.numNodes",
         1,
         "represents the total number of nodes on the network",
-        PropertyValidator.inRange(1, 16384));
+        PropertyValidator.inRange(1, 65535));
     builder.addListOfString(
         "node.peers",
         Collections.emptyList(),
         "Static peers",
         (key, position, peers) ->
-            peers.stream()
-                .map(
-                    peer -> {
-                      try {
-                        URI uri = new URI(peer);
-                        String userInfo = uri.getUserInfo();
-                        if (userInfo == null || userInfo.isEmpty()) {
-                          return new ConfigurationError("Missing public key");
-                        }
-                      } catch (URISyntaxException e) {
-                        return new ConfigurationError("Invalid uri " + peer);
-                      }
-                      return null;
-                    })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList()));
+            peers != null
+                ? peers.stream()
+                    .map(
+                        peer -> {
+                          try {
+                            URI uri = new URI(peer);
+                            String userInfo = uri.getUserInfo();
+                            if (userInfo == null || userInfo.isEmpty()) {
+                              return new ConfigurationError("Missing public key");
+                            }
+                          } catch (URISyntaxException e) {
+                            return new ConfigurationError("Invalid uri " + peer);
+                          }
+                          return null;
+                        })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList())
+                : null);
     builder.addLong(
         "node.networkID", 1L, "The identifier of the network (mainnet, testnet, sidechain)", null);
 
@@ -91,7 +93,7 @@ public final class ArtemisConfiguration {
     builder.addInteger("constants.SHARD_COUNT", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.TARGET_COMMITTEE_SIZE", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.MAX_BALANCE_CHURN_QUOTIENT", Integer.MIN_VALUE, null, null);
-    builder.addDefault("constants.BEACON_CHAIN_SHARD_NUMBER", UnsignedLong.MAX_VALUE);
+    builder.addLong("constants.BEACON_CHAIN_SHARD_NUMBER", -1L, null, null);
     builder.addInteger("constants.MAX_INDICES_PER_SLASHABLE_VOTE", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.MAX_EXIT_DEQUEUES_PER_EPOCH", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.SHUFFLE_ROUND_COUNT", Integer.MIN_VALUE, null, null);
@@ -111,7 +113,7 @@ public final class ArtemisConfiguration {
     builder.addLong("constants.GENESIS_SLOT", Long.MIN_VALUE, null, null);
     builder.addLong("constants.GENESIS_EPOCH", Long.MIN_VALUE, null, null);
     builder.addInteger("constants.GENESIS_START_SHARD", Integer.MIN_VALUE, null, null);
-    builder.addDefault("constants.FAR_FUTURE_EPOCH", UnsignedLong.MAX_VALUE);
+    builder.addLong("constants.FAR_FUTURE_EPOCH", -1L, null, null);
     builder.addDefault("constants.ZERO_HASH", Bytes32.ZERO);
     builder.addDefault("constants.EMPTY_SIGNATURE", BLSSignature.empty());
     builder.addDefault("constants.BLS_WITHDRAWAL_PREFIX_BYTE", Bytes32.EMPTY);
@@ -123,7 +125,6 @@ public final class ArtemisConfiguration {
     builder.addInteger("constants.MIN_SEED_LOOKAHEAD", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.ACTIVATION_EXIT_DELAY", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.EPOCHS_PER_ETH1_VOTING_PERIOD", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.SLOTS_PER_HISTORICAL_ROOT", Integer.MIN_VALUE, null, null);
     builder.addInteger(
         "constants.MIN_VALIDATOR_WITHDRAWABILITY_DELAY", Integer.MIN_VALUE, null, null);
 
@@ -150,16 +151,21 @@ public final class ArtemisConfiguration {
     builder.addInteger("constants.MAX_TRANSFERS", Integer.MIN_VALUE, null, null);
 
     // Signature domains
-    builder.addInteger("constants.DOMAIN_BEACON_BLOCK", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_RANDAO", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_ATTESTATION", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.DOMAIN_DEPOSIT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_VOLUNTARY_EXIT", Integer.MIN_VALUE, null, null);
+    builder.addInteger("constants.DOMAIN_ATTESTATION", Integer.MIN_VALUE, null, null);
+    builder.addInteger("constants.DOMAIN_PROPOSAL", Integer.MIN_VALUE, null, null);
+    builder.addInteger("constants.DOMAIN_EXIT", Integer.MIN_VALUE, null, null);
+    builder.addInteger("constants.DOMAIN_RANDAO", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.DOMAIN_TRANSFER", Integer.MIN_VALUE, null, null);
 
     // Artemis specific
     builder.addString("constants.SIM_DEPOSIT_VALUE", "", null, null);
     builder.addInteger("constants.DEPOSIT_DATA_SIZE", Integer.MIN_VALUE, null, null);
+
+    builder.validateConfiguration(
+        config -> {
+          return null;
+        });
 
     return builder.toSchema();
   }
@@ -209,6 +215,11 @@ public final class ArtemisConfiguration {
     return config.getString("node.identity");
   }
 
+  /** @return the identity of the node, the hexadecimal representation of its secret key */
+  public String getTimer() {
+    return config.getString("node.timer");
+  }
+
   /** @return the port this node will listen to */
   public int getPort() {
     return config.getInteger("node.port");
@@ -247,8 +258,8 @@ public final class ArtemisConfiguration {
     return config.getInteger("constants.MAX_BALANCE_CHURN_QUOTIENT");
   }
 
-  public Object getBeaconChainShardNumber() {
-    return config.get("constants.BEACON_CHAIN_SHARD_NUMBER");
+  public long getBeaconChainShardNumber() {
+    return config.getLong("constants.BEACON_CHAIN_SHARD_NUMBER");
   }
 
   public int getMaxIndicesPerSlashableVote() {
@@ -306,8 +317,8 @@ public final class ArtemisConfiguration {
     return config.getInteger("constants.GENESIS_START_SHARD");
   }
 
-  public Object getFarFutureEpoch() {
-    return config.get("constants.FAR_FUTURE_EPOCH");
+  public long getFarFutureEpoch() {
+    return config.getLong("constants.FAR_FUTURE_EPOCH");
   }
 
   public Object getZeroHash() {
@@ -347,15 +358,15 @@ public final class ArtemisConfiguration {
     return config.getInteger("constants.EPOCHS_PER_ETH1_VOTING_PERIOD");
   }
 
-  public int getSlotsPerHistoricalRoot() {
-    return config.getInteger("constants.SLOTS_PER_HISTORICAL_ROOT");
-  }
-
   public int getMinValidatorWithdrawabilityDelay() {
     return config.getInteger("constants.MIN_VALIDATOR_WITHDRAWABILITY_DELAY");
   }
 
   /** @return state list length constants */
+  public int getLatestBlockRootsLength() {
+    return config.getInteger("constants.LATEST_BLOCK_ROOTS_LENGTH");
+  }
+
   public int getLatestRandaoMixesLength() {
     return config.getInteger("constants.LATEST_RANDAO_MIXES_LENGTH");
   }
@@ -415,24 +426,24 @@ public final class ArtemisConfiguration {
   }
 
   /** @return signature domain constants */
-  public int getDomainBeaconBlock() {
-    return config.getInteger("constants.DOMAIN_BEACON_BLOCK");
-  }
-
-  public int getDomainRandao() {
-    return config.getInteger("constants.DOMAIN_RANDAO");
+  public int getDomainDeposit() {
+    return config.getInteger("constants.DOMAIN_DEPOSIT");
   }
 
   public int getDomainAttestation() {
     return config.getInteger("constants.DOMAIN_ATTESTATION");
   }
 
-  public int getDomainDeposit() {
-    return config.getInteger("constants.DOMAIN_DEPOSIT");
+  public int getDomainProposal() {
+    return config.getInteger("constants.DOMAIN_PROPOSAL");
   }
 
-  public int getDomainVoluntaryExit() {
-    return config.getInteger("constants.DOMAIN_VOLUNTARY_EXIT");
+  public int getDomainExit() {
+    return config.getInteger("constants.DOMAIN_EXIT");
+  }
+
+  public int getDomainRandao() {
+    return config.getInteger("constants.DOMAIN_RANDAO");
   }
 
   public int getDomainTransfer() {
@@ -473,7 +484,7 @@ public final class ArtemisConfiguration {
     return config.getLong("node.networkID");
   }
 
-  /** @return the mode of the network to use - mock, rlpx or hobbits */
+  /** @return the mode of the network to use - mock or hobbits */
   public String getNetworkMode() {
     return config.getString("node.networkMode");
   }

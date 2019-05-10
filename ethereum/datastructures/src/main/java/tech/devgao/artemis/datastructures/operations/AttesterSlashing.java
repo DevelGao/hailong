@@ -13,15 +13,11 @@
 
 package tech.devgao.artemis.datastructures.operations;
 
-import java.util.Arrays;
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.ssz.SSZ;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil;
-import tech.devgao.artemis.util.hashtree.Merkleizable;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.ssz.SSZ;
 
-public class AttesterSlashing implements Merkleizable {
+public class AttesterSlashing {
 
   private SlashableAttestation slashable_attestation_1;
   private SlashableAttestation slashable_attestation_2;
@@ -88,12 +84,5 @@ public class AttesterSlashing implements Merkleizable {
 
   public void setSlashable_attestation_2(SlashableAttestation slashable_attestation_2) {
     this.slashable_attestation_2 = slashable_attestation_2;
-  }
-
-  @Override
-  public Bytes32 hash_tree_root() {
-    return HashTreeUtil.merkleize(
-        Arrays.asList(
-            slashable_attestation_1.hash_tree_root(), slashable_attestation_2.hash_tree_root()));
   }
 }

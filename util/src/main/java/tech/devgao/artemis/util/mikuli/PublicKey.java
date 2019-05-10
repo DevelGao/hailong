@@ -15,7 +15,7 @@ package tech.devgao.artemis.util.mikuli;
 
 import java.util.List;
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes;
 
 /** This class represents a BLS12-381 public key. */
 public final class PublicKey {
@@ -49,7 +49,7 @@ public final class PublicKey {
     if (keys.isEmpty()) {
       return new PublicKey(new G1Point());
     }
-    return keys.stream().reduce((a, b) -> a.combine(b)).get();
+    return keys.stream().reduce(PublicKey::combine).get();
   }
 
   /**
@@ -75,11 +75,11 @@ public final class PublicKey {
 
   private final G1Point point;
 
-  PublicKey(G1Point point) {
+  public PublicKey(G1Point point) {
     this.point = point;
   }
 
-  PublicKey(SecretKey secretKey) {
+  public PublicKey(SecretKey secretKey) {
     this.point = KeyPair.g1Generator.mul(secretKey.getScalarValue());
   }
 
@@ -105,13 +105,13 @@ public final class PublicKey {
     return point.toBytesCompressed();
   }
 
-  G1Point g1Point() {
+  public G1Point g1Point() {
     return point;
   }
 
   @Override
   public String toString() {
-    return "Signature [ecpPoint=" + point.toString() + "]";
+    return point.toString();
   }
 
   @Override

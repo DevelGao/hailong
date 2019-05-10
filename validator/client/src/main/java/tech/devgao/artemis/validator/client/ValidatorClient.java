@@ -13,19 +13,26 @@
 
 package tech.devgao.artemis.validator.client;
 
+import static java.lang.Math.toIntExact;
 import static tech.devgao.artemis.datastructures.Constants.SLOTS_PER_EPOCH;
-import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_beacon_proposer_index;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_crosslink_committees_at_slot;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_current_epoch;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_epoch_start_slot;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_previous_epoch;
 
-import com.google.common.primitives.UnsignedLong;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.apache.tuweni.bytes.Bytes;
+import org.web3j.crypto.Credentials;
+import org.web3j.protocol.Web3j;
+import org.web3j.tx.gas.DefaultGasProvider;
+import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.state.CrosslinkCommittee;
+import tech.devgao.artemis.pow.contract.DepositContract;
+import tech.devgao.artemis.util.mikuli.BLS12381;
 
 public class ValidatorClient {
 
@@ -46,17 +53,17 @@ public class ValidatorClient {
    * @return Optional.of(CommitteeAssignmentTuple) or Optional.empty.
    */
   public Optional<CommitteeAssignmentTuple> get_committee_assignment(
-      BeaconState state, UnsignedLong epoch, int validator_index, boolean registry_change) {
-    UnsignedLong previous_epoch = get_previous_epoch(state);
-    UnsignedLong next_epoch = get_current_epoch(state);
-    assert previous_epoch.compareTo(epoch) <= 0 && epoch.compareTo(next_epoch) <= 0;
+      BeaconState state, long epoch, int validator_index, boolean registry_change) {
+    long previous_epoch = get_previous_epoch(state);
+    long next_epoch = get_current_epoch(state);
+    assert previous_epoch <= epoch && epoch <= next_epoch;
 
-    int epoch_start_slot = get_epoch_start_slot(epoch).intValue();
+    int epoch_start_slot = toIntExact(get_epoch_start_slot(epoch));
 
     for (int slot = epoch_start_slot; slot < epoch_start_slot + SLOTS_PER_EPOCH; slot++) {
 
       ArrayList<CrosslinkCommittee> crosslink_committees =
-          get_crosslink_committees_at_slot(state, UnsignedLong.valueOf(slot), registry_change);
+          get_crosslink_committees_at_slot(state, slot, registry_change);
       ArrayList<CrosslinkCommittee> selected_committees = new ArrayList<>();
 
       for (CrosslinkCommittee committee : crosslink_committees) {
@@ -67,14 +74,36 @@ public class ValidatorClient {
 
       if (selected_committees.size() > 0) {
         List<Integer> validators = selected_committees.get(0).getCommittee();
-        int shard = selected_committees.get(0).getShard().intValue();
+        int shard = toIntExact(selected_committees.get(0).getShard());
+        List<Integer> first_committee_at_slot =
+            crosslink_committees.get(0).getCommittee(); // List[ValidatorIndex]
         boolean is_proposer =
-            validator_index
-                == get_beacon_proposer_index(state, UnsignedLong.valueOf(slot), registry_change);
+            first_committee_at_slot.get(slot % first_committee_at_slot.size()) == validator_index;
 
         return Optional.of(new CommitteeAssignmentTuple(validators, shard, slot, is_proposer));
       }
     }
     return Optional.empty();
+  }
+
+  public static void registerValidatorEth1(
+      Validator validator, long amount, String address, Web3j web3j, DefaultGasProvider gasProvider)
+      throws Exception {
+    Credentials credentials =
+        Credentials.create(validator.getSecpKeys().secretKey().bytes().toHexString());
+    DepositContract contract = DepositContract.load(address, web3j, credentials, gasProvider);
+    Bytes deposit_data =
+        Bytes.wrap(
+            validator.getPubkey().getPublicKey().toBytesCompressed(),
+            validator.getWithdrawal_credentials(),
+            Bytes.ofUnsignedLong(amount));
+    deposit_data =
+        Bytes.wrap(
+            deposit_data,
+            BLS12381
+                .sign(validator.getBlsKeys(), deposit_data, Constants.DOMAIN_DEPOSIT)
+                .signature()
+                .toBytesCompressed());
+    contract.deposit(deposit_data.toArray(), new BigInteger(amount + "000000000")).send();
   }
 }

@@ -13,7 +13,10 @@
 
 package tech.devgao.artemis.util.cli;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.logging.log4j.Level;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -47,8 +50,28 @@ public class CommandLineArguments {
 
   @Option(
       names = {"-s", "--sim"},
-      description = "PoW simulation flag")
-  private boolean simulation = false;
+      arity = "0",
+      paramLabel = "<FILENAME>",
+      description = "PoW simulation flag, w/ optional input file")
+  private String inputFile = null;
+
+  @Option(
+      names = {"-f", "--format"},
+      paramLabel = "<IS FORMAT>",
+      description = "Output of JSON file is serial or formatted")
+  private boolean isFormat = false;
+
+  // Specify events that will be output for logging
+  @CommandLine.Parameters(
+      paramLabel = "<EVENT>",
+      description = "Output selector for specific events")
+  @SuppressWarnings({"DoubleBraceInitialization"})
+  private List<String> events =
+      new ArrayList<String>() {
+        {
+          add("TimeSeriesRecord");
+        }
+      };
 
   public String getProviderType() {
     return this.providerType;
@@ -71,6 +94,19 @@ public class CommandLineArguments {
   }
 
   public boolean isSimulation() {
-    return simulation;
+    return !(inputFile == null);
+  }
+
+  public String getInputFile() {
+    if (inputFile == null || inputFile.equals("")) return null;
+    return inputFile;
+  }
+
+  public boolean isFormat() {
+    return isFormat;
+  }
+
+  public List<String> getEvents() {
+    return events;
   }
 }

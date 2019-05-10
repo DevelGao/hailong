@@ -16,24 +16,27 @@ package tech.devgao.artemis.datastructures.blocks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomBeaconBlockBody;
+import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomEth1Data;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomLong;
 
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 import tech.devgao.artemis.util.bls.BLSSignature;
 
 class BeaconBlockTest {
 
-  private long slot = randomLong();
-  private Bytes32 previous_root = Bytes32.random();
-  private Bytes32 state_root = Bytes32.random();
-  private BeaconBlockBody body = randomBeaconBlockBody();
-  private BLSSignature signature = BLSSignature.random();
+  private final long slot = randomLong();
+  private final Bytes32 parentRoot = Bytes32.random();
+  private final Bytes32 stateRoot = Bytes32.random();
+  private final BLSSignature randaoReveal = BLSSignature.random();
+  private final Eth1Data eth1Data = randomEth1Data();
+  private final BeaconBlockBody body = randomBeaconBlockBody();
+  private final BLSSignature signature = BLSSignature.random();
 
-  private BeaconBlock beaconBlock =
-      new BeaconBlock(slot, previous_root, state_root, body, signature);
+  private final BeaconBlock beaconBlock =
+      new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, body, signature);
 
   @Test
   void equalsReturnsTrueWhenObjectsAreSame() {
@@ -44,7 +47,8 @@ class BeaconBlockTest {
 
   @Test
   void equalsReturnsTrueWhenObjectFieldsAreEqual() {
-    BeaconBlock testBeaconBlock = new BeaconBlock(slot, previous_root, state_root, body, signature);
+    BeaconBlock testBeaconBlock =
+        new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, body, signature);
 
     assertEquals(beaconBlock, testBeaconBlock);
   }
@@ -52,7 +56,8 @@ class BeaconBlockTest {
   @Test
   void equalsReturnsFalseWhenSlotsAreDifferent() {
     BeaconBlock testBeaconBlock =
-        new BeaconBlock(slot + randomLong(), previous_root, state_root, body, signature);
+        new BeaconBlock(
+            slot + randomLong(), parentRoot, stateRoot, randaoReveal, eth1Data, body, signature);
 
     assertNotEquals(beaconBlock, testBeaconBlock);
   }
@@ -60,7 +65,7 @@ class BeaconBlockTest {
   @Test
   void equalsReturnsFalseWhenParentRootsAreDifferent() {
     BeaconBlock testBeaconBlock =
-        new BeaconBlock(slot, previous_root.not(), state_root, body, signature);
+        new BeaconBlock(slot, parentRoot.not(), stateRoot, randaoReveal, eth1Data, body, signature);
 
     assertNotEquals(beaconBlock, testBeaconBlock);
   }
@@ -68,7 +73,36 @@ class BeaconBlockTest {
   @Test
   void equalsReturnsFalseWhenStateRootsAreDifferent() {
     BeaconBlock testBeaconBlock =
-        new BeaconBlock(slot, previous_root, state_root.not(), body, signature);
+        new BeaconBlock(slot, parentRoot, stateRoot.not(), randaoReveal, eth1Data, body, signature);
+
+    assertNotEquals(beaconBlock, testBeaconBlock);
+  }
+
+  @Test
+  void equalsReturnsFalseWhenRandaoRevealsAreDifferent() {
+    BLSSignature differentRandaoReveal = BLSSignature.random();
+    while (differentRandaoReveal.equals(randaoReveal)) {
+      differentRandaoReveal = BLSSignature.random();
+    }
+
+    BeaconBlock testBeaconBlock =
+        new BeaconBlock(
+            slot, parentRoot, stateRoot, differentRandaoReveal, eth1Data, body, signature);
+
+    assertNotEquals(beaconBlock, testBeaconBlock);
+  }
+
+  @Test
+  void equalsReturnsFalseWhenEth1DataIsDifferent() {
+    BeaconBlock testBeaconBlock =
+        new BeaconBlock(
+            slot,
+            parentRoot,
+            stateRoot,
+            randaoReveal,
+            new Eth1Data(eth1Data.getDeposit_root().not(), eth1Data.getBlock_hash().not()),
+            body,
+            signature);
 
     assertNotEquals(beaconBlock, testBeaconBlock);
   }
@@ -84,7 +118,7 @@ class BeaconBlockTest {
     }
 
     BeaconBlock testBeaconBlock =
-        new BeaconBlock(slot, previous_root, state_root, otherBody, signature);
+        new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, otherBody, signature);
 
     assertNotEquals(beaconBlock, testBeaconBlock);
   }
@@ -97,7 +131,8 @@ class BeaconBlockTest {
     }
 
     BeaconBlock testBeaconBlock =
-        new BeaconBlock(slot, previous_root, state_root, body, differentSignature);
+        new BeaconBlock(
+            slot, parentRoot, stateRoot, randaoReveal, eth1Data, body, differentSignature);
 
     assertNotEquals(beaconBlock, testBeaconBlock);
   }

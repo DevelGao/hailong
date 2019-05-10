@@ -15,7 +15,7 @@ package tech.devgao.artemis.services;
 
 import com.google.common.eventbus.EventBus;
 import java.util.Objects;
-import net.develgao.cava.crypto.SECP256K1;
+import org.apache.tuweni.crypto.SECP256K1;
 import tech.devgao.artemis.util.cli.CommandLineArguments;
 import tech.devgao.artemis.util.config.ArtemisConfiguration;
 
