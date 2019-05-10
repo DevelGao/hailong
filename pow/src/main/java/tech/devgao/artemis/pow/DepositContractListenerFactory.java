@@ -25,19 +25,18 @@ import tech.devgao.artemis.util.alogger.ALogger;
 
 public class DepositContractListenerFactory {
 
-  public static DepositContractListener simulationDeployDepositContract(
+  public static DepositContractListener simulationDepositContract(
       EventBus eventBus, GanacheController controller) {
     ALogger LOG = new ALogger();
     Web3j web3j = Web3j.build(new HttpService(controller.getProvider()));
-    Credentials credentials =
-        Credentials.create(controller.getAccounts().get(0).secretKey().bytes().toHexString());
+    Credentials credentials = Credentials.create(controller.getAccounts().get(0).getPrivateKey());
     DepositContract contract = null;
     try {
       contract = DepositContract.deploy(web3j, credentials, new DefaultGasProvider()).send();
     } catch (Exception e) {
       LOG.log(
           Level.FATAL,
-          "DepositContractListenerFactory.simulationDeployDepositContract: DepositContract failed to deploy in the simulation environment\n"
+          "DepositContractListenerFactory.simulationDepositContract: DepositContract failed to deploy in the simulation environment\n"
               + e);
     }
     return new DepositContractListener(eventBus, contract);

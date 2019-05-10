@@ -13,24 +13,29 @@
 
 package tech.devgao.artemis.datastructures.state;
 
+import com.google.common.primitives.UnsignedLong;
+import java.util.Arrays;
 import java.util.Objects;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.ssz.SSZ;
+import net.develgao.cava.bytes.Bytes;
+import net.develgao.cava.bytes.Bytes32;
+import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.datastructures.Copyable;
 import tech.devgao.artemis.datastructures.operations.AttestationData;
+import tech.devgao.artemis.util.hashtree.HashTreeUtil;
+import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
 
 public class PendingAttestation implements Copyable<PendingAttestation> {
 
   private Bytes aggregation_bitfield;
   private AttestationData data;
   private Bytes custody_bitfield;
-  private long inclusion_slot;
+  private UnsignedLong inclusion_slot;
 
   public PendingAttestation(
       Bytes aggregation_bitfield,
       AttestationData data,
       Bytes custody_bitfield,
-      long inclusion_slot) {
+      UnsignedLong inclusion_slot) {
     this.aggregation_bitfield = aggregation_bitfield;
     this.data = data;
     this.custody_bitfield = custody_bitfield;
@@ -41,7 +46,7 @@ public class PendingAttestation implements Copyable<PendingAttestation> {
     this.aggregation_bitfield = pendingAttestation.getAggregation_bitfield().copy();
     this.data = new AttestationData(pendingAttestation.getData());
     this.custody_bitfield = pendingAttestation.getCustody_bitfield().copy();
-    this.inclusion_slot = pendingAttestation.getInclusionSlot();
+    this.inclusion_slot = pendingAttestation.getInclusion_slot();
   }
 
   @Override
@@ -57,7 +62,7 @@ public class PendingAttestation implements Copyable<PendingAttestation> {
                 Bytes.wrap(reader.readBytes()),
                 AttestationData.fromBytes(reader.readBytes()),
                 Bytes.wrap(reader.readBytes()),
-                reader.readUInt64()));
+                UnsignedLong.fromLongBits(reader.readUInt64())));
   }
 
   public Bytes toBytes() {
@@ -66,7 +71,7 @@ public class PendingAttestation implements Copyable<PendingAttestation> {
           writer.writeBytes(aggregation_bitfield);
           writer.writeBytes(data.toBytes());
           writer.writeBytes(custody_bitfield);
-          writer.writeUInt64(inclusion_slot);
+          writer.writeUInt64(inclusion_slot.longValue());
         });
   }
 
@@ -93,7 +98,7 @@ public class PendingAttestation implements Copyable<PendingAttestation> {
     return Objects.equals(this.getAggregation_bitfield(), other.getAggregation_bitfield())
         && Objects.equals(this.getData(), other.getData())
         && Objects.equals(this.getCustody_bitfield(), other.getCustody_bitfield())
-        && Objects.equals(this.getInclusionSlot(), other.getInclusionSlot());
+        && Objects.equals(this.getInclusion_slot(), other.getInclusion_slot());
   }
 
   /** ******************* * GETTERS & SETTERS * * ******************* */
@@ -121,11 +126,21 @@ public class PendingAttestation implements Copyable<PendingAttestation> {
     this.custody_bitfield = custody_bitfield;
   }
 
-  public long getInclusionSlot() {
+  public UnsignedLong getInclusion_slot() {
     return inclusion_slot;
   }
 
-  public void setInclusionSlot(long inclusion_slot) {
+  public void setInclusionSlot(UnsignedLong inclusion_slot) {
     this.inclusion_slot = inclusion_slot;
+  }
+
+  public Bytes32 hash_tree_root() {
+    return HashTreeUtil.merkleize(
+        Arrays.asList(
+            HashTreeUtil.hash_tree_root(SSZTypes.LIST_OF_BASIC, aggregation_bitfield),
+            data.hash_tree_root(),
+            HashTreeUtil.hash_tree_root(SSZTypes.LIST_OF_BASIC, custody_bitfield),
+            HashTreeUtil.hash_tree_root(
+                SSZTypes.BASIC, SSZ.encodeUInt64(inclusion_slot.longValue()))));
   }
 }

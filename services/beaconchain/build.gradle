@@ -19,8 +19,8 @@ dependencies {
   implementation 'com.google.guava:guava'
   implementation 'org.apache.logging.log4j:log4j-api'
   runtime 'org.apache.logging.log4j:log4j-core'
-  implementation 'org.apache.tuweni:tuweni-config'
-  implementation 'org.apache.tuweni:tuweni-crypto'
+  implementation 'net.develgao.cava:cava-config'
+  implementation 'net.develgao.cava:cava-crypto'
 
   testSupportImplementation 'io.vertx:vertx-core'
 }

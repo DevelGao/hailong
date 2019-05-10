@@ -13,18 +13,14 @@
 
 package tech.devgao.artemis.data.adapter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.IntStream;
-import org.apache.tuweni.bytes.Bytes32;
+import com.google.common.primitives.UnsignedLong;
+import net.develgao.cava.bytes.Bytes32;
 import tech.devgao.artemis.data.RawRecord;
 import tech.devgao.artemis.data.TimeSeriesRecord;
-import tech.devgao.artemis.data.ValidatorJoin;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.util.alogger.ALogger;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 
 /** Transforms a data record into a time series record */
 public class TimeSeriesAdapter implements DataAdapter<TimeSeriesRecord> {
@@ -39,43 +35,34 @@ public class TimeSeriesAdapter implements DataAdapter<TimeSeriesRecord> {
   public TimeSeriesRecord transform() {
 
     long slot = this.input.getHeadBlock().getSlot();
-    long epoch = BeaconStateUtil.slot_to_epoch(this.input.getHeadBlock().getSlot());
+    // TODO: fix this war crime
+    long epoch =
+        BeaconStateUtil.slot_to_epoch(UnsignedLong.valueOf(this.input.getHeadBlock().getSlot()))
+            .longValue();
     BeaconBlock headBlock = this.input.getHeadBlock();
     BeaconState headState = this.input.getHeadState();
     BeaconBlock justifiedBlock = this.input.getJustifiedBlock();
     BeaconState justifiedState = this.input.getJustifiedState();
     BeaconBlock finalizedBlock = this.input.getFinalizedBlock();
     BeaconState finalizedState = this.input.getFinalizedState();
-    int numValidators = headState.getValidator_registry().size();
+    long numValidators = headState.getValidator_registry().size();
 
-    Bytes32 lastJustifiedBlockRoot = HashTreeUtil.hash_tree_root(justifiedBlock.toBytes());
-    Bytes32 lastJustifiedStateRoot = HashTreeUtil.hash_tree_root(justifiedState.toBytes());
-    Bytes32 lastFinalizedBlockRoot = HashTreeUtil.hash_tree_root(finalizedBlock.toBytes());
-    Bytes32 lastFinalizedStateRoot = HashTreeUtil.hash_tree_root(finalizedState.toBytes());
-
-    List<ValidatorJoin> validators = new ArrayList<>();
-
-    IntStream.range(0, numValidators - 1)
-        .parallel()
-        .forEach(
-            i ->
-                validators.add(
-                    new ValidatorJoin(
-                        headState.getValidator_registry().get(i),
-                        headState.getValidator_balances().get(i))));
-
+    Bytes32 headBlockRoot = headBlock.hash_tree_root();
+    Bytes32 justifiedBlockRoot = justifiedBlock.hash_tree_root();
+    Bytes32 justifiedStateRoot = justifiedState.hash_tree_root();
+    Bytes32 finalizedBlockRoot = finalizedBlock.hash_tree_root();
+    Bytes32 finalizedStateRoot = finalizedState.hash_tree_root();
     return new TimeSeriesRecord(
-        this.input.getDate(),
         this.input.getIndex(),
         slot,
         epoch,
-        this.input.getHeadBlock().getState_root().toHexString(),
-        this.input.getHeadBlock().getParent_root().toHexString(),
-        HashTreeUtil.hash_tree_root(this.input.getHeadBlock().toBytes()).toHexString(),
-        lastJustifiedBlockRoot.toHexString(),
-        lastJustifiedStateRoot.toHexString(),
-        lastFinalizedBlockRoot.toHexString(),
-        lastFinalizedStateRoot.toHexString(),
-        validators);
+        headBlockRoot.toHexString(),
+        headBlock.getState_root().toHexString(),
+        headBlock.getPrevious_block_root().toHexString(),
+        numValidators,
+        justifiedBlockRoot.toHexString(),
+        justifiedStateRoot.toHexString(),
+        finalizedBlockRoot.toHexString(),
+        finalizedStateRoot.toHexString());
   }
 }

@@ -13,90 +13,33 @@
 
 package tech.devgao.artemis.pow.event;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import java.nio.ByteOrder;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import tech.devgao.artemis.data.IRecordAdapter;
+import net.develgao.cava.bytes.Bytes;
 import tech.devgao.artemis.pow.api.DepositEvent;
 import tech.devgao.artemis.pow.contract.DepositContract.DepositEventResponse;
-import tech.devgao.artemis.util.bls.BLSPublicKey;
 
-public class Deposit extends AbstractEvent<DepositEventResponse>
-    implements DepositEvent, IRecordAdapter {
-  // processed fields
-  private BLSPublicKey pubkey;
-  private Bytes32 withdrawal_credentials;
-  private Bytes proof_of_possession;
-  private long amount;
+public class Deposit extends AbstractEvent<DepositEventResponse> implements DepositEvent {
 
-  // raw fields
   private Bytes data;
   private Bytes merkel_tree_index;
 
   public Deposit(DepositEventResponse response) {
     super(response);
-    // raw fields
-    this.data = Bytes.wrap(response.data);
-    this.merkel_tree_index = Bytes.wrap(response.merkle_tree_index);
-
-    // process fields
-    this.pubkey = BLSPublicKey.fromBytesCompressed(data.slice(0, 48).reverse());
-    this.withdrawal_credentials = Bytes32.wrap(data.slice(48, 32).reverse());
-    this.proof_of_possession = data.slice(88, 96).reverse();
-    this.amount = data.slice(80, 8).toLong(ByteOrder.LITTLE_ENDIAN);
+    data = Bytes.wrap(response.data);
+    merkel_tree_index = Bytes.wrap(response.merkle_tree_index);
   }
 
   public Bytes getData() {
     return data;
   }
 
-  public Bytes getMerkle_tree_index() {
+  public Bytes getMerkel_tree_index() {
     return merkel_tree_index;
   }
 
   @Override
   public String toString() {
-    return data.toString() + "\n" + merkel_tree_index.toString();
-  }
-
-  public BLSPublicKey getPubkey() {
-    return pubkey;
-  }
-
-  public Bytes32 getWithdrawal_credentials() {
-    return withdrawal_credentials;
-  }
-
-  public Bytes getProof_of_possession() {
-    return proof_of_possession;
-  }
-
-  public long getAmount() {
-    return amount;
-  }
-
-  @Override
-  public String toJSON() {
-    Gson gson = new GsonBuilder().create();
-    GsonBuilder gsonBuilder = new GsonBuilder();
-
-    JsonObject deposit = new JsonObject();
-    deposit.addProperty("eventType", "Deposit");
-    deposit.addProperty("pubkey", pubkey.getPublicKey().toBytesCompressed().toHexString());
-    deposit.addProperty("withdrawal_crednetials", withdrawal_credentials.toHexString());
-    deposit.addProperty("proof_of_possession", proof_of_possession.toHexString());
-    deposit.addProperty("amount", amount);
-    deposit.addProperty("merkel_tree_index", merkel_tree_index.toHexString());
-
-    Gson customGson = gsonBuilder.setPrettyPrinting().create();
-    return customGson.toJson(deposit);
-  }
-
-  @Override
-  public String toCSV() {
-    return null;
+    StringBuilder sb = new StringBuilder();
+    sb.append(data.toString()).append("\n").append(merkel_tree_index.toString());
+    return sb.toString();
   }
 }

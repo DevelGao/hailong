@@ -18,19 +18,19 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomAttestationData;
 
 import java.util.Objects;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
+import net.develgao.cava.bytes.Bytes;
+import net.develgao.cava.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 import tech.devgao.artemis.util.bls.BLSSignature;
 
 class AttestationTest {
 
-  private final Bytes aggregationBitfield = Bytes32.random();
-  private final AttestationData data = randomAttestationData();
-  private final Bytes custodyBitfield = Bytes32.random();
-  private final BLSSignature aggregateSignature = BLSSignature.random();
+  private Bytes aggregationBitfield = Bytes32.random();
+  private AttestationData data = randomAttestationData();
+  private Bytes custodyBitfield = Bytes32.random();
+  private BLSSignature aggregateSignature = BLSSignature.random();
 
-  private final Attestation attestation =
+  private Attestation attestation =
       new Attestation(aggregationBitfield, data, custodyBitfield, aggregateSignature);
 
   @Test

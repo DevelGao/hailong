@@ -20,8 +20,13 @@ import org.junit.jupiter.api.Test;
 final class ArtemisConfigurationTest {
 
   @Test
+  void missingIdentity() {
+    assertThrows(IllegalArgumentException.class, () -> ArtemisConfiguration.fromString(""));
+  }
+
+  @Test
   void validMinimum() {
-    ArtemisConfiguration.fromString("");
+    ArtemisConfiguration.fromString("node.identity=\"a3e4b1c5\"");
   }
 
   @Test
