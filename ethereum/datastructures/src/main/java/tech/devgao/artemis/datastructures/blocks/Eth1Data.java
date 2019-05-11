@@ -13,13 +13,10 @@
 
 package tech.devgao.artemis.datastructures.blocks;
 
-import java.util.Arrays;
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
-import net.develgao.cava.ssz.SSZ;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.ssz.SSZ;
 
 public final class Eth1Data {
 
@@ -39,16 +36,14 @@ public final class Eth1Data {
   public static Eth1Data fromBytes(Bytes bytes) {
     return SSZ.decode(
         bytes,
-        reader ->
-            new Eth1Data(
-                Bytes32.wrap(reader.readFixedBytes(32)), Bytes32.wrap(reader.readFixedBytes(32))));
+        reader -> new Eth1Data(Bytes32.wrap(reader.readBytes()), Bytes32.wrap(reader.readBytes())));
   }
 
   public Bytes toBytes() {
     return SSZ.encode(
         writer -> {
-          writer.writeFixedBytes(32, deposit_root);
-          writer.writeFixedBytes(32, block_hash);
+          writer.writeBytes(deposit_root);
+          writer.writeBytes(block_hash);
         });
   }
 
@@ -94,12 +89,5 @@ public final class Eth1Data {
   /** @param block_hash the block_hash to set */
   public void setBlock_hash(Bytes32 block_hash) {
     this.block_hash = block_hash;
-  }
-
-  public Bytes32 hash_tree_root() {
-    return HashTreeUtil.merkleize(
-        Arrays.asList(
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, deposit_root),
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, block_hash)));
   }
 }

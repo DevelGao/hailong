@@ -18,17 +18,17 @@ import static tech.devgao.artemis.util.mikuli.Util.calculateYFlag;
 
 import java.security.SecureRandom;
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
 import org.apache.milagro.amcl.BLS381.BIG;
 import org.apache.milagro.amcl.BLS381.ECP;
 import org.apache.milagro.amcl.BLS381.FP;
 import org.apache.milagro.amcl.BLS381.ROM;
+import org.apache.tuweni.bytes.Bytes;
 
 /**
  * G1 is a subgroup of an elliptic curve whose points are elements of the finite field Fp - simple
  * numbers mod some prime p. The curve is defined by: y^2 = x^3 + 4
  */
-final class G1Point implements Group<G1Point> {
+public final class G1Point implements Group<G1Point> {
 
   /**
    * Generate a random point on the curve
@@ -167,7 +167,7 @@ final class G1Point implements Group<G1Point> {
    *
    * @return the serialised compressed form of the point
    */
-  Bytes toBytesCompressed() {
+  public Bytes toBytesCompressed() {
     byte[] xBytes = new byte[fpPointSize];
     point.getX().toBytes(xBytes);
 
