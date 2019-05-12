@@ -20,8 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.apache.logging.log4j.Level;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import tech.devgao.artemis.util.alogger.ALogger;
@@ -42,9 +40,9 @@ public class GanacheController {
   private static final String KEY_PATH_PARAM = "--acctKeys";
 
   private Thread ganacheThread;
-  private List<SECP256K1.KeyPair> accounts;
+
+  private List<Account> accounts;
   private String provider;
-  private int waitIterations;
 
   private static final ALogger LOG = new ALogger();
 
@@ -55,8 +53,6 @@ public class GanacheController {
   public GanacheController(String hostName, String port, int accountSize, int balance) {
     provider = hostName + ":" + port;
     cleanUp();
-    waitIterations = (accountSize / 200 > 20) ? accountSize / 200 : 20;
-
     // starts a child process of ganache-cli and generates a keys.json file
     ProcessBuilder pb =
         new ProcessBuilder(
@@ -117,12 +113,12 @@ public class GanacheController {
   // Wait for keys.json file to be copied to the keysPath directory
   @SuppressWarnings({"unchecked", "DefaultCharset"})
   public void initKeys() {
-    accounts = new ArrayList<>();
+    accounts = new ArrayList<Account>();
     JSONObject accountsJSON = null;
     File keyFile = new File(keysPath);
     try {
       int waitInterval = 0;
-      while (waitInterval < waitIterations) {
+      while (waitInterval < 20) {
         if (keyFile.exists()) break;
         Thread.sleep(500);
         waitInterval++;
@@ -142,19 +138,10 @@ public class GanacheController {
                 + e);
     }
     Set<String> keys = accountsJSON.keySet();
-    // SECP256K1.SecretKey.fromBytes(Bytes32.fromHexString(accountsJSON.get(key).toString())))
-
-    for (String key : keys) {
-      // Bytes32 bytes = Bytes32.fromHexString(accountsJSON.get(key).toString());
-      Bytes32 stuff = Bytes32.fromHexString((String) accountsJSON.get(key));
-      SECP256K1.KeyPair keyPair =
-          SECP256K1.KeyPair.fromSecretKey(
-              SECP256K1.SecretKey.fromBytes(Bytes32.fromHexString((String) accountsJSON.get(key))));
-      accounts.add(keyPair);
-    }
+    for (String key : keys) accounts.add(new Account(key, accountsJSON.get(key).toString()));
   }
 
-  public List<SECP256K1.KeyPair> getAccounts() {
+  public List<Account> getAccounts() {
     return accounts;
   }
 

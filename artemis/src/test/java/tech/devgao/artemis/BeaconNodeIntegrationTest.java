@@ -17,14 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Objects;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.junit.BouncyCastleExtension;
+import net.develgao.cava.bytes.Bytes32;
+import net.develgao.cava.junit.BouncyCastleExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import picocli.CommandLine;
@@ -39,64 +34,65 @@ class BeaconNodeIntegrationTest {
   private static ObjectMapper mapper = new ObjectMapper();
 
   @Test
-  void testTwoNodes() throws InterruptedException, JsonProcessingException, IOException {
+  void testThreeNodes() throws InterruptedException, JsonProcessingException {
     CommandLineArguments cliArgs = new CommandLineArguments();
     CommandLine commandLine = new CommandLine(cliArgs);
-    commandLine.parse("");
 
-    // Read all lines from a file
-    String content = "";
-    content =
-        new String(Files.readAllBytes(Paths.get("../config/config.toml")), StandardCharsets.UTF_8);
+    Bytes32 randomId = Bytes32.random();
 
-    // Construct the configuration file for the first node
-    String updatedConfig1 =
-        content
-            .replaceFirst("networkMode = \"mock\"", "networkMode = \"hobbits\"")
-            .replaceFirst("networkInterface = \"0.0.0.0\"", "networkInterface = \"127.0.0.1\"")
-            .replaceFirst(
-                "port = 9000", "port = 19000\npeers = [\"hob+tcp://abcf@localhost:19001\"]")
-            .replaceFirst("advertisedPort = 9000", "advertisedPort = 19000")
-            .replaceFirst("numNodes = 1", "numNodes = 2");
+    ArtemisConfiguration config1 =
+        ArtemisConfiguration.fromString(
+            "node.networkMode=\"hobbits\"\n"
+                + "node.identity=\""
+                + randomId.toHexString()
+                + "\"\n"
+                + "node.networkInterface=\"127.0.0.1\"\n"
+                + "node.port=19000\n"
+                + "node.peers=[\"hobs://abcf@localhost:19001\", \"hobs://abcf@localhost:19002\"]");
 
-    // Construct the configuration file for the second node
-    String updatedConfig2 =
-        content
-            .replaceFirst("networkMode = \"mock\"", "networkMode = \"hobbits\"")
-            .replaceFirst("identity = \"0x00\"", "identity = \"0x01\"")
-            .replaceFirst("networkInterface = \"0.0.0.0\"", "networkInterface = \"127.0.0.1\"")
-            .replaceFirst(
-                "port = 9000", "port = 19001\npeers = [\"hob+tcp://abcf@localhost:19000\"]")
-            .replaceFirst("advertisedPort = 9000", "advertisedPort = 19001")
-            .replaceFirst("numNodes = 1", "numNodes = 2");
-
-    ArtemisConfiguration config1 = ArtemisConfiguration.fromString(updatedConfig1);
-    ArtemisConfiguration config2 = ArtemisConfiguration.fromString(updatedConfig2);
+    ArtemisConfiguration config2 =
+        ArtemisConfiguration.fromString(
+            "node.networkMode=\"hobbits\"\n"
+                + "node.identity=\""
+                + randomId.toHexString()
+                + "\"\n"
+                + "node.networkInterface=\"127.0.0.1\"\n"
+                + "node.port=19001\n"
+                + "node.peers=[\"hobs://abcf@localhost:19000\", \"hobs://abcf@localhost:19002\"]");
+    ArtemisConfiguration config3 =
+        ArtemisConfiguration.fromString(
+            "node.networkMode=\"hobbits\"\n"
+                + "node.identity=\""
+                + randomId.toHexString()
+                + "\"\n"
+                + "node.networkInterface=\"127.0.0.1\"\n"
+                + "node.port=19002\n"
+                + "node.peers=[\"hobs://abcf@localhost:19001\", \"hobs://abcf@localhost:19000\"]");
 
     BeaconNode node1 = new BeaconNode(commandLine, cliArgs, config1);
     BeaconNode node2 = new BeaconNode(commandLine, cliArgs, config2);
+    BeaconNode node3 = new BeaconNode(commandLine, cliArgs, config3);
 
     node1.start();
     node2.start();
+    node3.start();
 
-    Thread.sleep(20000);
+    Thread.sleep(5000);
 
     P2PNetwork net1 = node1.p2pNetwork();
     P2PNetwork net2 = node2.p2pNetwork();
+    P2PNetwork net3 = node3.p2pNetwork();
 
-    Bytes block = null;
-    for (P2PNetwork net : Arrays.asList(net1, net2)) {
+    for (P2PNetwork net : Arrays.asList(net1, net2, net3)) {
       for (Object p : net.getPeers()) {
-        Peer peer = (Peer) p;
-        Bytes message = peer.peerGossip();
-        if (!Objects.isNull(message)) {
-          block = message;
-          break;
-        }
+        assertNotNull(((Peer) p).peerHello());
+        assertNotNull(((Peer) p).peerStatus());
+        System.out.println(mapper.writer().writeValueAsString(((Peer) p).peerStatus()));
       }
     }
-    assertNotNull(block);
+
     node1.stop();
     node2.stop();
+    node3.stop();
   }
 }

@@ -8,6 +8,8 @@ Implementation of the Ethereum 2.0 Beacon Chain.
 
 Based on the (evolving) [specification](https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md).
 
+> NOTE:  This repo reflects the v0.5.1 version of the spec
+
 ## Build Instructions
 
 To build, clone this repo and run with `gradle` like so:
@@ -19,17 +21,6 @@ $ ./gradlew
 ```
 
 After a successful build, distribution packages will be available in `build/distributions`.
-
-## Run Demo
-
-After building, follow these instructions:
-
-```bash
-$ cd scripts
-$ sh run.sh [NUMBER OF NODES]
-```
-
-> Note:  You will need tmux installed for this demo to work
 
 ## Code Style
 
@@ -47,6 +38,10 @@ All the unit tests are run as part of the build, but can be explicitly triggered
 ```
 $ ./gradlew test
 ```
+The integration tests can be triggered with:
+```
+$ ./gradlew integrationTest
+```
 
 ## Run Options
 
@@ -55,22 +50,13 @@ To view the run menu:
 ```
 $ ./gradlew run --args='-h'
 
-Usage: Artemis [-fhV] [-s] [-c=<FILENAME>] [-l=<LOG VERBOSITY LEVEL>]
-               [-o=<FILENAME>] [-p=<PROVIDER TYPE>] [<EVENT>...]
-      [<EVENT>...]          Output selector for specific events
-  -c, --config=<FILENAME>   Path/filename of the config file
-  -f, --format              Output of JSON file is serial or formatted
-  -h, --help                Show this help message and exit.
-  -l, --logging=<LOG VERBOSITY LEVEL>
-                            Logging verbosity levels: OFF, FATAL, WARN, INFO, DEBUG,
-                              TRACE, ALL (default: INFO).
-  -o, --output=<FILENAME>   Path/filename of the output file. Path can be followed
-                            by events the user wishes to output example:
-                            -o=artemis.json Eth2Genesis TimeSeriesRecord
-  -p, --provider=<PROVIDER TYPE>
-                            Output provider types: CSV, JSON (default: JSON).
-  -s, --sim                 PoW simulation flag, w/ optional input file
-  -V, --version             Print version information and exit.
+Usage: Artemis [-hV] [-c=<FILENAME>] [-l=<LOG VERBOSITY LEVEL>] [-o=<FILENAME>] [-p=<PROVIDER TYPE>]
+  -c, --config=<FILENAME>               Path/filename of the config file
+  -h, --help                            Show this help message and exit.
+  -l, --logging=<LOG VERBOSITY LEVEL>   Logging verbosity levels: OFF, FATAL, WARN, INFO, DEBUG, TRACE, ALL (default: INFO).
+  -o, --output=<FILENAME>               Path/filename of the output file
+  -p, --provider=<PROVIDER TYPE>        Output provider types: CSV, JSON (default: JSON).
+  -V, --version                         Print version information and exit.
 ```
 
 You can run the executable from the CLI with this command:
@@ -92,10 +78,10 @@ To run and send formatted output to a csv file
 $ ./gradlew run --args='-p=CSV -o=artemis.csv'
 ```
 
-To run with loggin level set to DEBUG
+To run with loggin level set to ALL
 
 ```
-$ ./gradlew run --args='-l=DEBUG'
+$ ./gradlew run --args='-l=ALL'
 ```
 
 To run and generate flow diagrams for Artemis
