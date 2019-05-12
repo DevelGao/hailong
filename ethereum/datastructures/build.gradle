@@ -7,12 +7,11 @@ jar {
 }
 
 dependencies {
-  implementation project(':pow')
   implementation project(':util')
 
-  implementation 'net.develgao.cava:cava-crypto'
-  implementation 'net.develgao.cava:cava-units'
-  compile files("../../lib/cava-ssz-1.0.0-dev.jar")
+  implementation 'org.apache.tuweni:tuweni-crypto'
+  implementation 'org.apache.tuweni:tuweni-units'
+  implementation 'org.apache.tuweni:tuweni-ssz'
   implementation 'com.google.guava:guava'
   implementation 'com.google.code.gson:gson'
   implementation 'org.apache.logging.log4j:log4j-api'

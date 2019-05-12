@@ -19,8 +19,8 @@ import static java.util.Objects.isNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.ssz.SSZ;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.ssz.SSZ;
 import tech.devgao.artemis.util.mikuli.PublicKey;
 
 public class BLSPublicKey {
@@ -57,13 +57,21 @@ public class BLSPublicKey {
   }
 
   public static BLSPublicKey fromBytes(Bytes bytes) {
-    checkArgument(bytes.size() == 48, "Expected 48 bytes but received %s.", bytes.size());
-    if (SSZ.decodeBytes(bytes, 48).isZero()) {
+    checkArgument(bytes.size() == 52, "Expected 52 bytes but received %s.", bytes.size());
+    Bytes decode = SSZ.decodeBytes(bytes);
+    if (decode.isZero()) {
       return BLSPublicKey.empty();
     } else {
       return SSZ.decode(
-          bytes,
-          reader -> new BLSPublicKey(PublicKey.fromBytesCompressed(reader.readFixedBytes(48))));
+          bytes, reader -> new BLSPublicKey(PublicKey.fromBytesCompressed(reader.readBytes())));
+    }
+  }
+
+  public static BLSPublicKey fromBytesCompressed(Bytes bytes) {
+    if (bytes.isZero()) {
+      return BLSPublicKey.empty();
+    } else {
+      return new BLSPublicKey(PublicKey.fromBytesCompressed(bytes));
     }
   }
 
@@ -80,15 +88,9 @@ public class BLSPublicKey {
    */
   public Bytes toBytes() {
     if (isNull(publicKey)) {
-      return SSZ.encode(
-          writer -> {
-            writer.writeFixedBytes(48, Bytes.wrap(new byte[48]));
-          });
+      return SSZ.encode(writer -> writer.writeBytes(Bytes.wrap(new byte[48])));
     } else {
-      return SSZ.encode(
-          writer -> {
-            writer.writeFixedBytes(48, publicKey.toBytesCompressed());
-          });
+      return SSZ.encode(writer -> writer.writeBytes(publicKey.toBytesCompressed()));
     }
   }
 
