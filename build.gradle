@@ -57,7 +57,9 @@ allprojects {
 
   repositories {
     if ("$System.env.JENKINS_URL" == 'https://jenkins.devgao.tech/') {
-      maven { url "https://nexus.int.devgao.tech/repository/jcenter/" }
+      jcenter()
+      mavenCentral()
+      maven { url  "https://develgao.bintray.com/devgao-repo" }
       maven { url "https://repository.apache.org/content/repositories/snapshots"}
     } else {
       jcenter()
