@@ -18,15 +18,15 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomSlashableAttestation;
 
 import java.util.Objects;
-import org.apache.tuweni.bytes.Bytes;
+import net.develgao.cava.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
 class AttesterSlashingTest {
 
-  private final SlashableAttestation slashableAttestation1 = randomSlashableAttestation();
-  private final SlashableAttestation slashableAttestation2 = randomSlashableAttestation();
+  private SlashableAttestation slashableAttestation1 = randomSlashableAttestation();
+  private SlashableAttestation slashableAttestation2 = randomSlashableAttestation();
 
-  private final AttesterSlashing attesterSlashing =
+  private AttesterSlashing attesterSlashing =
       new AttesterSlashing(slashableAttestation1, slashableAttestation2);
 
   @Test

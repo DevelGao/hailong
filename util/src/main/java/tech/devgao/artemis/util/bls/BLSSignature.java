@@ -19,8 +19,8 @@ import static java.util.Objects.isNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.ssz.SSZ;
+import net.develgao.cava.bytes.Bytes;
+import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.util.mikuli.BLS12381;
 import tech.devgao.artemis.util.mikuli.KeyPair;
 import tech.devgao.artemis.util.mikuli.PublicKey;
@@ -95,12 +95,13 @@ public final class BLSSignature {
   }
 
   public static BLSSignature fromBytes(Bytes bytes) {
-    checkArgument(bytes.size() == 100, "Expected 100 bytes but received %s.", bytes.size());
-    if (SSZ.decodeBytes(bytes).isZero()) {
+    checkArgument(bytes.size() == 96, "Expected 96 bytes but received %s.", bytes.size());
+    if (SSZ.decodeBytes(bytes, 96).isZero()) {
       return BLSSignature.empty();
     } else {
       return SSZ.decode(
-          bytes, reader -> new BLSSignature(Signature.fromBytesCompressed(reader.readBytes())));
+          bytes,
+          reader -> new BLSSignature(Signature.fromBytesCompressed(reader.readFixedBytes(96))));
     }
   }
 
@@ -150,7 +151,7 @@ public final class BLSSignature {
       throw new BLSException("The checkSignature method was called on an empty signature.");
     }
     List<PublicKey> publicKeyObjects =
-        publicKeys.stream().map(BLSPublicKey::getPublicKey).collect(Collectors.toList());
+        publicKeys.stream().map(x -> x.getPublicKey()).collect(Collectors.toList());
     return BLS12381.verifyMultiple(publicKeyObjects, signature, messages, domain);
   }
 
@@ -161,9 +162,15 @@ public final class BLSSignature {
    */
   public Bytes toBytes() {
     if (isNull(signature)) {
-      return SSZ.encode(writer -> writer.writeBytes(Bytes.wrap(new byte[96])));
+      return SSZ.encode(
+          writer -> {
+            writer.writeFixedBytes(96, Bytes.wrap(new byte[96]));
+          });
     } else {
-      return SSZ.encode(writer -> writer.writeBytes(signature.toBytesCompressed()));
+      return SSZ.encode(
+          writer -> {
+            writer.writeFixedBytes(96, signature.toBytesCompressed());
+          });
     }
   }
 
