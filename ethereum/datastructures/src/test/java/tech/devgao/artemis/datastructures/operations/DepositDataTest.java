@@ -16,23 +16,22 @@ package tech.devgao.artemis.datastructures.operations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDepositInput;
-import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomUnsignedLong;
+import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomLong;
 
-import com.google.common.primitives.UnsignedLong;
 import java.util.Objects;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.junit.BouncyCastleExtension;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.junit.BouncyCastleExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(BouncyCastleExtension.class)
 class DepositDataTest {
 
-  private UnsignedLong amount = randomUnsignedLong();
-  private UnsignedLong timestamp = randomUnsignedLong();
-  private DepositInput depositInput = randomDepositInput();
+  private final long amount = randomLong();
+  private final long timestamp = randomLong();
+  private final DepositInput depositInput = randomDepositInput();
 
-  private DepositData depositData = new DepositData(amount, timestamp, depositInput);
+  private final DepositData depositData = new DepositData(amount, timestamp, depositInput);
 
   @Test
   void equalsReturnsTrueWhenObjectAreSame() {
@@ -50,16 +49,14 @@ class DepositDataTest {
 
   @Test
   void equalsReturnsFalseWhenAmountsAreDifferent() {
-    DepositData testDepositData =
-        new DepositData(amount.plus(randomUnsignedLong()), timestamp, depositInput);
+    DepositData testDepositData = new DepositData(amount + randomLong(), timestamp, depositInput);
 
     assertNotEquals(depositData, testDepositData);
   }
 
   @Test
   void equalsReturnsFalseWhenTimestampsAreDifferent() {
-    DepositData testDepositData =
-        new DepositData(amount, timestamp.plus(randomUnsignedLong()), depositInput);
+    DepositData testDepositData = new DepositData(amount, timestamp + randomLong(), depositInput);
 
     assertNotEquals(depositData, testDepositData);
   }
