@@ -15,22 +15,27 @@ package tech.devgao.artemis;
 
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import io.vertx.core.Vertx;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.jetbrains.annotations.NotNull;
 import picocli.CommandLine;
+import tech.devgao.artemis.data.RawRecord;
+import tech.devgao.artemis.data.TimeSeriesRecord;
+import tech.devgao.artemis.data.adapter.TimeSeriesAdapter;
 import tech.devgao.artemis.data.provider.CSVProvider;
-import tech.devgao.artemis.data.provider.EventHandler;
 import tech.devgao.artemis.data.provider.FileProvider;
 import tech.devgao.artemis.data.provider.JSONProvider;
 import tech.devgao.artemis.data.provider.ProviderTypes;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.networking.p2p.HobbitsP2PNetwork;
 import tech.devgao.artemis.networking.p2p.MockP2PNetwork;
+import tech.devgao.artemis.networking.p2p.RLPxP2PNetwork;
 import tech.devgao.artemis.networking.p2p.api.P2PNetwork;
 import tech.devgao.artemis.services.ServiceConfig;
 import tech.devgao.artemis.services.ServiceController;
@@ -47,10 +52,13 @@ public class BeaconNode {
   private final Vertx vertx = Vertx.vertx();
   private final ExecutorService threadPool =
       Executors.newCachedThreadPool(
-          r -> {
-            Thread t = new Thread(r);
-            t.setDaemon(true);
-            return t;
+          new ThreadFactory() {
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+              Thread t = new Thread(r);
+              t.setDaemon(true);
+              return t;
+            }
           });
 
   private final ServiceController serviceController = new ServiceController();
@@ -59,8 +67,8 @@ public class BeaconNode {
   private P2PNetwork p2pNetwork;
   private ValidatorCoordinator validatorCoordinator;
   private EventBus eventBus;
-  private FileProvider fileProvider;
-  private EventHandler eventHandler;
+  private String outputFilename;
+  private FileProvider<?> fileProvider;
 
   private CommandLineArguments cliArgs;
   private CommandLine commandLine;
@@ -73,6 +81,15 @@ public class BeaconNode {
     this.eventBus = new AsyncEventBus(threadPool);
     if ("mock".equals(config.getNetworkMode())) {
       this.p2pNetwork = new MockP2PNetwork(eventBus);
+    } else if ("rlpx".equals(config.getNetworkMode())) {
+      this.p2pNetwork =
+          new RLPxP2PNetwork(
+              eventBus,
+              vertx,
+              config.getKeyPair(),
+              config.getPort(),
+              config.getAdvertisedPort(),
+              config.getNetworkInterface());
     } else if ("hobbits".equals(config.getNetworkMode())) {
       this.p2pNetwork =
           new HobbitsP2PNetwork(
@@ -87,48 +104,42 @@ public class BeaconNode {
     }
     this.serviceConfig = new ServiceConfig(eventBus, config, cliArgs);
     Constants.init(config);
+    this.validatorCoordinator = new ValidatorCoordinator(serviceConfig);
     this.cliArgs = cliArgs;
     this.commandLine = commandLine;
-    if (config.isOutputEnabled()) {
+    if (cliArgs.isOutputEnabled()) {
       this.eventBus.register(this);
-      try {
-        Path outputFilename = FileProvider.uniqueFilename(config.getOutputFile());
-        if (ProviderTypes.compare(CSVProvider.class, config.getProviderType())) {
-          this.fileProvider = new CSVProvider(outputFilename);
-        } else {
-          this.fileProvider = new JSONProvider(outputFilename);
-        }
-        this.eventHandler = new EventHandler(config, fileProvider);
-        this.eventBus.register(eventHandler);
-      } catch (IOException e) {
-        LOG.log(Level.ERROR, e.getMessage());
+      this.outputFilename = FileProvider.uniqueFilename(cliArgs.getOutputFile());
+      if (ProviderTypes.compare(CSVProvider.class, cliArgs.getProviderType())) {
+        this.fileProvider = new CSVProvider();
+      } else {
+        this.fileProvider = new JSONProvider(outputFilename);
       }
     }
-
-    // set log level per CLI flags
-    System.out.println("Setting logging level to " + cliArgs.getLoggingLevel().name());
-    Configurator.setAllLevels("", cliArgs.getLoggingLevel());
-    this.validatorCoordinator = new ValidatorCoordinator(serviceConfig);
   }
 
   public void start() {
-
-    try {
-
-      // Initialize services
-      serviceController.initAll(
-          eventBus,
-          serviceConfig,
-          BeaconChainService.class,
-          PowchainService.class,
-          ChainStorageService.class);
-      // Start services
-      serviceController.startAll(cliArgs);
-      // Start p2p adapter
-      this.p2pNetwork.run();
-    } catch (java.util.concurrent.CompletionException e) {
-      LOG.log(Level.FATAL, e.toString());
+    if (commandLine.isUsageHelpRequested()) {
+      commandLine.usage(System.out);
+      return;
     }
+    // set log level per CLI flags
+    System.out.println("Setting logging level to " + cliArgs.getLoggingLevel().name());
+    Configurator.setAllLevels("", cliArgs.getLoggingLevel());
+
+    // Check output file
+
+    // Initialize services
+    serviceController.initAll(
+        eventBus,
+        serviceConfig,
+        BeaconChainService.class,
+        PowchainService.class,
+        ChainStorageService.class);
+    // Start services
+    serviceController.startAll(cliArgs);
+    // Start p2p adapter
+    this.p2pNetwork.run();
   }
 
   public void stop() {
@@ -136,8 +147,16 @@ public class BeaconNode {
       serviceController.stopAll(cliArgs);
       this.p2pNetwork.close();
     } catch (IOException e) {
-      LOG.log(Level.FATAL, e.toString());
+      LOG.log(Level.WARN, e.toString());
     }
+  }
+
+  @Subscribe
+  public void onDataEvent(RawRecord record) {
+    TimeSeriesAdapter adapter = new TimeSeriesAdapter(record);
+    TimeSeriesRecord tsRecord = adapter.transform();
+    fileProvider.setRecord(tsRecord);
+    JSONProvider.output(outputFilename, fileProvider);
   }
 
   P2PNetwork p2pNetwork() {
