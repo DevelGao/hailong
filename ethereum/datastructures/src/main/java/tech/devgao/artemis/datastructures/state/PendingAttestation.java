@@ -23,8 +23,9 @@ import tech.devgao.artemis.datastructures.Copyable;
 import tech.devgao.artemis.datastructures.operations.AttestationData;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
+import tech.devgao.artemis.util.hashtree.Merkleizable;
 
-public class PendingAttestation implements Copyable<PendingAttestation> {
+public class PendingAttestation implements Copyable<PendingAttestation>, Merkleizable {
 
   private Bytes aggregation_bitfield;
   private AttestationData data;
@@ -134,6 +135,7 @@ public class PendingAttestation implements Copyable<PendingAttestation> {
     this.inclusion_slot = inclusion_slot;
   }
 
+  @Override
   public Bytes32 hash_tree_root() {
     return HashTreeUtil.merkleize(
         Arrays.asList(
