@@ -37,6 +37,7 @@ import tech.devgao.artemis.datastructures.util.BeaconBlockUtil;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.datastructures.util.DataStructureUtil;
 import tech.devgao.artemis.services.ServiceConfig;
+import tech.devgao.artemis.statetransition.GenesisHeadStateEvent;
 import tech.devgao.artemis.statetransition.HeadStateEvent;
 import tech.devgao.artemis.statetransition.StateTransition;
 import tech.devgao.artemis.statetransition.StateTransitionException;
@@ -73,14 +74,6 @@ public class ValidatorCoordinator {
     initializeValidators();
 
     stateTransition = new StateTransition(printEnabled);
-    BeaconStateWithCache initialBeaconState =
-        DataStructureUtil.createInitialBeaconState(numValidators);
-
-    Bytes32 initialStateRoot = initialBeaconState.hash_tree_root();
-    BeaconBlock genesisBlock = BeaconBlockUtil.get_empty_block();
-    genesisBlock.setState_root(initialStateRoot);
-
-    createBlockIfNecessary(initialBeaconState, genesisBlock);
   }
 
   @Subscribe
@@ -89,6 +82,12 @@ public class ValidatorCoordinator {
       this.eventBus.post(validatorBlock);
       validatorBlock = null;
     }
+  }
+
+  @Subscribe
+  public void onGenesisHeadStateEvent(GenesisHeadStateEvent genesisHeadStateEvent) {
+    onNewHeadStateEvent(genesisHeadStateEvent);
+    genesisHeadStateEvent.getEventBus().post(true);
   }
 
   @Subscribe
