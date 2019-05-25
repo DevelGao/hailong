@@ -33,7 +33,6 @@ import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
 import tech.devgao.artemis.datastructures.util.AttestationUtil;
-import tech.devgao.artemis.datastructures.util.BeaconBlockUtil;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.datastructures.util.DataStructureUtil;
 import tech.devgao.artemis.services.ServiceConfig;
@@ -87,7 +86,7 @@ public class ValidatorCoordinator {
   @Subscribe
   public void onGenesisHeadStateEvent(GenesisHeadStateEvent genesisHeadStateEvent) {
     onNewHeadStateEvent(genesisHeadStateEvent);
-    genesisHeadStateEvent.getEventBus().post(true);
+    this.eventBus.post(true);
   }
 
   @Subscribe
