@@ -16,19 +16,19 @@ package tech.devgao.artemis.datastructures.operations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
+import net.develgao.cava.bytes.Bytes;
+import net.develgao.cava.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
 import tech.devgao.artemis.util.bls.BLSSignature;
 
 class DepositInputTest {
 
-  private final BLSPublicKey pubkey = BLSPublicKey.random();
-  private final Bytes32 withdrawalCredentials = Bytes32.random();
-  private final BLSSignature proofOfPossession = BLSSignature.random();
+  private BLSPublicKey pubkey = BLSPublicKey.random();
+  private Bytes32 withdrawalCredentials = Bytes32.random();
+  private BLSSignature proofOfPossession = BLSSignature.random();
 
-  private final DepositInput depositInput =
+  private DepositInput depositInput =
       new DepositInput(pubkey, withdrawalCredentials, proofOfPossession);
 
   @Test

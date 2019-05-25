@@ -14,17 +14,17 @@
 package tech.devgao.artemis.storage;
 
 import com.google.common.eventbus.EventBus;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
+import net.develgao.cava.bytes.Bytes;
 import org.apache.logging.log4j.Level;
-import org.apache.tuweni.bytes.Bytes;
 import tech.devgao.artemis.util.alogger.ALogger;
 
 /** ChainStorage Interface class */
 public interface ChainStorage {
 
-  ALogger LOG = new ALogger(ChainStorage.class.getName());
+  static final ALogger LOG = new ALogger(ChainStorage.class.getName());
 
   /**
    * Instantiate the ChainStorage
@@ -51,7 +51,7 @@ public interface ChainStorage {
     try {
       items.add(item);
     } catch (IllegalStateException e) {
-      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + e.getMessage());
+      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + e.getMessage().toString());
     }
   }
 
@@ -62,11 +62,11 @@ public interface ChainStorage {
    * @param value
    * @param items
    */
-  static <S extends Bytes, T, U extends ConcurrentHashMap<S, T>> void add(S key, T value, U items) {
+  static <S extends Bytes, T, U extends HashMap<S, T>> void add(S key, T value, U items) {
     try {
       items.put(key, value);
     } catch (IllegalStateException e) {
-      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + e.getMessage(), true);
+      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + e.getMessage().toString(), true);
     }
   }
 
@@ -77,18 +77,12 @@ public interface ChainStorage {
    * @param items
    * @return
    */
-  static <S extends Bytes, T, U extends ConcurrentHashMap<S, T>> Optional<T> get(S key, U items) {
-    Optional<T> result = Optional.empty();
+  static <S extends Bytes, T, U extends HashMap<S, T>> Optional<T> get(S key, U items) {
+    Optional<T> result = Optional.ofNullable(null);
     try {
-      if (items.size() > 0) {
-        result = Optional.of(items.get(key));
-      }
+      result = Optional.of(items.get(key));
     } catch (NullPointerException e) {
-      if (!key.toHexString()
-          .equalsIgnoreCase("0x0000000000000000000000000000000000000000000000000000000000000000")) {
-        LOG.log(
-            Level.DEBUG, items.getClass().toString() + ": " + key.toHexString() + " not found.");
-      }
+      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + key.toHexString() + " not found.");
     }
     return result;
   }
@@ -100,7 +94,7 @@ public interface ChainStorage {
    * @return
    */
   static <S, T extends Queue<S>> Optional<S> remove(T items) {
-    Optional<S> result = Optional.empty();
+    Optional<S> result = Optional.ofNullable(null);
     if (items.size() > 0) {
       result = Optional.of(items.poll());
     }
@@ -114,7 +108,7 @@ public interface ChainStorage {
    * @return
    */
   static <S, T extends Queue<S>> Optional<S> peek(T items) {
-    Optional<S> result = Optional.empty();
+    Optional<S> result = Optional.ofNullable(null);
     if (items.size() > 0) {
       result = Optional.of(items.peek());
     }

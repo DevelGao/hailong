@@ -18,7 +18,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.util.List;
 import java.util.Objects;
-import org.apache.tuweni.bytes.Bytes;
+import net.develgao.cava.bytes.Bytes;
 
 /** This class represents a Signature on G2 */
 public final class Signature {
@@ -113,7 +113,7 @@ public final class Signature {
    * @param signature the signature to combine with
    * @return a new signature as combination of both signatures
    */
-  Signature combine(Signature signature) {
+  public Signature combine(Signature signature) {
     return new Signature(point.add(signature.point));
   }
 
@@ -137,8 +137,7 @@ public final class Signature {
 
   @Override
   public String toString() {
-    // return "Signature [ecp2Point=" + point.toString() + "]";
-    return point.toString();
+    return "Signature [ecp2Point=" + point.toString() + "]";
   }
 
   @Override
@@ -146,7 +145,7 @@ public final class Signature {
     return point.hashCode();
   }
 
-  public G2Point g2Point() {
+  G2Point g2Point() {
     return point;
   }
 

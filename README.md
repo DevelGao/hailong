@@ -8,6 +8,8 @@ Implementation of the Ethereum 2.0 Beacon Chain.
 
 Based on the (evolving) [specification](https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md).
 
+> NOTE:  This repo reflects the v0.5.1 version of the spec
+
 ## Build Instructions
 
 To build, clone this repo and run with `gradle` like so:
@@ -19,17 +21,6 @@ $ ./gradlew
 ```
 
 After a successful build, distribution packages will be available in `build/distributions`.
-
-## Run Demo
-
-After building, follow these instructions:
-
-```bash
-$ cd scripts
-$ sh run.sh [NUMBER OF NODES]
-```
-
-> Note:  You will need tmux installed for this demo to work
 
 ## Code Style
 
@@ -47,6 +38,10 @@ All the unit tests are run as part of the build, but can be explicitly triggered
 ```
 $ ./gradlew test
 ```
+The integration tests can be triggered with:
+```
+$ ./gradlew integrationTest
+```
 
 ## Run Options
 
@@ -55,14 +50,13 @@ To view the run menu:
 ```
 $ ./gradlew run --args='-h'
 
-Usage: Artemis [-hV] [-c=<FILENAME>] [-l=<LOG VERBOSITY LEVEL>]
--c, --config=<FILENAME>   Path/filename of the config file
--h, --help                Show this help message and exit.
--l, --logging=<LOG VERBOSITY LEVEL>
-                          Logging verbosity levels: OFF, FATAL, WARN, INFO, DEBUG,
-                            TRACE, ALL (default: INFO).
--V, --version             Print version information and exit.
-
+Usage: Artemis [-hV] [-c=<FILENAME>] [-l=<LOG VERBOSITY LEVEL>] [-o=<FILENAME>] [-p=<PROVIDER TYPE>]
+  -c, --config=<FILENAME>               Path/filename of the config file
+  -h, --help                            Show this help message and exit.
+  -l, --logging=<LOG VERBOSITY LEVEL>   Logging verbosity levels: OFF, FATAL, WARN, INFO, DEBUG, TRACE, ALL (default: INFO).
+  -o, --output=<FILENAME>               Path/filename of the output file
+  -p, --provider=<PROVIDER TYPE>        Output provider types: CSV, JSON (default: JSON).
+  -V, --version                         Print version information and exit.
 ```
 
 You can run the executable from the CLI with this command:
@@ -70,40 +64,28 @@ You can run the executable from the CLI with this command:
 $ ./gradlew run
 ```
 
-Refer to `config/config.toml` for a set of default configuration settings.
-
-To run and send formatted output to a json file:
-```
-[output]
-outputFile = "artemis.json"
-providerType = "JSON"
-```
-
-Then run:
-```
-$ ./gradlew run
-```
-
-To run and send formatted output to a csv file:
-```
-[output]
-outputFile = "artemis.csv"
-providerType = "CSV"
-```
-
-Then run:
-```
-$ ./gradlew run
-```
-
-To run with loggin level set to DEBUG
+To run and send formatted output to a json file
 
 ```
-$ ./gradlew run --args='-l=DEBUG'
+$ ./gradlew run --args='-p=JSON -o=artemis.json'
+```
+
+>NOTE: If no -p isn't provided then it defaults to JSON
+
+To run and send formatted output to a csv file
+
+```
+$ ./gradlew run --args='-p=CSV -o=artemis.csv'
+```
+
+To run with loggin level set to ALL
+
+```
+$ ./gradlew run --args='-l=ALL'
 ```
 
 To run and generate flow diagrams for Artemis
 ```
 $ ./gradlew run -PgenerateFlow
 ```
-> Note: You must be running [flow](http://findtheflow.io/)
+Note: You must be running [flow](http://findtheflow.io/)

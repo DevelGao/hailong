@@ -31,9 +31,9 @@ def expandedTaskList = []
 gradle.startParameter.taskNames.each {
   expandedTaskList << (buildAliases[it] ? buildAliases[it] : it)
 }
-gradle.startParameter.taskNames = expandedTaskList.flatten() as Iterable<String>
+gradle.startParameter.taskNames = expandedTaskList.flatten()
 
-def baseVersion = '1.0.0'
+def baseVersion = '1.0.0';
 project.version = baseVersion + '-SNAPSHOT'
 def userHome = System.getProperty("user.home")
 allprojects {
@@ -57,14 +57,10 @@ allprojects {
 
   repositories {
     if ("$System.env.JENKINS_URL" == 'https://jenkins.devgao.tech/') {
-      jcenter()
-      mavenCentral()
-      maven { url  "https://develgao.bintray.com/devgao-repo" }
-      maven { url "https://repository.apache.org/content/repositories/snapshots"}
+      maven { url "https://nexus.int.devgao.tech/repository/jcenter/" }
     } else {
       jcenter()
       mavenCentral()
-      maven { url "https://repository.apache.org/content/repositories/snapshots"}
       maven { url  "https://develgao.bintray.com/devgao-repo" }
     }
   }
@@ -77,7 +73,7 @@ allprojects {
   }
 
   buildScan { 
-    termsOfServiceUrl = "https://gradle.com/terms-of-service"
+    termsOfServiceUrl = "https://gradle.com/terms-of-service"; 
     termsOfServiceAgree = "yes" 
   }
 
@@ -163,7 +159,7 @@ allprojects {
       'root.log.level',
       'evm.log.level'
     ]
-    testLogging.showStandardStreams = true
+    testLogging.showStandardStreams = true;
     for (String name : toImport) {
       if (System.getProperty(name) != null) {
         systemProperty name, System.getProperty(name)
@@ -241,7 +237,7 @@ subprojects {
     integrationTestImplementation sourceSets.testSupport.output
 
     testImplementation 'org.assertj:assertj-core'
-    testImplementation 'org.apache.tuweni:tuweni-junit'
+    testImplementation 'net.develgao.cava:cava-junit'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testImplementation 'org.junit.jupiter:junit-jupiter-params'
 
@@ -320,7 +316,7 @@ distZip {
   }
 }
 
-task jacocoRootReport(type: JacocoReport) {
+task jacocoRootReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
   additionalSourceDirs.from = files(subprojects.sourceSets.main.allSource.srcDirs)
   sourceDirectories.from = files(subprojects.sourceSets.main.allSource.srcDirs)
   classDirectories.from = files(subprojects.sourceSets.main.output)

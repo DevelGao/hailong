@@ -13,70 +13,98 @@
 
 package tech.devgao.artemis.data.provider;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.io.File;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.Collections;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
+import java.util.Objects;
 import org.apache.logging.log4j.Level;
-import tech.devgao.artemis.data.IRecordAdapter;
+import tech.devgao.artemis.data.TimeSeriesRecord;
 import tech.devgao.artemis.util.alogger.ALogger;
 
-public class JSONProvider implements FileProvider {
+public class JSONProvider extends FileProvider<JSONProvider> {
   private static final ALogger LOG = new ALogger(JSONProvider.class.getName());
 
-  private final Path path;
-
-  public JSONProvider(Path logFilePath) throws IOException {
-    this.path = logFilePath;
+  public JSONProvider(String filename) {
+    init(filename);
   }
 
-  @Override
-  public void serialOutput(IRecordAdapter record) {
+  public JSONProvider(TimeSeriesRecord record) {
+    this.record = record;
+  }
+
+  // adds the array brackets for JSON formatting
+  private static void init(String filename) {
     try {
-      Files.write(
-          path,
-          Collections.singletonList(record.toJSON()),
-          StandardCharsets.UTF_8,
-          Files.exists(path) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
+      BufferedWriter bw =
+          new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename, true), "UTF-8"));
+      StringBuilder line = new StringBuilder("[]");
+      bw.write(line.toString());
+      bw.flush();
+      bw.close();
+    } catch (IOException e) {
+      LOG.log(Level.WARN, e.toString());
+    }
+  }
+  // reads in and inserts next JSON object
+  private static String readInFileForEdit(String filename, StringBuilder insert)
+      throws IOException {
+    BufferedReader reader;
+    reader =
+        new BufferedReader(
+            new InputStreamReader(new FileInputStream(filename), Charset.forName("UTF-8")));
+    String line = "";
+    String patternEnd = "^[^\\]]*\\]$";
+    StringBuilder builder = new StringBuilder();
+    while (line != null && !line.matches(patternEnd)) {
+      line = reader.readLine();
+      builder.append(line);
+    }
+    if (builder.toString().contains("{")) builder.insert(builder.length() - 1, ",\n");
+    builder.insert(builder.length() - 1, insert);
+    return builder.toString();
+  }
+
+  public static <T> void output(String filename, T record) {
+
+    try {
+      StringBuilder line = new StringBuilder(record.toString());
+      String readFile = readInFileForEdit(filename, line);
+      BufferedWriter bw =
+          new BufferedWriter(
+              new OutputStreamWriter(new FileOutputStream(filename, false), "UTF-8"));
+      bw.write(readFile);
+      bw.flush();
+      bw.close();
     } catch (IOException e) {
       LOG.log(Level.WARN, e.toString());
     }
   }
 
   @Override
-  public void formattedOutput(IRecordAdapter record) {
-    try {
-      RandomAccessFile r = new RandomAccessFile(new File(path.getFileName().toString()), "rw");
-      RandomAccessFile rtemp =
-          new RandomAccessFile(new File(path.getFileName().toString() + "~"), "rw");
-      long fileSize = r.length();
-
-      long offset = fileSize == 0 ? 0 : r.length() - 2;
-      byte[] content =
-          fileSize == 0
-              ? ("[\n\t" + record.toJSON() + "\n]").getBytes(UTF_8)
-              : (",\n\t" + record.toJSON()).getBytes(UTF_8);
-
-      FileChannel sourceChannel = r.getChannel();
-      FileChannel targetChannel = rtemp.getChannel();
-      sourceChannel.transferTo(offset, (fileSize - offset), targetChannel);
-      sourceChannel.truncate(offset);
-      r.seek(offset);
-      r.write(content);
-      long newOffset = r.getFilePointer();
-      targetChannel.position(0L);
-      sourceChannel.transferFrom(targetChannel, newOffset, (fileSize - offset));
-      sourceChannel.close();
-      targetChannel.close();
-    } catch (Exception e) {
-      LOG.log(Level.ERROR, e.getMessage());
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof JSONProvider)) {
+      return false;
     }
+    JSONProvider jSONProvider = (JSONProvider) o;
+    return Objects.equals(record, jSONProvider.record);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(record);
+  }
+
+  @Override
+  public String toString() {
+    Gson gson = new GsonBuilder().create();
+    return gson.toJson(record);
   }
 }
