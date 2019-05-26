@@ -14,7 +14,6 @@
 package tech.devgao.artemis.datastructures.util;
 
 import com.google.common.collect.Sets;
-import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,20 +26,6 @@ import tech.devgao.artemis.datastructures.state.Validator;
 public class ValidatorsUtil {
 
   /**
-   * Check if (this) validator is active in the given epoch.
-   *
-   * @param epoch - The epoch under consideration.
-   * @return A boolean indicating if the validator is active.
-   * @see <a
-   *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.4.0/specs/core/0_beacon-chain.md#is_active_validator">is_active_validator
-   *     - Spec v0.4</a>
-   */
-  public static boolean is_active_validator(Validator validator, UnsignedLong epoch) {
-    return validator.getActivation_epoch().compareTo(epoch) <= 0
-        && epoch.compareTo(validator.getExit_epoch()) < 0;
-  }
-
-  /**
    * Returns the list of active validators from the provided list of validators at the given epoch.
    *
    * <p><b>This method is defined for convenience and is not mentioned in the spec.</b>
@@ -49,12 +34,11 @@ public class ValidatorsUtil {
    * @param epoch - The epoch under consideration.
    * @return A list of active validators for the given epoch.
    */
-  public static List<Validator> get_active_validators(
-      List<Validator> validators, UnsignedLong epoch) {
+  public static List<Validator> get_active_validators(List<Validator> validators, long epoch) {
     List<Validator> active_validators = new ArrayList<>();
     if (validators != null) {
       for (Validator record : validators) {
-        if (is_active_validator(record, epoch)) {
+        if (record.is_active_validator(epoch)) {
           active_validators.add(record);
         }
       }
@@ -63,7 +47,8 @@ public class ValidatorsUtil {
   }
 
   /**
-   * Get indices of active validators from ``validators``.
+   * Returns the list of indices of active validators from the provided list of validators at the
+   * given epoch.
    *
    * @param validators - The list of validators under consideration.
    * @param epoch - The epoch under consideration.
@@ -72,14 +57,13 @@ public class ValidatorsUtil {
    *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.4.0/specs/core/0_beacon-chain.md#get_active_validator_indices">get_active_validator_indices
    *     - Spec v0.4</a>
    */
-  public static List<Integer> get_active_validator_indices(
-      List<Validator> validators, UnsignedLong epoch) {
+  public static List<Integer> get_active_validator_indices(List<Validator> validators, long epoch) {
     List<Integer> active_validator_indices = Collections.synchronizedList(new ArrayList<>());
     IntStream.range(0, validators.size())
         .parallel()
         .forEachOrdered(
             index -> {
-              if (is_active_validator(validators.get(index), epoch)) {
+              if (validators.get(index).is_active_validator(epoch)) {
                 active_validator_indices.add(index);
               }
             });
@@ -95,10 +79,9 @@ public class ValidatorsUtil {
    * @param epoch
    * @return
    */
-  public static Boolean is_active_validator_index(
-      BeaconState state, int index, UnsignedLong epoch) {
+  public static Boolean is_active_validator_index(BeaconState state, int index, long epoch) {
     List<Validator> all_validators = state.getValidator_registry();
-    return is_active_validator(all_validators.get(index), epoch);
+    return all_validators.get(index).is_active_validator(epoch);
   }
 
   /**

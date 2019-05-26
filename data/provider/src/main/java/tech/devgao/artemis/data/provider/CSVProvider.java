@@ -13,62 +13,38 @@
 
 package tech.devgao.artemis.data.provider;
 
-import java.util.Objects;
-import tech.devgao.artemis.data.TimeSeriesRecord;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.Collections;
+import org.apache.logging.log4j.Level;
+import tech.devgao.artemis.data.IRecordAdapter;
 import tech.devgao.artemis.util.alogger.ALogger;
 
-public class CSVProvider extends FileProvider<CSVProvider> {
+public class CSVProvider implements FileProvider {
   private static final ALogger LOG = new ALogger(CSVProvider.class.getName());
 
-  public CSVProvider() {}
+  private final Path logFilePath;
 
-  public CSVProvider(TimeSeriesRecord record) {
-    this.record = record;
+  public CSVProvider(Path logFilePath) {
+    this.logFilePath = logFilePath;
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (o == this) return true;
-    if (!(o instanceof CSVProvider)) {
-      return false;
+  public void serialOutput(IRecordAdapter record) {
+    try {
+      Files.write(
+          logFilePath,
+          Collections.singletonList(record.toCSV()),
+          StandardCharsets.UTF_8,
+          Files.exists(logFilePath) ? StandardOpenOption.APPEND : StandardOpenOption.CREATE);
+    } catch (IOException e) {
+      LOG.log(Level.WARN, e.toString());
     }
-    CSVProvider cSVProvider = (CSVProvider) o;
-    return Objects.equals(record, cSVProvider.record);
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(record);
-  }
-
-  @Override
-  public String toString() {
-    return " '"
-        + record.getIndex()
-        + "'"
-        + ", '"
-        + record.getSlot()
-        + "'"
-        + ", '"
-        + record.getEpoch()
-        + "'"
-        + ", '"
-        + record.getHeadBlockRoot()
-        + "'"
-        + ", '"
-        + record.getHeadStateRoot()
-        + "'"
-        + ", '"
-        + record.getParentHeadBlockRoot()
-        + "'"
-        + ", '"
-        + record.getNumValidators()
-        + "'"
-        + ", '"
-        + record.getJustifiedBlockRoot()
-        + "'"
-        + ", '"
-        + record.getJustifiedStateRoot()
-        + "'";
-  }
+  public void formattedOutput(IRecordAdapter record) {}
 }

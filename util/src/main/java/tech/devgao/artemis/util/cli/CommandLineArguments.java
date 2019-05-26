@@ -19,17 +19,6 @@ import picocli.CommandLine.Option;
 
 @Command(name = "Artemis", mixinStandardHelpOptions = true)
 public class CommandLineArguments {
-  @Option(
-      names = {"-p", "--provider"},
-      paramLabel = "<PROVIDER TYPE>",
-      description = "Output provider types: CSV, JSON (default: JSON).")
-  private String providerType = "JSON";
-
-  @Option(
-      names = {"-o", "--output"},
-      paramLabel = "<FILENAME>",
-      description = "Path/filename of the output file")
-  private String outputFile = "";
 
   @Option(
       names = {"-l", "--logging"},
@@ -45,32 +34,11 @@ public class CommandLineArguments {
       description = "Path/filename of the config file")
   private String configFile = "./config/config.toml";
 
-  @Option(
-      names = {"-s", "--sim"},
-      description = "PoW simulation flag")
-  private boolean simulation = false;
-
-  public String getProviderType() {
-    return this.providerType;
-  }
-
-  public String getOutputFile() {
-    return this.outputFile;
-  }
-
-  public Boolean isOutputEnabled() {
-    return this.outputFile.length() > 0;
-  }
-
   public Level getLoggingLevel() {
     return this.logLevel;
   }
 
   public String getConfigFile() {
     return configFile;
-  }
-
-  public boolean isSimulation() {
-    return simulation;
   }
 }

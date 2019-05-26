@@ -15,25 +15,24 @@ package tech.devgao.artemis.datastructures.state;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomUnsignedLong;
+import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomLong;
 
-import com.google.common.primitives.UnsignedLong;
-import net.develgao.cava.bytes.Bytes;
-import net.develgao.cava.bytes.Bytes32;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
 
 class ValidatorTest {
 
-  private BLSPublicKey pubkey = BLSPublicKey.random();
-  private Bytes32 withdrawalCredentials = Bytes32.random();
-  private UnsignedLong activationEpoch = randomUnsignedLong();
-  private UnsignedLong exitEpoch = randomUnsignedLong();
-  private UnsignedLong withdrawalEpoch = randomUnsignedLong();
-  private boolean initiatedExit = false;
-  private boolean slashed = false;
+  private final BLSPublicKey pubkey = BLSPublicKey.random();
+  private final Bytes32 withdrawalCredentials = Bytes32.random();
+  private final long activationEpoch = randomLong();
+  private final long exitEpoch = randomLong();
+  private final long withdrawalEpoch = randomLong();
+  private final boolean initiatedExit = false;
+  private final boolean slashed = false;
 
-  private Validator validator =
+  private final Validator validator =
       new Validator(
           pubkey,
           withdrawalCredentials,
@@ -105,7 +104,7 @@ class ValidatorTest {
         new Validator(
             pubkey,
             withdrawalCredentials,
-            activationEpoch.plus(randomUnsignedLong()),
+            activationEpoch + randomLong(),
             exitEpoch,
             withdrawalEpoch,
             initiatedExit,
@@ -121,7 +120,7 @@ class ValidatorTest {
             pubkey,
             withdrawalCredentials,
             activationEpoch,
-            exitEpoch.plus(randomUnsignedLong()),
+            exitEpoch + randomLong(),
             withdrawalEpoch,
             initiatedExit,
             slashed);
@@ -137,7 +136,7 @@ class ValidatorTest {
             withdrawalCredentials,
             activationEpoch,
             exitEpoch,
-            withdrawalEpoch.plus(randomUnsignedLong()),
+            withdrawalEpoch + randomLong(),
             initiatedExit,
             slashed);
 

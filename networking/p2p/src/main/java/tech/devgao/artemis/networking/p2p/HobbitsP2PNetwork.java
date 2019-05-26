@@ -14,6 +14,7 @@
 package tech.devgao.artemis.networking.p2p;
 
 import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetClientOptions;
@@ -23,6 +24,7 @@ import io.vertx.core.net.NetSocket;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -31,14 +33,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-import net.develgao.cava.concurrent.AsyncCompletion;
-import net.develgao.cava.concurrent.CompletableAsyncCompletion;
-import tech.devgao.artemis.data.RawRecord;
+import org.apache.logging.log4j.Level;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.concurrent.AsyncCompletion;
+import org.apache.tuweni.concurrent.CompletableAsyncCompletion;
+import org.apache.tuweni.crypto.Hash;
+import org.apache.tuweni.plumtree.EphemeralPeerRepository;
+import org.apache.tuweni.plumtree.MessageSender;
+import org.apache.tuweni.plumtree.State;
 import tech.devgao.artemis.data.TimeSeriesRecord;
-import tech.devgao.artemis.data.adapter.TimeSeriesAdapter;
+import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
+import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.networking.p2p.api.P2PNetwork;
 import tech.devgao.artemis.networking.p2p.hobbits.HobbitsSocketHandler;
 import tech.devgao.artemis.networking.p2p.hobbits.Peer;
+import tech.devgao.artemis.util.alogger.ALogger;
 
 /**
  * Hobbits Ethereum Wire Protocol implementation.
@@ -46,7 +56,7 @@ import tech.devgao.artemis.networking.p2p.hobbits.Peer;
  * <p>This P2P implementation uses clear messages relying on the hobbits wire format.
  */
 public final class HobbitsP2PNetwork implements P2PNetwork {
-
+  private static final ALogger LOG = new ALogger(HobbitsSocketHandler.class.getName());
   private final AtomicBoolean started = new AtomicBoolean(false);
   private final EventBus eventBus;
   private final Vertx vertx;
@@ -54,11 +64,13 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
   private final int advertisedPort;
   private final String networkInterface;
   private final String userAgent = "Artemis SNAPSHOT";
+  private final State state;
   private NetServer server;
   private NetClient client;
   private List<URI> staticPeers;
   private TimeSeriesRecord chainData;
   private Map<URI, HobbitsSocketHandler> handlersMap = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, Boolean> receivedMessages = new ConcurrentHashMap<>();
 
   /**
    * Default constructor
@@ -85,7 +97,31 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
     this.staticPeers = staticPeers;
     this.chainData = new TimeSeriesRecord();
     eventBus.register(this);
+    this.state =
+        new State(
+            new EphemeralPeerRepository(),
+            Hash::sha2_256,
+            this::sendMessage,
+            this::processGossip,
+            (bytes, peer) -> true);
   }
+
+  private void sendMessage(
+      MessageSender.Verb verb,
+      String attributes,
+      org.apache.tuweni.plumtree.Peer peer,
+      Bytes hash,
+      Bytes bytes) {
+    if (!started.get()) {
+      return;
+    }
+    HobbitsSocketHandler handler = handlersMap.get(((Peer) peer).uri());
+    if (handler != null) {
+      handler.gossipMessage(verb, attributes, hash, Bytes32.random(), bytes);
+    }
+  }
+
+  private void processGossip(Bytes message) {}
 
   @Override
   public void run() {
@@ -127,7 +163,9 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
         peerURI,
         uri -> {
           Peer peer = new Peer(peerURI);
-          return new HobbitsSocketHandler(netSocket, userAgent, peer, chainData);
+          state.addPeer(peer);
+          return new HobbitsSocketHandler(
+              eventBus, netSocket, userAgent, peer, chainData, state, receivedMessages);
         });
   }
 
@@ -136,6 +174,11 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
     return handlersMap.values().stream()
         .map(HobbitsSocketHandler::peer)
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public Collection<?> getHandlers() {
+    return handlersMap.values();
   }
 
   CompletableFuture<?> connect(URI peerURI) {
@@ -155,10 +198,10 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
               NetSocket socket = res.result();
               Peer peer = new Peer(peerURI);
               HobbitsSocketHandler handler =
-                  new HobbitsSocketHandler(socket, userAgent, peer, chainData);
+                  new HobbitsSocketHandler(
+                      eventBus, socket, userAgent, peer, chainData, state, receivedMessages);
               handlersMap.put(peerURI, handler);
-              handler.sendHello();
-              handler.sendStatus();
+              state.addPeer(peer);
               connected.complete(peer);
             }
           });
@@ -172,7 +215,10 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
   }
 
   @Override
-  public void subscribe(String event) {}
+  public void subscribe(String event) {
+    // TODO
+    if (!started.get()) {}
+  }
 
   @Override
   public void stop() {
@@ -209,9 +255,25 @@ public final class HobbitsP2PNetwork implements P2PNetwork {
     stop();
   }
 
-  @Override
-  public synchronized void onDataEvent(RawRecord record) {
-    TimeSeriesAdapter adapter = new TimeSeriesAdapter(record);
-    chainData = adapter.transform();
+  @Subscribe
+  public void onNewUnprocessedBlock(BeaconBlock block) {
+    LOG.log(
+        Level.INFO, "Gossiping new block with state root: " + block.getState_root().toHexString());
+    Date timestamp = new Date();
+    String attributes = "BLOCK" + "," + String.valueOf(timestamp.getTime());
+    Bytes messageHash = state.sendGossipMessage(attributes, block.toBytes());
+    this.receivedMessages.put(messageHash.toHexString(), true);
+  }
+
+  @Subscribe
+  public void onNewAttestation(Attestation attestation) {
+    LOG.log(
+        Level.DEBUG,
+        "Gossiping new attestation for block_root: "
+            + attestation.getData().getBeacon_block_root().toHexString());
+    Date timestamp = new Date();
+    String attributes = "ATTESTATION" + "," + String.valueOf(timestamp.getTime());
+    Bytes messageHash = state.sendGossipMessage(attributes, attestation.toBytes());
+    this.receivedMessages.put(messageHash.toHexString(), true);
   }
 }

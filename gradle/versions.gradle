@@ -25,8 +25,9 @@ dependencyManagement {
     
     dependency 'io.pkts:pkts-core:3.0.3'
 
-    dependency "io.prometheus:simpleclient:0.5.0"
-    dependency "io.prometheus:simpleclient_hotspot:0.5.0"
+    dependency "io.prometheus:simpleclient:0.6.0"
+    dependency "io.prometheus:simpleclient_hotspot:0.6.0"
+    dependency "io.prometheus:simpleclient_vertx:0.6.0"
 
     dependency 'io.vertx:vertx-codegen:3.6.3'
     dependency 'io.vertx:vertx-core:3.6.3'
@@ -38,17 +39,17 @@ dependencyManagement {
       entry 'logl-logl'
     }
 
-    dependencySet(group: 'net.develgao.cava', version: '1.0.0-C01FE1-snapshot') {
-      entry 'cava-bytes'
-      entry 'cava-config'
-      entry 'cava-crypto'
-      entry 'cava-junit'
-      entry 'cava-kv'
-      entry 'cava-rlpx'
-      // Commented out in favor of a precompiled jar for v0.5.1 spec
-      // entry 'cava-ssz'
-      entry 'cava-toml'
-      entry 'cava-units'
+    dependencySet(group: 'org.apache.tuweni', version: '1.0.0-SNAPSHOT') {
+      entry 'tuweni-bytes'
+      entry 'tuweni-config'
+      entry 'tuweni-crypto'
+      entry 'tuweni-junit'
+      entry 'tuweni-kv'
+      entry 'tuweni-plumtree'
+      entry 'tuweni-rlpx'
+      entry 'tuweni-ssz'
+      entry 'tuweni-toml'
+      entry 'tuweni-units'
     }
 
     dependency 'org.apache.commons:commons-text:1.6'
@@ -73,7 +74,8 @@ dependencyManagement {
     }
     
     dependency 'org.openjdk.jmh:jmh-core:1.21'
-
+    dependency 'org.miracl.milagro.amcl:milagro-crypto-java:0.4.0'
+    dependency 'org.quartz-scheduler:quartz:2.3.1'
     dependency 'org.rocksdb:rocksdbjni:5.15.10'
 
     dependency 'org.web3j:core:4.1.1'
