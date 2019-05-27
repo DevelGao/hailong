@@ -19,19 +19,21 @@ dependencies {
   implementation project(':data:provider')
   implementation project(':ethereum:datastructures')
   implementation project(':validator:coordinator')
+  implementation project(':validator:client')
 
   
   api 'com.google.guava:guava:27.0.1-jre'
-  implementation 'net.develgao.cava:cava-crypto'
-  implementation 'net.develgao.cava:cava-units'
+  implementation 'org.apache.tuweni:tuweni-crypto'
+  implementation 'org.apache.tuweni:tuweni-plumtree'
+  implementation 'org.apache.tuweni:tuweni-ssz'
+  implementation 'org.apache.tuweni:tuweni-toml'
+  implementation 'org.apache.tuweni:tuweni-units'
   implementation 'info.picocli:picocli'
   implementation 'com.google.guava:guava'
-  implementation 'net.develgao.cava:cava-toml'
   implementation 'io.vertx:vertx-core'
   implementation 'io.vertx:vertx-web'
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.slf4j:slf4j-nop:1.7.25'
-  compileOnly 'org.jetbrains:annotations:15.0'
 
   runtimeOnly 'org.apache.logging.log4j:log4j-core'
 
