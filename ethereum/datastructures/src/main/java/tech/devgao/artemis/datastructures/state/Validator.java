@@ -25,7 +25,7 @@ import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
 import tech.devgao.artemis.util.hashtree.Merkleizable;
 
-public final class Validator implements Copyable<Validator>, Merkleizable {
+public class Validator implements Copyable<Validator>, Merkleizable {
 
   // BLS public key
   private BLSPublicKey pubkey;
