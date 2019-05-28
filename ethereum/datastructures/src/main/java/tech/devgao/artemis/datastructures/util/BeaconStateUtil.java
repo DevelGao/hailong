@@ -46,7 +46,7 @@ import java.util.stream.IntStream;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.crypto.Hash;
-import net.develgao.cava.ssz.SSZ;
+import org.apache.tuweni.ssz.SSZ;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
 import tech.devgao.artemis.datastructures.operations.AttestationData;

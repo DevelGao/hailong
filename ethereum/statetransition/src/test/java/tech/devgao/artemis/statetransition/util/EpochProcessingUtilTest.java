@@ -15,11 +15,8 @@ package tech.devgao.artemis.statetransition.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDeposits;
-import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomEth1Data;
-import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomValidator;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.junit.BouncyCastleExtension;
 import org.junit.jupiter.api.Disabled;

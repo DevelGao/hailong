@@ -17,7 +17,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import net.develgao.cava.ssz.SSZ;
+import org.apache.tuweni.ssz.SSZ;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
 import tech.devgao.artemis.util.bls.BLSSignature;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;

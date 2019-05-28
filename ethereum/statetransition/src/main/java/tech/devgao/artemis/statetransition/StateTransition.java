@@ -31,7 +31,6 @@ import tech.devgao.artemis.statetransition.util.EpochProcessingException;
 import tech.devgao.artemis.statetransition.util.EpochProcessorUtil;
 import tech.devgao.artemis.statetransition.util.PreProcessingUtil;
 import tech.devgao.artemis.util.alogger.ALogger;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 
 public class StateTransition {
 

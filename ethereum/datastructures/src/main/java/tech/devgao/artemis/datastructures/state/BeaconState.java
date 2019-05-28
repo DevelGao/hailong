@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import net.develgao.cava.ssz.SSZ;
+import org.apache.tuweni.ssz.SSZ;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlockHeader;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;

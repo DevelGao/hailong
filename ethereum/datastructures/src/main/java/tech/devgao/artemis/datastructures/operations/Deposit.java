@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import net.develgao.cava.ssz.SSZ;
+import org.apache.tuweni.ssz.SSZ;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
