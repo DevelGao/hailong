@@ -16,8 +16,8 @@ package tech.devgao.artemis.datastructures.operations;
 import com.google.common.primitives.UnsignedLong;
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.util.bls.BLSSignature;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
@@ -122,7 +122,7 @@ public class Attestation implements Merkleizable {
     this.aggregate_signature = aggregate_signature;
   }
 
-  public long getSlot() {
+  public UnsignedLong getSlot() {
     return data.getSlot();
   }
 

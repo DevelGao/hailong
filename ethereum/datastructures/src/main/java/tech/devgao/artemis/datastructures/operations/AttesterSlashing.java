@@ -18,7 +18,6 @@ import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
-import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 import tech.devgao.artemis.util.hashtree.Merkleizable;
 

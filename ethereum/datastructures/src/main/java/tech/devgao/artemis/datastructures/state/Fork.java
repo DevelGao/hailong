@@ -19,7 +19,6 @@ import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import net.develgao.cava.ssz.SSZ;
-import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
 
@@ -104,11 +103,11 @@ public class Fork {
     this.current_version = current_version;
   }
 
-  public long getEpoch() {
+  public UnsignedLong getEpoch() {
     return epoch;
   }
 
-  public void setEpoch(long epoch) {
+  public void setEpoch(UnsignedLong epoch) {
     this.epoch = epoch;
   }
 

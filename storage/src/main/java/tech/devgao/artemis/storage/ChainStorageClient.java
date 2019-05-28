@@ -27,6 +27,8 @@ import org.apache.tuweni.bytes.Bytes;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.state.BeaconState;
+import tech.devgao.artemis.datastructures.util.AttestationUtil;
+import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.util.alogger.ALogger;
 
 /** This class is the ChainStorage client-side logic */
