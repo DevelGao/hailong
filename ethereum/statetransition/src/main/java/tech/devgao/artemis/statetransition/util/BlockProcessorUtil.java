@@ -59,7 +59,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.crypto.Hash;
-import org.apache.tuweni.ssz.SSZ;
+import net.develgao.cava.ssz.SSZ;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.blocks.Eth1DataVote;

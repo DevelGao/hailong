@@ -13,12 +13,11 @@
 
 package tech.devgao.artemis.datastructures.blocks;
 
-import com.google.common.primitives.UnsignedLong;
 import java.util.Arrays;
 import java.util.Objects;
-import org.apache.tuweni.bytes.Bytes32;
+import net.develgao.cava.ssz.SSZ;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.ssz.SSZ;
+import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil;
 import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
 import tech.devgao.artemis.util.hashtree.Merkleizable;

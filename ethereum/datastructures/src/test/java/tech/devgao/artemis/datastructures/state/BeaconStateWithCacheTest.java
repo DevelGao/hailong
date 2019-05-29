@@ -21,7 +21,6 @@ import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDe
 
 import java.util.ArrayList;
 import java.util.Collections;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.junit.BouncyCastleExtension;
 import org.junit.jupiter.api.Test;
