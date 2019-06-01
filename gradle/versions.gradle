@@ -47,8 +47,7 @@ dependencyManagement {
       entry 'tuweni-kv'
       entry 'tuweni-plumtree'
       entry 'tuweni-rlpx'
-      //Commented out until v5.1 ssz mods are pushed to tuweni
-      //entry 'tuweni-ssz'
+      entry 'tuweni-ssz'
       entry 'tuweni-toml'
       entry 'tuweni-units'
     }

@@ -52,8 +52,10 @@ class BLSSignatureTest {
   void succeedsIfSerialisationOfEmptySignatureIsCorrect() {
     BLSSignature emptySignature = BLSSignature.empty();
     assertTrue(emptySignature.isEmpty());
+    // SSZ prepends the length as four little-endian bytes
     assertEquals(
-        "0x0000000000000000000000000000000000000000000000000000000000000000"
+        "0x60000000"
+            + "0000000000000000000000000000000000000000000000000000000000000000"
             + "0000000000000000000000000000000000000000000000000000000000000000"
             + "0000000000000000000000000000000000000000000000000000000000000000",
         emptySignature.toBytes().toHexString());
@@ -64,7 +66,7 @@ class BLSSignatureTest {
     BLSSignature emptySignature = BLSSignature.empty();
     assertTrue(emptySignature.isEmpty());
     Bytes zeroBytes = Bytes.wrap(new byte[96]);
-    Bytes emptyBytesSsz = SSZ.encode(writer -> writer.writeFixedBytes(96, zeroBytes));
+    Bytes emptyBytesSsz = SSZ.encodeBytes(zeroBytes);
     BLSSignature deserialisedSignature = BLSSignature.fromBytes(emptyBytesSsz);
     assertEquals(emptySignature, deserialisedSignature);
   }

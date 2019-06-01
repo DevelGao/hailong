@@ -158,13 +158,14 @@ public final class HobbitsSocketHandler {
         Bytes bytes = gossipMessage.body();
         String[] attributes = gossipMessage.getAttributes().split(",");
         if (attributes[0].equalsIgnoreCase("ATTESTATION")) {
-          peer.setPeerGossip(bytes);
           this.eventBus.post(Attestation.fromBytes(bytes));
-        } else if (attributes[0].equalsIgnoreCase("BLOCK")) {
           peer.setPeerGossip(bytes);
+        } else if (attributes[0].equalsIgnoreCase("BLOCK")) {
           this.eventBus.post(BeaconBlock.fromBytes(bytes));
+          peer.setPeerGossip(bytes);
         }
-        p2pState.receiveGossipMessage(peer, gossipMessage.getAttributes(), gossipMessage.body());
+        p2pState.receiveGossipMessage(
+            peer, gossipMessage.getAttributes(), gossipMessage.body(), gossipMessage.messageHash());
       } else if (GossipMethod.PRUNE.equals(gossipMessage.method())) {
         p2pState.receivePruneMessage(peer);
       } else if (GossipMethod.GRAFT.equals(gossipMessage.method())) {

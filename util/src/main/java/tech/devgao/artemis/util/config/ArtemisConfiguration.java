@@ -159,7 +159,6 @@ public final class ArtemisConfiguration {
     builder.addInteger("constants.MIN_SEED_LOOKAHEAD", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.ACTIVATION_EXIT_DELAY", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.EPOCHS_PER_ETH1_VOTING_PERIOD", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.SLOTS_PER_HISTORICAL_ROOT", Integer.MIN_VALUE, null, null);
     builder.addInteger(
         "constants.MIN_VALIDATOR_WITHDRAWABILITY_DELAY", Integer.MIN_VALUE, null, null);
 
@@ -186,11 +185,11 @@ public final class ArtemisConfiguration {
     builder.addInteger("constants.MAX_TRANSFERS", Integer.MIN_VALUE, null, null);
 
     // Signature domains
-    builder.addInteger("constants.DOMAIN_BEACON_BLOCK", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_RANDAO", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_ATTESTATION", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.DOMAIN_DEPOSIT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_VOLUNTARY_EXIT", Integer.MIN_VALUE, null, null);
+    builder.addInteger("constants.DOMAIN_ATTESTATION", Integer.MIN_VALUE, null, null);
+    builder.addInteger("constants.DOMAIN_PROPOSAL", Integer.MIN_VALUE, null, null);
+    builder.addInteger("constants.DOMAIN_EXIT", Integer.MIN_VALUE, null, null);
+    builder.addInteger("constants.DOMAIN_RANDAO", Integer.MIN_VALUE, null, null);
     builder.addInteger("constants.DOMAIN_TRANSFER", Integer.MIN_VALUE, null, null);
 
     // Artemis specific
@@ -398,7 +397,7 @@ public final class ArtemisConfiguration {
   }
 
   public long getFarFutureEpoch() {
-    return Long.MAX_VALUE;
+    return config.getLong("constants.FAR_FUTURE_EPOCH");
   }
 
   public Object getZeroHash() {
@@ -438,15 +437,15 @@ public final class ArtemisConfiguration {
     return config.getInteger("constants.EPOCHS_PER_ETH1_VOTING_PERIOD");
   }
 
-  public int getSlotsPerHistoricalRoot() {
-    return config.getInteger("constants.SLOTS_PER_HISTORICAL_ROOT");
-  }
-
   public int getMinValidatorWithdrawabilityDelay() {
     return config.getInteger("constants.MIN_VALIDATOR_WITHDRAWABILITY_DELAY");
   }
 
   /** @return state list length constants */
+  public int getLatestBlockRootsLength() {
+    return config.getInteger("constants.LATEST_BLOCK_ROOTS_LENGTH");
+  }
+
   public int getLatestRandaoMixesLength() {
     return config.getInteger("constants.LATEST_RANDAO_MIXES_LENGTH");
   }
@@ -506,24 +505,24 @@ public final class ArtemisConfiguration {
   }
 
   /** @return signature domain constants */
-  public int getDomainBeaconBlock() {
-    return config.getInteger("constants.DOMAIN_BEACON_BLOCK");
-  }
-
-  public int getDomainRandao() {
-    return config.getInteger("constants.DOMAIN_RANDAO");
+  public int getDomainDeposit() {
+    return config.getInteger("constants.DOMAIN_DEPOSIT");
   }
 
   public int getDomainAttestation() {
     return config.getInteger("constants.DOMAIN_ATTESTATION");
   }
 
-  public int getDomainDeposit() {
-    return config.getInteger("constants.DOMAIN_DEPOSIT");
+  public int getDomainProposal() {
+    return config.getInteger("constants.DOMAIN_PROPOSAL");
   }
 
-  public int getDomainVoluntaryExit() {
-    return config.getInteger("constants.DOMAIN_VOLUNTARY_EXIT");
+  public int getDomainExit() {
+    return config.getInteger("constants.DOMAIN_EXIT");
+  }
+
+  public int getDomainRandao() {
+    return config.getInteger("constants.DOMAIN_RANDAO");
   }
 
   public int getDomainTransfer() {
