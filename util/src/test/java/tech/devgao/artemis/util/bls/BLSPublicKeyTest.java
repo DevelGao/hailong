@@ -41,8 +41,10 @@ class BLSPublicKeyTest {
   void succeedsIfSerialisationOfEmptyPublicKeyIsCorrect() {
     BLSPublicKey emptyPublicKey = BLSPublicKey.empty();
     assertTrue(emptyPublicKey.isEmpty());
+    // SSZ prepends the length as four little-endian bytes
     assertEquals(
-        "0x000000000000000000000000000000000000000000000000"
+        "0x30000000"
+            + "000000000000000000000000000000000000000000000000"
             + "000000000000000000000000000000000000000000000000",
         emptyPublicKey.toBytes().toHexString());
   }
@@ -51,11 +53,8 @@ class BLSPublicKeyTest {
   void succeedsIfDeserialisationOfEmptyPublicKeyIsCorrect() {
     BLSPublicKey emptyPublicKey = BLSPublicKey.empty();
     assertTrue(emptyPublicKey.isEmpty());
-    Bytes emptyBytesSsz =
-        SSZ.encode(
-            writer -> {
-              writer.writeFixedBytes(48, Bytes.wrap(new byte[48]));
-            });
+    Bytes zeroBytes = Bytes.wrap(new byte[48]);
+    Bytes emptyBytesSsz = SSZ.encodeBytes(zeroBytes);
     BLSPublicKey deserialisedPublicKey = BLSPublicKey.fromBytes(emptyBytesSsz);
     assertEquals(emptyPublicKey, deserialisedPublicKey);
   }
