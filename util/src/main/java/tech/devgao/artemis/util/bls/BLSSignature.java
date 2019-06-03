@@ -95,13 +95,12 @@ public final class BLSSignature {
   }
 
   public static BLSSignature fromBytes(Bytes bytes) {
-    checkArgument(bytes.size() == 96, "Expected 96 bytes but received %s.", bytes.size());
-    if (SSZ.decode(bytes, reader -> reader.readFixedBytes(96)).isZero()) {
+    checkArgument(bytes.size() == 100, "Expected 100 bytes but received %s.", bytes.size());
+    if (SSZ.decodeBytes(bytes).isZero()) {
       return BLSSignature.empty();
     } else {
       return SSZ.decode(
-          bytes,
-          reader -> new BLSSignature(Signature.fromBytesCompressed(reader.readFixedBytes(96))));
+          bytes, reader -> new BLSSignature(Signature.fromBytesCompressed(reader.readBytes())));
     }
   }
 
@@ -151,7 +150,7 @@ public final class BLSSignature {
       throw new BLSException("The checkSignature method was called on an empty signature.");
     }
     List<PublicKey> publicKeyObjects =
-        publicKeys.stream().map(x -> x.getPublicKey()).collect(Collectors.toList());
+        publicKeys.stream().map(BLSPublicKey::getPublicKey).collect(Collectors.toList());
     return BLS12381.verifyMultiple(publicKeyObjects, signature, messages, domain);
   }
 
@@ -162,15 +161,9 @@ public final class BLSSignature {
    */
   public Bytes toBytes() {
     if (isNull(signature)) {
-      return SSZ.encode(
-          writer -> {
-            writer.writeFixedBytes(96, Bytes.wrap(new byte[96]));
-          });
+      return SSZ.encode(writer -> writer.writeBytes(Bytes.wrap(new byte[96])));
     } else {
-      return SSZ.encode(
-          writer -> {
-            writer.writeFixedBytes(96, signature.toBytesCompressed());
-          });
+      return SSZ.encode(writer -> writer.writeBytes(signature.toBytesCompressed()));
     }
   }
 

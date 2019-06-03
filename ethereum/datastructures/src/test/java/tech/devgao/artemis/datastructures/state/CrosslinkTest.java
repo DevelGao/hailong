@@ -15,19 +15,18 @@ package tech.devgao.artemis.datastructures.state;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomUnsignedLong;
+import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomLong;
 
-import com.google.common.primitives.UnsignedLong;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 
 class CrosslinkTest {
 
-  UnsignedLong epoch = randomUnsignedLong();
-  Bytes32 crosslinkDataRoot = Bytes32.random();
+  final long epoch = randomLong();
+  final Bytes32 crosslinkDataRoot = Bytes32.random();
 
-  private Crosslink crosslink = new Crosslink(epoch, crosslinkDataRoot);
+  private final Crosslink crosslink = new Crosslink(epoch, crosslinkDataRoot);
 
   @Test
   void equalsReturnsTrueWhenObjectAreSame() {
@@ -45,7 +44,7 @@ class CrosslinkTest {
 
   @Test
   void equalsReturnsFalseWhenEpochsAreDifferent() {
-    Crosslink testCrosslink = new Crosslink(epoch.plus(randomUnsignedLong()), crosslinkDataRoot);
+    Crosslink testCrosslink = new Crosslink(epoch + randomLong(), crosslinkDataRoot);
 
     assertNotEquals(crosslink, testCrosslink);
   }

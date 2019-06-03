@@ -16,6 +16,7 @@ dependencies {
   implementation project(':util')
   implementation project(':data')
   implementation project(':data:adapter')
+  implementation project(':data:metrics')
   implementation project(':data:provider')
   implementation project(':ethereum:datastructures')
   implementation project(':validator:coordinator')
@@ -25,7 +26,7 @@ dependencies {
   api 'com.google.guava:guava:27.0.1-jre'
   implementation 'org.apache.tuweni:tuweni-crypto'
   implementation 'org.apache.tuweni:tuweni-plumtree'
-  implementation files("../lib/tuweni-ssz-0.8.1-SNAPSHOT.jar")
+  implementation 'org.apache.tuweni:tuweni-ssz'
   implementation 'org.apache.tuweni:tuweni-toml'
   implementation 'org.apache.tuweni:tuweni-units'
   implementation 'info.picocli:picocli'
