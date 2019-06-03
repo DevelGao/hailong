@@ -61,7 +61,7 @@ public final class G1Point implements Group<G1Point> {
     return new G1Point(ECP.fromBytes(bytes.toArrayUnsafe()));
   }
 
-  public static G1Point fromBytesCompressed(Bytes bytes) {
+  static G1Point fromBytesCompressed(Bytes bytes) {
     checkArgument(
         bytes.size() == fpPointSize,
         "Expected %s bytes but received %s.",
@@ -121,7 +121,7 @@ public final class G1Point implements Group<G1Point> {
   private static final int fpPointSize = BIG.MODBYTES;
 
   /** Default constructor creates the point at infinity (the zero point) */
-  public G1Point() {
+  G1Point() {
     this(new ECP());
   }
 
@@ -149,7 +149,7 @@ public final class G1Point implements Group<G1Point> {
     return new G1Point(newPoint);
   }
 
-  public Bytes toBytes() {
+  Bytes toBytes() {
     // Size of the byte array representing compressed ECP point for BLS12-381 is
     // 49 bytes in milagro
     // size of the point = 48 bytes
