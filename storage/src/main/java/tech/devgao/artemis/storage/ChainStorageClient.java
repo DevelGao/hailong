@@ -27,6 +27,8 @@ import org.apache.tuweni.bytes.Bytes;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.state.BeaconState;
+import tech.devgao.artemis.datastructures.util.AttestationUtil;
+import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.util.alogger.ALogger;
 
 /** This class is the ChainStorage client-side logic */
@@ -117,7 +119,7 @@ public class ChainStorageClient implements ChainStorage {
    * @return
    */
   public Optional<BeaconBlock> getParent(BeaconBlock block) {
-    Bytes parent_root = block.getParent_root();
+    Bytes parent_root = block.getPrevious_block_root();
     return this.getProcessedBlock(parent_root);
   }
 
@@ -217,5 +219,32 @@ public class ChainStorageClient implements ChainStorage {
             + " detected."
             + ANSI_RESET);
     addUnprocessedAttestation(attestation);
+
+    // TODO: verify the assumption below:
+    // ASSUMPTION: the state with which we can find the attestation participants
+    // using get_attestation_participants is the state associated with the beacon
+    // block being attested in the attestation.
+    BeaconBlock block = processedBlockLookup.get(attestation.getData().getBeacon_block_root());
+    BeaconState state = stateLookup.get(block.getState_root());
+
+    // TODO: verify attestation is stubbed out, needs to be implemented
+    if (AttestationUtil.verifyAttestation(state, attestation)) {
+      List<Integer> attestation_participants =
+          BeaconStateUtil.get_attestation_participants(
+              state, attestation.getData(), attestation.getAggregation_bitfield());
+
+      for (Integer participantIndex : attestation_participants) {
+        Optional<Attestation> latest_attestation = getLatestAttestation(participantIndex);
+        if (!latest_attestation.isPresent()
+            || latest_attestation
+                    .get()
+                    .getData()
+                    .getSlot()
+                    .compareTo(attestation.getData().getSlot())
+                < 0) {
+          latestAttestations.put(participantIndex, attestation);
+        }
+      }
+    }
   }
 }

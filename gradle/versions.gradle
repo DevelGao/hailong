@@ -39,7 +39,7 @@ dependencyManagement {
       entry 'logl-logl'
     }
 
-    dependencySet(group: 'org.apache.tuweni', version: '0.8.0-20190531144026') {
+    dependencySet(group: 'org.apache.tuweni', version: '0.8.0-SNAPSHOT') {
       entry 'tuweni-bytes'
       entry 'tuweni-config'
       entry 'tuweni-crypto'
@@ -47,7 +47,8 @@ dependencyManagement {
       entry 'tuweni-kv'
       entry 'tuweni-plumtree'
       entry 'tuweni-rlpx'
-      entry 'tuweni-ssz'
+      //Commented out until v5.1 ssz mods are pushed to tuweni
+      //entry 'tuweni-ssz'
       entry 'tuweni-toml'
       entry 'tuweni-units'
     }
