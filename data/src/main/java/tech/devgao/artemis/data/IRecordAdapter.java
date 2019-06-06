@@ -13,16 +13,11 @@
 
 package tech.devgao.artemis.data;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import java.util.List;
-
 public interface IRecordAdapter {
 
-  String toJSON() throws JsonProcessingException;
+  String toJSON();
 
   String toCSV();
 
   String[] toLabels();
-
-  void filterOutputFields(List<String> outputFields);
 }
