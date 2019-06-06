@@ -13,13 +13,15 @@
 
 package tech.devgao.artemis.statetransition.util;
 
+import com.google.common.primitives.UnsignedLong;
 import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 
 public final class PreProcessingUtil {
 
   public static void cacheCurrentBeaconProposerIndex(BeaconStateWithCache state) {
-    int beaconProposerIndex = BeaconStateUtil.get_beacon_proposer_index(state, state.getSlot());
+    int beaconProposerIndex =
+        BeaconStateUtil.get_beacon_proposer_index(state, state.getSlot().plus(UnsignedLong.ONE));
     state.setCurrentBeaconProposerIndex(beaconProposerIndex);
   }
 }
