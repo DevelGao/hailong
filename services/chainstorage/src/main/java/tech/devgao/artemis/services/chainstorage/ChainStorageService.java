@@ -14,8 +14,8 @@
 package tech.devgao.artemis.services.chainstorage;
 
 import com.google.common.eventbus.EventBus;
-import tech.devgao.artemis.services.ServiceConfig;
-import tech.devgao.artemis.services.ServiceInterface;
+import tech.devgao.artemis.service.serviceutils.ServiceConfig;
+import tech.devgao.artemis.service.serviceutils.ServiceInterface;
 import tech.devgao.artemis.storage.ChainStorage;
 import tech.devgao.artemis.storage.ChainStorageServer;
 import tech.devgao.artemis.util.alogger.ALogger;

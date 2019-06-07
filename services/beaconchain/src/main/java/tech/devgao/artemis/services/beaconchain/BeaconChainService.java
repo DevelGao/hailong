@@ -16,17 +16,22 @@ package tech.devgao.artemis.services.beaconchain;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import tech.devgao.artemis.datastructures.Constants;
-import tech.devgao.artemis.services.ServiceConfig;
-import tech.devgao.artemis.services.ServiceInterface;
+import tech.devgao.artemis.service.serviceutils.ServiceConfig;
+import tech.devgao.artemis.service.serviceutils.ServiceInterface;
 import tech.devgao.artemis.statetransition.StateProcessor;
+import tech.devgao.artemis.storage.ChainStorage;
+import tech.devgao.artemis.storage.ChainStorageClient;
 import tech.devgao.artemis.util.time.Timer;
 import tech.devgao.artemis.util.time.TimerFactory;
+import tech.devgao.artemis.validator.coordinator.ValidatorCoordinator;
 
 public class BeaconChainService implements ServiceInterface {
 
   private EventBus eventBus;
   private Timer timer;
   private StateProcessor stateProcessor;
+  private ValidatorCoordinator validatorCoordinator;
+  private ChainStorageClient store;
 
   public BeaconChainService() {}
 
@@ -45,8 +50,9 @@ public class BeaconChainService implements ServiceInterface {
     } catch (IllegalArgumentException e) {
       System.exit(1);
     }
-    this.stateProcessor =
-        new StateProcessor(this.eventBus, config.getConfig(), config.getKeyPair().publicKey());
+    this.store = ChainStorage.Create(ChainStorageClient.class, eventBus);
+    this.stateProcessor = new StateProcessor(config, store);
+    this.validatorCoordinator = new ValidatorCoordinator(config);
   }
 
   @Override

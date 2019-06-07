@@ -31,7 +31,7 @@ import org.web3j.protocol.core.methods.response.Log;
 import tech.devgao.artemis.pow.contract.DepositContract;
 import tech.devgao.artemis.pow.event.Deposit;
 import tech.devgao.artemis.pow.event.Eth2Genesis;
-import tech.devgao.artemis.services.ServiceConfig;
+import tech.devgao.artemis.service.serviceutils.ServiceConfig;
 import tech.devgao.artemis.services.adapter.event.OutboundEvent;
 
 public class ServiceAdapterTest {

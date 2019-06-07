@@ -38,7 +38,7 @@ import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
 import tech.devgao.artemis.datastructures.util.AttestationUtil;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.datastructures.util.DataStructureUtil;
-import tech.devgao.artemis.services.ServiceConfig;
+import tech.devgao.artemis.service.serviceutils.ServiceConfig;
 import tech.devgao.artemis.statetransition.GenesisHeadStateEvent;
 import tech.devgao.artemis.statetransition.HeadStateEvent;
 import tech.devgao.artemis.statetransition.StateTransition;
