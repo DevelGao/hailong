@@ -13,18 +13,12 @@
 
 package tech.devgao.artemis.datastructures.operations;
 
-import com.google.common.primitives.UnsignedLong;
-import java.util.Arrays;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.ssz.SSZ;
 import tech.devgao.artemis.util.bls.BLSSignature;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
-import tech.devgao.artemis.util.hashtree.Merkleizable;
 
-public class Attestation implements Merkleizable {
+public class Attestation {
 
   private Bytes aggregation_bitfield;
   private AttestationData data;
@@ -122,17 +116,7 @@ public class Attestation implements Merkleizable {
     this.aggregate_signature = aggregate_signature;
   }
 
-  public UnsignedLong getSlot() {
+  public long getSlot() {
     return data.getSlot();
-  }
-
-  @Override
-  public Bytes32 hash_tree_root() {
-    return HashTreeUtil.merkleize(
-        Arrays.asList(
-            HashTreeUtil.hash_tree_root(SSZTypes.LIST_OF_BASIC, aggregation_bitfield),
-            data.hash_tree_root(),
-            HashTreeUtil.hash_tree_root(SSZTypes.LIST_OF_BASIC, custody_bitfield),
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, aggregate_signature.toBytes())));
   }
 }

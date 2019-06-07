@@ -9,7 +9,6 @@ plugins {
   id 'net.ltgt.errorprone' version '0.7' apply false
   id 'net.researchgate.release' version '2.7.0'
   id 'com.gradle.build-scan' version '2.1'
-
 }
 
 defaultTasks 'build','checkLicenses'
@@ -92,7 +91,6 @@ allprojects {
         exclude 'web3j'
         //Excluding tech.devgao.artemis.datastructures due to preferred formatting overwritten by plugin in getConstantsAsString.
         exclude '**/src/main/java/tech/devgao/artemis/Constants.java'
-        exclude '**/proto'
       }
       
 

@@ -13,30 +13,25 @@
 
 package tech.devgao.artemis.datastructures.state;
 
-import com.google.common.primitives.UnsignedLong;
-import java.util.Arrays;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.ssz.SSZ;
 import tech.devgao.artemis.datastructures.Copyable;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
-import tech.devgao.artemis.util.hashtree.Merkleizable;
 
-public class Validator implements Copyable<Validator>, Merkleizable {
+public class Validator implements Copyable<Validator> {
 
   // BLS public key
   private BLSPublicKey pubkey;
   // Withdrawal credentials
   private Bytes32 withdrawal_credentials;
   // Epoch when validator activated
-  private UnsignedLong activation_epoch;
+  private long activation_epoch;
   // Epoch when validator exited
-  private UnsignedLong exit_epoch;
+  private long exit_epoch;
   // Epoch when validator withdrew
-  private UnsignedLong withdrawable_epoch;
+  private long withdrawal_epoch;
   // Did the validator initiate an exit
   private boolean initiated_exit;
   // Was the validator slashed
@@ -45,16 +40,16 @@ public class Validator implements Copyable<Validator>, Merkleizable {
   public Validator(
       BLSPublicKey pubkey,
       Bytes32 withdrawal_credentials,
-      UnsignedLong activation_epoch,
-      UnsignedLong exit_epoch,
-      UnsignedLong withdrawal_epoch,
+      long activation_epoch,
+      long exit_epoch,
+      long withdrawal_epoch,
       boolean initiated_exit,
       boolean slashed) {
     this.pubkey = pubkey;
     this.withdrawal_credentials = withdrawal_credentials;
     this.activation_epoch = activation_epoch;
     this.exit_epoch = exit_epoch;
-    this.withdrawable_epoch = withdrawal_epoch;
+    this.withdrawal_epoch = withdrawal_epoch;
     this.initiated_exit = initiated_exit;
     this.slashed = slashed;
   }
@@ -64,7 +59,7 @@ public class Validator implements Copyable<Validator>, Merkleizable {
     this.withdrawal_credentials = validator.getWithdrawal_credentials().copy();
     this.activation_epoch = validator.getActivation_epoch();
     this.exit_epoch = validator.getExit_epoch();
-    this.withdrawable_epoch = validator.getWithdrawable_epoch();
+    this.withdrawal_epoch = validator.getWithdrawal_epoch();
     this.initiated_exit = validator.hasInitiatedExit();
     this.slashed = validator.isSlashed();
   }
@@ -80,10 +75,10 @@ public class Validator implements Copyable<Validator>, Merkleizable {
         reader ->
             new Validator(
                 BLSPublicKey.fromBytes(reader.readBytes()),
-                Bytes32.wrap(reader.readFixedBytes(32)),
-                UnsignedLong.fromLongBits(reader.readUInt64()),
-                UnsignedLong.fromLongBits(reader.readUInt64()),
-                UnsignedLong.fromLongBits(reader.readUInt64()),
+                Bytes32.wrap(reader.readBytes()),
+                reader.readUInt64(),
+                reader.readUInt64(),
+                reader.readUInt64(),
                 reader.readBoolean(),
                 reader.readBoolean()));
   }
@@ -92,10 +87,10 @@ public class Validator implements Copyable<Validator>, Merkleizable {
     return SSZ.encode(
         writer -> {
           writer.writeBytes(pubkey.toBytes());
-          writer.writeFixedBytes(32, withdrawal_credentials);
-          writer.writeUInt64(activation_epoch.longValue());
-          writer.writeUInt64(exit_epoch.longValue());
-          writer.writeUInt64(withdrawable_epoch.longValue());
+          writer.writeBytes(withdrawal_credentials);
+          writer.writeUInt64(activation_epoch);
+          writer.writeUInt64(exit_epoch);
+          writer.writeUInt64(withdrawal_epoch);
           writer.writeBoolean(initiated_exit);
           writer.writeBoolean(slashed);
         });
@@ -108,7 +103,7 @@ public class Validator implements Copyable<Validator>, Merkleizable {
         withdrawal_credentials,
         activation_epoch,
         exit_epoch,
-        withdrawable_epoch,
+        withdrawal_epoch,
         initiated_exit,
         slashed);
   }
@@ -132,7 +127,7 @@ public class Validator implements Copyable<Validator>, Merkleizable {
         && Objects.equals(this.getWithdrawal_credentials(), other.getWithdrawal_credentials())
         && Objects.equals(this.getActivation_epoch(), other.getActivation_epoch())
         && Objects.equals(this.getExit_epoch(), other.getExit_epoch())
-        && Objects.equals(this.getWithdrawable_epoch(), other.getWithdrawable_epoch())
+        && Objects.equals(this.getWithdrawal_epoch(), other.getWithdrawal_epoch())
         && Objects.equals(this.hasInitiatedExit(), other.hasInitiatedExit())
         && Objects.equals(this.isSlashed(), other.isSlashed());
   }
@@ -153,28 +148,28 @@ public class Validator implements Copyable<Validator>, Merkleizable {
     this.withdrawal_credentials = withdrawal_credentials;
   }
 
-  public UnsignedLong getActivation_epoch() {
+  public long getActivation_epoch() {
     return activation_epoch;
   }
 
-  public void setActivation_epoch(UnsignedLong activation_epoch) {
+  public void setActivation_epoch(long activation_epoch) {
     this.activation_epoch = activation_epoch;
   }
 
-  public UnsignedLong getExit_epoch() {
+  public long getExit_epoch() {
     return exit_epoch;
   }
 
-  public void setExit_epoch(UnsignedLong exit_epoch) {
+  public void setExit_epoch(long exit_epoch) {
     this.exit_epoch = exit_epoch;
   }
 
-  public UnsignedLong getWithdrawable_epoch() {
-    return withdrawable_epoch;
+  public long getWithdrawal_epoch() {
+    return withdrawal_epoch;
   }
 
-  public void setWithdrawable_epoch(UnsignedLong withdrawable_epoch) {
-    this.withdrawable_epoch = withdrawable_epoch;
+  public void setWithdrawal_epoch(long withdrawal_epoch) {
+    this.withdrawal_epoch = withdrawal_epoch;
   }
 
   public boolean hasInitiatedExit() {
@@ -193,18 +188,19 @@ public class Validator implements Copyable<Validator>, Merkleizable {
     this.slashed = slashed;
   }
 
-  @Override
-  public Bytes32 hash_tree_root() {
-    return HashTreeUtil.merkleize(
-        Arrays.asList(
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, pubkey.toBytes()),
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, withdrawal_credentials),
-            HashTreeUtil.hash_tree_root(
-                SSZTypes.BASIC, SSZ.encodeUInt64(activation_epoch.longValue())),
-            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(exit_epoch.longValue())),
-            HashTreeUtil.hash_tree_root(
-                SSZTypes.BASIC, SSZ.encodeUInt64(withdrawable_epoch.longValue())),
-            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeBoolean(initiated_exit)),
-            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeBoolean(slashed))));
+  /**
+   * Check if (this) validator is active in the given epoch.
+   *
+   * @param epoch - The epoch under consideration.
+   * @return A boolean indicating if the validator is active.
+   * @see <a
+   *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.4.0/specs/core/0_beacon-chain.md#is_active_validator">is_active_validator
+   *     - Spec v0.4</a>
+   */
+  public boolean is_active_validator(long epoch) {
+    if (exit_epoch == -1) {
+      return activation_epoch <= epoch;
+    }
+    return activation_epoch <= epoch && epoch < exit_epoch;
   }
 }

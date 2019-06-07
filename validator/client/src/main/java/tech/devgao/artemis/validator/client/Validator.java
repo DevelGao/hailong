@@ -13,7 +13,6 @@
 
 package tech.devgao.artemis.validator.client;
 
-import com.google.common.primitives.UnsignedLong;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.crypto.SECP256K1;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
@@ -24,14 +23,7 @@ public final class Validator extends tech.devgao.artemis.datastructures.state.Va
   SECP256K1.KeyPair secpKeys;
 
   public Validator(Bytes32 withdrawal_credentials, KeyPair blsKeys, SECP256K1.KeyPair secpKeys) {
-    super(
-        null,
-        withdrawal_credentials,
-        UnsignedLong.ZERO,
-        UnsignedLong.ZERO,
-        UnsignedLong.ZERO,
-        false,
-        false);
+    super(null, withdrawal_credentials, 0, 0, 0, false, false);
     this.blsKeys = blsKeys;
     this.secpKeys = secpKeys;
   }

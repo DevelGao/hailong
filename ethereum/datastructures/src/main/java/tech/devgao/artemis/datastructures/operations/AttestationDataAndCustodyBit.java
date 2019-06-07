@@ -13,13 +13,9 @@
 
 package tech.devgao.artemis.datastructures.operations;
 
-import java.util.Arrays;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.ssz.SSZ;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil;
-import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
 
 public class AttestationDataAndCustodyBit {
 
@@ -86,12 +82,5 @@ public class AttestationDataAndCustodyBit {
 
   public void setData(AttestationData data) {
     this.data = data;
-  }
-
-  public Bytes32 hash_tree_root() {
-    return HashTreeUtil.merkleize(
-        Arrays.asList(
-            data.hash_tree_root(),
-            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeBoolean(custody_bit))));
   }
 }
