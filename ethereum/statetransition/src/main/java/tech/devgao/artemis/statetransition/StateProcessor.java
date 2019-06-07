@@ -16,6 +16,7 @@ package tech.devgao.artemis.statetransition;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.primitives.UnsignedLong;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -26,12 +27,13 @@ import org.apache.tuweni.crypto.SECP256K1.PublicKey;
 import tech.devgao.artemis.data.RawRecord;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
+import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.state.BeaconStateWithCache;
 import tech.devgao.artemis.datastructures.util.BeaconBlockUtil;
 import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.datastructures.util.DataStructureUtil;
-import tech.devgao.artemis.pow.api.DepositEvent;
+import tech.devgao.artemis.datastructures.util.DepositUtil;
 import tech.devgao.artemis.pow.api.Eth2GenesisEvent;
 import tech.devgao.artemis.service.serviceutils.ServiceConfig;
 import tech.devgao.artemis.storage.ChainStorageClient;
@@ -55,6 +57,7 @@ public class StateProcessor {
   private ArtemisConfiguration config;
   private PublicKey publicKey;
   private static final ALogger LOG = new ALogger(StateProcessor.class.getName());
+  private List<Deposit> deposits;
 
   // Colors
   public static final String ANSI_RESET = "\u001B[0m";
@@ -73,6 +76,7 @@ public class StateProcessor {
 
   @Subscribe
   public void onEth2GenesisEvent(Eth2GenesisEvent event) {
+    if (deposits != null) deposits = DepositUtil.generateBranchProofs(deposits);
     LOG.log(
         Level.INFO,
         "******* Eth2Genesis Event detected ******* : "
@@ -85,8 +89,12 @@ public class StateProcessor {
     LOG.log(Level.INFO, "Node slot: " + nodeSlot);
     LOG.log(Level.INFO, "Node time: " + nodeTime);
     try {
-      BeaconState initial_state =
-          DataStructureUtil.createInitialBeaconState(config.getNumValidators());
+      BeaconState initial_state;
+      if (config.isSimulation())
+        initial_state =
+            DataStructureUtil.createInitialBeaconState(
+                deposits, ((tech.devgao.artemis.pow.event.Eth2Genesis) event).getDeposit_root());
+      else initial_state = DataStructureUtil.createInitialBeaconState(config.getNumValidators());
       Bytes32 initial_state_root = initial_state.hash_tree_root();
       BeaconBlock genesis_block = BeaconBlockUtil.get_empty_block();
       genesis_block.setState_root(initial_state_root);
@@ -107,8 +115,9 @@ public class StateProcessor {
   }
 
   @Subscribe
-  public void onDepositEvent(DepositEvent event) {
-    LOG.log(Level.INFO, "Deposit Event detected: " + event.toString());
+  public void onDeposit(Deposit deposit) {
+    if (deposits == null) deposits = new ArrayList<Deposit>();
+    deposits.add(deposit);
   }
 
   @Subscribe
