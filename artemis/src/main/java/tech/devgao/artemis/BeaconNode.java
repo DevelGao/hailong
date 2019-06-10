@@ -28,6 +28,7 @@ import tech.devgao.artemis.data.provider.EventHandler;
 import tech.devgao.artemis.data.provider.FileProvider;
 import tech.devgao.artemis.data.provider.JSONProvider;
 import tech.devgao.artemis.data.provider.ProviderTypes;
+import tech.devgao.artemis.data.provider.RawRecordHandler;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.metrics.PrometheusEndpoint;
 import tech.devgao.artemis.networking.p2p.HobbitsP2PNetwork;
@@ -95,6 +96,10 @@ public class BeaconNode {
       PrometheusEndpoint.registerEndpoint(
           vertx, config.getMetricsNetworkInterface(), config.getMetricsPort());
     }
+
+    // register a raw record handler that will transform objects to events
+    new RawRecordHandler(this.eventBus);
+
     if (config.isOutputEnabled()) {
       this.eventBus.register(this);
       try {

@@ -18,9 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import tech.devgao.artemis.data.IRecordAdapter;
-import tech.devgao.artemis.data.RawRecord;
-import tech.devgao.artemis.data.TimeSeriesRecord;
-import tech.devgao.artemis.data.adapter.TimeSeriesAdapter;
 import tech.devgao.artemis.util.config.ArtemisConfiguration;
 
 public class EventHandler {
@@ -34,21 +31,6 @@ public class EventHandler {
     this.isFormat = config.isFormat();
     this.fileProvider = fileProvider;
     this.eventOutputFields = config.getEventFields();
-  }
-
-  @Subscribe
-  @SuppressWarnings("unchecked")
-  public void onDataEvent(RawRecord record) {
-    TimeSeriesAdapter adapter = new TimeSeriesAdapter(record);
-    TimeSeriesRecord tsRecord = adapter.transform();
-    String name = tsRecord.getClass().getSimpleName();
-    if (events == null || events.contains(name)) {
-      if (this.eventOutputFields.get(name) != null
-          && this.eventOutputFields.get(name) instanceof ArrayList) {
-        tsRecord.filterOutputFields((ArrayList<String>) this.eventOutputFields.get(name));
-      }
-      output(tsRecord);
-    }
   }
 
   @Subscribe
