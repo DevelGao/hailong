@@ -20,8 +20,10 @@ import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlockBody;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlockHeader;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
+import tech.devgao.artemis.util.alogger.ALogger;
 
 public class BeaconBlockUtil {
+  private static final ALogger LOG = new ALogger(BeaconBlockUtil.class.getName());
   /**
    * Return the block header corresponding to a block with ``state_root`` set to ``ZERO_HASH``.
    *
