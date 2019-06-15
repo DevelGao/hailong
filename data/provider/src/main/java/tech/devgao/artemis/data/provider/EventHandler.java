@@ -17,7 +17,7 @@ import com.google.common.eventbus.Subscribe;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import tech.devgao.artemis.data.IRecordAdapter;
+import tech.devgao.artemis.datastructures.interfaces.IRecordAdapter;
 import tech.devgao.artemis.util.config.ArtemisConfiguration;
 
 public class EventHandler {

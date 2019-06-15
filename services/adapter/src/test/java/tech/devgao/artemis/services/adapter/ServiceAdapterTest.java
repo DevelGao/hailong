@@ -28,9 +28,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.web3j.protocol.core.methods.response.Log;
+import tech.devgao.artemis.datastructures.event.Deposit;
+import tech.devgao.artemis.datastructures.event.Eth2Genesis;
 import tech.devgao.artemis.pow.contract.DepositContract;
-import tech.devgao.artemis.pow.event.Deposit;
-import tech.devgao.artemis.pow.event.Eth2Genesis;
 import tech.devgao.artemis.service.serviceutils.ServiceConfig;
 import tech.devgao.artemis.services.adapter.event.OutboundEvent;
 

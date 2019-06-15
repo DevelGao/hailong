@@ -25,9 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
-import tech.devgao.artemis.data.IRecordAdapter;
-import tech.devgao.artemis.pow.event.Deposit;
-import tech.devgao.artemis.pow.event.Eth2Genesis;
+import tech.devgao.artemis.datastructures.event.Deposit;
+import tech.devgao.artemis.datastructures.event.Eth2Genesis;
+import tech.devgao.artemis.datastructures.interfaces.IRecordAdapter;
 
 public class DepositSimulation implements IRecordAdapter {
 

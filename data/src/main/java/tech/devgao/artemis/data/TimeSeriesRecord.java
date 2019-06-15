@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.datastructures.Constants;
+import tech.devgao.artemis.datastructures.interfaces.IRecordAdapter;
 import tech.devgao.artemis.util.alogger.ALogger;
 import tech.devgao.artemis.util.json.BytesModule;
 

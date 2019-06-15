@@ -20,7 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import org.apache.logging.log4j.Level;
-import tech.devgao.artemis.data.IRecordAdapter;
+import tech.devgao.artemis.datastructures.interfaces.IRecordAdapter;
 import tech.devgao.artemis.util.alogger.ALogger;
 
 public class CSVProvider implements FileProvider {
