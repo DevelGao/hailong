@@ -19,7 +19,7 @@ import java.util.Iterator;
 import org.apache.tuweni.bytes.Bytes;
 
 @SuppressWarnings("ALL")
-public interface Codec {
+interface Codec {
   enum ProtocolType {
     GOSSIP,
     RPC

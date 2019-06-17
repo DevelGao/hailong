@@ -31,6 +31,9 @@ import tech.devgao.artemis.data.provider.ProviderTypes;
 import tech.devgao.artemis.data.provider.RawRecordHandler;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.metrics.PrometheusEndpoint;
+import tech.devgao.artemis.networking.p2p.HobbitsP2PNetwork;
+import tech.devgao.artemis.networking.p2p.MockP2PNetwork;
+import tech.devgao.artemis.networking.p2p.api.P2PNetwork;
 import tech.devgao.artemis.service.serviceutils.ServiceConfig;
 import tech.devgao.artemis.service.serviceutils.ServiceController;
 import tech.devgao.artemis.services.beaconchain.BeaconChainService;
@@ -54,6 +57,7 @@ public class BeaconNode {
   private final ServiceController serviceController = new ServiceController();
   private final ServiceConfig serviceConfig;
   private Constants constants;
+  private P2PNetwork p2pNetwork;
   private EventBus eventBus;
   private FileProvider fileProvider;
   private EventHandler eventHandler;
@@ -70,8 +74,21 @@ public class BeaconNode {
     System.setProperty("rollingFile", config.getLogFile());
 
     this.eventBus = new AsyncEventBus(threadPool);
-
-    this.serviceConfig = new ServiceConfig(eventBus, vertx, config, cliArgs);
+    if ("mock".equals(config.getNetworkMode())) {
+      this.p2pNetwork = new MockP2PNetwork(eventBus);
+    } else if ("hobbits".equals(config.getNetworkMode())) {
+      this.p2pNetwork =
+          new HobbitsP2PNetwork(
+              eventBus,
+              vertx,
+              config.getPort(),
+              config.getAdvertisedPort(),
+              config.getNetworkInterface(),
+              config.getStaticPeers());
+    } else {
+      throw new IllegalArgumentException("Unsupported network mode " + config.getNetworkMode());
+    }
+    this.serviceConfig = new ServiceConfig(eventBus, config, cliArgs);
     Constants.init(config);
     this.cliArgs = cliArgs;
     this.commandLine = commandLine;
@@ -120,14 +137,24 @@ public class BeaconNode {
           ChainStorageService.class);
       // Start services
       serviceController.startAll(cliArgs);
-
+      // Start p2p adapter
+      this.p2pNetwork.run();
     } catch (java.util.concurrent.CompletionException e) {
       LOG.log(Level.FATAL, e.toString());
     }
   }
 
   public void stop() {
-    serviceController.stopAll(cliArgs);
-    this.fileProvider.close();
+    try {
+      serviceController.stopAll(cliArgs);
+      this.p2pNetwork.close();
+      this.fileProvider.close();
+    } catch (IOException e) {
+      LOG.log(Level.FATAL, e.toString());
+    }
+  }
+
+  P2PNetwork p2pNetwork() {
+    return p2pNetwork;
   }
 }
