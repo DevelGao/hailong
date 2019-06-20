@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes;
@@ -47,16 +48,16 @@ public class ChainStorageClient implements ChainStorage {
   protected final PriorityBlockingQueue<BeaconBlock> unprocessedBlocks =
       new PriorityBlockingQueue<>(
           UNPROCESSED_BLOCKS_LENGTH, Comparator.comparing(BeaconBlock::getSlot));
+  protected final LinkedBlockingQueue<Attestation> unprocessedAttestations =
+      new LinkedBlockingQueue<>();
   protected final ConcurrentHashMap<Bytes, BeaconBlock> processedBlockLookup =
       new ConcurrentHashMap<>();
   protected final ConcurrentHashMap<Bytes, BeaconState> stateLookup = new ConcurrentHashMap<>();
-  protected final ConcurrentHashMap<BLSSignature, Attestation> processedAttestationsMap =
+  protected final ConcurrentHashMap<BLSSignature, Attestation> processedAttestations =
       new ConcurrentHashMap<>();
-  private final PriorityBlockingQueue<Attestation> unprocessedAttestationsQueue =
+  private final PriorityBlockingQueue<Attestation> attestationsQueue =
       new PriorityBlockingQueue<>(
           UNPROCESSED_BLOCKS_LENGTH, Comparator.comparing(Attestation::getSlot));
-  private final ConcurrentHashMap<BLSSignature, Attestation> unprocessedAttestationsMap =
-      new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Integer, List<BeaconBlockHeader>> validatorBlockHeaders =
       new ConcurrentHashMap<>();
   private Bytes32 bestBlockRoot; // block chosen by lmd ghost to build and attest on
@@ -89,8 +90,7 @@ public class ChainStorageClient implements ChainStorage {
    * @param attestation
    */
   public void addProcessedAttestation(Attestation attestation) {
-    ChainStorage.add(
-        attestation.getAggregate_signature(), attestation, this.processedAttestationsMap);
+    ChainStorage.add(attestation.getAggregate_signature(), attestation, this.processedAttestations);
   }
 
   /**
@@ -134,9 +134,7 @@ public class ChainStorageClient implements ChainStorage {
    * @param attestation
    */
   public void addUnprocessedAttestation(Attestation attestation) {
-    ChainStorage.add(attestation, this.unprocessedAttestationsQueue);
-    ChainStorage.add(
-        attestation.getAggregate_signature(), attestation, this.unprocessedAttestationsMap);
+    ChainStorage.add(attestation, attestationsQueue);
   }
 
   /**
@@ -208,39 +206,6 @@ public class ChainStorageClient implements ChainStorage {
   }
 
   /**
-   * Retrieves a list of processed blocks
-   *
-   * @param startRoot
-   * @param max
-   * @param skip
-   * @return
-   */
-  public List<Optional<BeaconBlock>> getProcessedBlocks(Bytes startRoot, long max, long skip) {
-    List<Optional<BeaconBlock>> result = new ArrayList<>();
-    Bytes blockRoot = startRoot;
-    Optional<BeaconBlock> block = ChainStorage.get(blockRoot, this.processedBlockLookup);
-    if (block.isPresent()) {
-      result.add(block);
-    }
-    return result;
-  }
-
-  /**
-   * Retrieves a list of unprocessed attestations that have not been included in blocks
-   *
-   * @param signature
-   * @return
-   */
-  public Optional<Attestation> getUnprocessedAttestation(BLSSignature signature) {
-    Optional<Attestation> result = Optional.empty();
-    if (!this.processedAttestationsMap.containsKey(signature)
-        && this.unprocessedAttestationsMap.containsKey(signature)) {
-      result = ChainStorage.get(signature, this.unprocessedAttestationsMap);
-    }
-    return result;
-  }
-
-  /**
    * Retrieves processed block's parent block
    *
    * @param block
@@ -300,6 +265,15 @@ public class ChainStorageClient implements ChainStorage {
   }
 
   /**
+   * Removes an unprocessed attestation (LIFO)
+   *
+   * @return
+   */
+  public Optional<Attestation> getUnprocessedAttestation() {
+    return ChainStorage.remove(unprocessedAttestations);
+  }
+
+  /**
    * Returns a validator's latest attestation
    *
    * @param validatorIndex
@@ -321,12 +295,12 @@ public class ChainStorageClient implements ChainStorage {
   public List<Attestation> getUnprocessedAttestationsUntilSlot(UnsignedLong slot) {
     List<Attestation> attestations = new ArrayList<>();
     int numAttestations = 0;
-    while (unprocessedAttestationsQueue.peek() != null
-        && unprocessedAttestationsQueue.peek().getSlot().compareTo(slot) <= 0
+    while (attestationsQueue.peek() != null
+        && attestationsQueue.peek().getSlot().compareTo(slot) <= 0
         && numAttestations < Constants.MAX_ATTESTATIONS) {
-      Attestation attestation = unprocessedAttestationsQueue.remove();
+      Attestation attestation = attestationsQueue.remove();
       // Check if attestation has already been processed in successful block
-      if (!ChainStorage.get(attestation.getAggregate_signature(), this.processedAttestationsMap)
+      if (!ChainStorage.get(attestation.getAggregate_signature(), this.processedAttestations)
           .isPresent()) {
         attestations.add(attestation);
         numAttestations++;

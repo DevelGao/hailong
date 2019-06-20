@@ -126,7 +126,7 @@ public class AttestationUtil {
     attestationData.setShard(shard);
     Crosslink previousCrosslink =
         state.getLatest_crosslinks().get(shard.intValue() % Constants.SHARD_COUNT);
-    attestationData.setCrosslink(previousCrosslink);
+    attestationData.setPrevious_crosslink(previousCrosslink);
     return attestationData;
   }
 

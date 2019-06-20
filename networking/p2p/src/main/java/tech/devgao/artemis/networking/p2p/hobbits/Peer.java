@@ -16,15 +16,13 @@ package tech.devgao.artemis.networking.p2p.hobbits;
 import java.net.URI;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
-import tech.devgao.artemis.networking.p2p.hobbits.rpc.GetStatusMessage;
-import tech.devgao.artemis.networking.p2p.hobbits.rpc.HelloMessage;
 
 /** A hobbits peer */
 public final class Peer implements org.apache.tuweni.plumtree.Peer {
 
   private final URI uri;
-  private HelloMessage peerHello;
-  private GetStatusMessage peerStatus;
+  private Hello peerHello;
+  private GetStatus peerStatus;
   private Bytes peerGossip;
   private boolean active = true;
 
@@ -32,11 +30,11 @@ public final class Peer implements org.apache.tuweni.plumtree.Peer {
     this.uri = peer;
   }
 
-  public void setPeerHello(HelloMessage peerHello) {
+  public void setPeerHello(Hello peerHello) {
     this.peerHello = peerHello;
   }
 
-  public void setPeerStatus(GetStatusMessage peerStatus) {
+  public void setPeerStatus(GetStatus peerStatus) {
     this.peerStatus = peerStatus;
   }
 
@@ -50,11 +48,11 @@ public final class Peer implements org.apache.tuweni.plumtree.Peer {
     active = false;
   }
 
-  public GetStatusMessage peerStatus() {
+  public GetStatus peerStatus() {
     return peerStatus;
   }
 
-  public HelloMessage peerHello() {
+  public Hello peerHello() {
     return peerHello;
   }
 
