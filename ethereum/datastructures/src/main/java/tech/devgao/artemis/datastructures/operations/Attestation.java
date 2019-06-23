@@ -122,8 +122,8 @@ public class Attestation implements Merkleizable {
     this.aggregate_signature = aggregate_signature;
   }
 
-  public UnsignedLong getTarget_epoch() {
-    return this.data.getTarget_epoch();
+  public UnsignedLong getSlot() {
+    return data.getSlot();
   }
 
   @Override

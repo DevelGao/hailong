@@ -13,7 +13,6 @@
 
 package tech.devgao.artemis.datastructures.blocks;
 
-import com.google.common.primitives.UnsignedLong;
 import java.util.Arrays;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
@@ -25,24 +24,15 @@ import tech.devgao.artemis.util.hashtree.HashTreeUtil.SSZTypes;
 public final class Eth1Data {
 
   private Bytes32 deposit_root;
-  private UnsignedLong deposit_count;
   private Bytes32 block_hash;
 
-  public Eth1Data(Bytes32 deposit_root, UnsignedLong deposit_count, Bytes32 block_hash) {
+  public Eth1Data(Bytes32 deposit_root, Bytes32 block_hash) {
     this.deposit_root = deposit_root;
-    this.deposit_count = deposit_count;
     this.block_hash = block_hash;
-  }
-
-  public Eth1Data() {
-    this.deposit_root = Bytes32.ZERO;
-    this.deposit_count = UnsignedLong.ZERO;
-    this.block_hash = Bytes32.ZERO;
   }
 
   public Eth1Data(Eth1Data eth1Data) {
     this.deposit_root = eth1Data.getDeposit_root();
-    this.deposit_count = eth1Data.getDeposit_count();
     this.block_hash = eth1Data.getBlock_hash();
   }
 
@@ -51,23 +41,20 @@ public final class Eth1Data {
         bytes,
         reader ->
             new Eth1Data(
-                Bytes32.wrap(reader.readFixedBytes(32)),
-                UnsignedLong.fromLongBits(reader.readUInt64()),
-                Bytes32.wrap(reader.readFixedBytes(32))));
+                Bytes32.wrap(reader.readFixedBytes(32)), Bytes32.wrap(reader.readFixedBytes(32))));
   }
 
   public Bytes toBytes() {
     return SSZ.encode(
         writer -> {
           writer.writeFixedBytes(32, deposit_root);
-          writer.writeUInt64(deposit_count.longValue());
           writer.writeFixedBytes(32, block_hash);
         });
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(deposit_root, deposit_count, block_hash);
+    return Objects.hash(deposit_root, block_hash);
   }
 
   @Override
@@ -86,7 +73,6 @@ public final class Eth1Data {
 
     Eth1Data other = (Eth1Data) obj;
     return Objects.equals(this.getDeposit_root(), other.getDeposit_root())
-        && Objects.equals(this.getDeposit_count(), other.getDeposit_count())
         && Objects.equals(this.getBlock_hash(), other.getBlock_hash());
   }
 
@@ -98,14 +84,6 @@ public final class Eth1Data {
   /** @param deposit_root the deposit_root to set */
   public void setDeposit_root(Bytes32 deposit_root) {
     this.deposit_root = deposit_root;
-  }
-
-  public UnsignedLong getDeposit_count() {
-    return deposit_count;
-  }
-
-  public void setDeposit_count(UnsignedLong deposit_count) {
-    this.deposit_count = deposit_count;
   }
 
   /** @return the block_hash */
@@ -122,8 +100,6 @@ public final class Eth1Data {
     return HashTreeUtil.merkleize(
         Arrays.asList(
             HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, deposit_root),
-            HashTreeUtil.hash_tree_root(
-                SSZTypes.BASIC, SSZ.encodeUInt64(deposit_count.longValue())),
             HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, block_hash)));
   }
 }

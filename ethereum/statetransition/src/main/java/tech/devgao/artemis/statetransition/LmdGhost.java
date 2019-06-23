@@ -14,6 +14,8 @@
 package tech.devgao.artemis.statetransition;
 
 import static java.util.Objects.requireNonNull;
+import static tech.devgao.artemis.datastructures.Constants.FORK_CHOICE_BALANCE_INCREMENT;
+import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.get_effective_balance;
 import static tech.devgao.artemis.datastructures.util.BeaconStateUtil.slot_to_epoch;
 
 import com.google.common.primitives.UnsignedLong;
@@ -27,6 +29,7 @@ import org.apache.tuweni.bytes.Bytes;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.state.BeaconState;
+import tech.devgao.artemis.datastructures.state.Validator;
 import tech.devgao.artemis.datastructures.util.ValidatorsUtil;
 import tech.devgao.artemis.storage.ChainStorageClient;
 
@@ -42,9 +45,10 @@ public class LmdGhost {
    */
   public static BeaconBlock lmd_ghost(
       ChainStorageClient store, BeaconState start_state, BeaconBlock start_block) {
+    List<Validator> validators = start_state.getValidator_registry();
     List<Integer> active_validator_indices =
         ValidatorsUtil.get_active_validator_indices(
-            start_state, slot_to_epoch(start_state.getSlot()));
+            validators, slot_to_epoch(start_state.getSlot()));
 
     List<MutablePair<Integer, BeaconBlock>> attestation_targets = new ArrayList<>();
     for (Integer validator_index : active_validator_indices) {
@@ -105,12 +109,14 @@ public class LmdGhost {
       int validator_index = index_target.getLeft();
       BeaconBlock target = index_target.getRight();
 
-      Optional<BeaconBlock> ancestor = get_ancestor(store, target, block.getSlot());
+      Optional<BeaconBlock> ancestor =
+          get_ancestor(store, target, UnsignedLong.valueOf(block.getSlot()));
       if (!ancestor.isPresent()) continue;
       if (ancestor.get().equals(block)) {
         sum =
             sum.plus(
-                start_state.getValidator_registry().get(validator_index).getEffective_balance());
+                get_effective_balance(start_state, validator_index)
+                    .dividedBy(UnsignedLong.valueOf(FORK_CHOICE_BALANCE_INCREMENT)));
       }
     }
     return sum;
@@ -180,7 +186,7 @@ public class LmdGhost {
   public static Optional<BeaconBlock> get_ancestor(
       ChainStorageClient store, BeaconBlock block, UnsignedLong slot) {
     requireNonNull(block);
-    UnsignedLong blockSlot = block.getSlot();
+    UnsignedLong blockSlot = UnsignedLong.valueOf(block.getSlot());
     if (blockSlot.compareTo(slot) == 0) {
       return Optional.of(block);
     } else if (blockSlot.compareTo(slot) < 0) {

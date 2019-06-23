@@ -13,9 +13,6 @@
 
 package tech.devgao.artemis.storage;
 
-import static tech.devgao.artemis.datastructures.util.AttestationUtil.get_attestation_data_slot;
-import static tech.devgao.artemis.datastructures.util.AttestationUtil.get_attesting_indices;
-
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.primitives.UnsignedLong;
@@ -24,8 +21,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes;
@@ -36,6 +33,7 @@ import tech.devgao.artemis.datastructures.blocks.BeaconBlockHeader;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.state.BeaconState;
 import tech.devgao.artemis.datastructures.util.AttestationUtil;
+import tech.devgao.artemis.datastructures.util.BeaconStateUtil;
 import tech.devgao.artemis.util.alogger.ALogger;
 import tech.devgao.artemis.util.bls.BLSSignature;
 
@@ -50,20 +48,16 @@ public class ChainStorageClient implements ChainStorage {
   protected final PriorityBlockingQueue<BeaconBlock> unprocessedBlocks =
       new PriorityBlockingQueue<>(
           UNPROCESSED_BLOCKS_LENGTH, Comparator.comparing(BeaconBlock::getSlot));
+  protected final LinkedBlockingQueue<Attestation> unprocessedAttestations =
+      new LinkedBlockingQueue<>();
   protected final ConcurrentHashMap<Bytes, BeaconBlock> processedBlockLookup =
       new ConcurrentHashMap<>();
   protected final ConcurrentHashMap<Bytes, BeaconState> stateLookup = new ConcurrentHashMap<>();
-  protected final ConcurrentHashMap<BLSSignature, Attestation> processedAttestationsMap =
+  protected final ConcurrentHashMap<BLSSignature, Attestation> processedAttestations =
       new ConcurrentHashMap<>();
-<<<<<<< HEAD
-  private final PriorityBlockingQueue<Attestation> unprocessedAttestationsQueue =
+  private final PriorityBlockingQueue<Attestation> attestationsQueue =
       new PriorityBlockingQueue<>(
           UNPROCESSED_BLOCKS_LENGTH, Comparator.comparing(Attestation::getSlot));
-  private final ConcurrentHashMap<BLSSignature, Attestation> unprocessedAttestationsMap =
-      new ConcurrentHashMap<>();
-=======
-  private final Queue<Attestation> attestationsQueue = new LinkedBlockingQueue<>();
->>>>>>> Make this thing work (#739)
   private final ConcurrentHashMap<Integer, List<BeaconBlockHeader>> validatorBlockHeaders =
       new ConcurrentHashMap<>();
   private Bytes32 bestBlockRoot; // block chosen by lmd ghost to build and attest on
@@ -96,8 +90,7 @@ public class ChainStorageClient implements ChainStorage {
    * @param attestation
    */
   public void addProcessedAttestation(Attestation attestation) {
-    ChainStorage.add(
-        attestation.getAggregate_signature(), attestation, this.processedAttestationsMap);
+    ChainStorage.add(attestation.getAggregate_signature(), attestation, this.processedAttestations);
   }
 
   /**
@@ -141,9 +134,7 @@ public class ChainStorageClient implements ChainStorage {
    * @param attestation
    */
   public void addUnprocessedAttestation(Attestation attestation) {
-    ChainStorage.add(attestation, this.unprocessedAttestationsQueue);
-    ChainStorage.add(
-        attestation.getAggregate_signature(), attestation, this.unprocessedAttestationsMap);
+    ChainStorage.add(attestation, attestationsQueue);
   }
 
   /**
@@ -224,25 +215,14 @@ public class ChainStorageClient implements ChainStorage {
    */
   public List<Optional<BeaconBlock>> getProcessedBlocks(Bytes startRoot, long max, long skip) {
     List<Optional<BeaconBlock>> result = new ArrayList<>();
-    Bytes blockRoot = startRoot;
-    Optional<BeaconBlock> block = ChainStorage.get(blockRoot, this.processedBlockLookup);
-    if (block.isPresent()) {
-      result.add(block);
-    }
-    return result;
-  }
-
-  /**
-   * Retrieves a list of unprocessed attestations that have not been included in blocks
-   *
-   * @param signature
-   * @return
-   */
-  public Optional<Attestation> getUnprocessedAttestation(BLSSignature signature) {
-    Optional<Attestation> result = Optional.empty();
-    if (!this.processedAttestationsMap.containsKey(signature)
-        && this.unprocessedAttestationsMap.containsKey(signature)) {
-      result = ChainStorage.get(signature, this.unprocessedAttestationsMap);
+    Bytes stateRoot = startRoot;
+    for (long i = 0; i < max; i += skip + 1) {
+      Optional<BeaconBlock> block = ChainStorage.get(stateRoot, this.processedBlockLookup);
+      if (block.isPresent()) {
+        result.add(block);
+      } else {
+        break;
+      }
     }
     return result;
   }
@@ -254,7 +234,7 @@ public class ChainStorageClient implements ChainStorage {
    * @return
    */
   public Optional<BeaconBlock> getParent(BeaconBlock block) {
-    Bytes parent_root = block.getParent_root();
+    Bytes parent_root = block.getPrevious_block_root();
     return this.getProcessedBlock(parent_root);
   }
 
@@ -291,19 +271,28 @@ public class ChainStorageClient implements ChainStorage {
    *
    * @return
    */
-  public List<Optional<BeaconBlock>> getUnprocessedBlocksUntilSlot(UnsignedLong slot) {
+  public List<Optional<BeaconBlock>> getUnprocessedBlocksUntilSlot(long slot) {
     List<Optional<BeaconBlock>> unprocessedBlocks = new ArrayList<>();
     boolean unproccesedBlocksLeft = true;
     Optional<BeaconBlock> currentBlock;
     while (unproccesedBlocksLeft) {
       currentBlock = ChainStorage.peek(this.unprocessedBlocks);
-      if (currentBlock.isPresent() && currentBlock.get().getSlot().compareTo(slot) <= 0) {
+      if (currentBlock.isPresent() && currentBlock.get().getSlot() <= slot) {
         unprocessedBlocks.add(ChainStorage.remove(this.unprocessedBlocks));
       } else {
         unproccesedBlocksLeft = false;
       }
     }
     return unprocessedBlocks;
+  }
+
+  /**
+   * Removes an unprocessed attestation (LIFO)
+   *
+   * @return
+   */
+  public Optional<Attestation> getUnprocessedAttestation() {
+    return ChainStorage.remove(unprocessedAttestations);
   }
 
   /**
@@ -325,16 +314,15 @@ public class ChainStorageClient implements ChainStorage {
     return processedBlockLookup;
   }
 
-  public List<Attestation> getUnprocessedAttestationsUntilSlot(
-      BeaconState state, UnsignedLong slot) {
+  public List<Attestation> getUnprocessedAttestationsUntilSlot(UnsignedLong slot) {
     List<Attestation> attestations = new ArrayList<>();
     int numAttestations = 0;
     while (attestationsQueue.peek() != null
-        && get_attestation_data_slot(state, attestationsQueue.peek().getData()).compareTo(slot) <= 0
+        && attestationsQueue.peek().getSlot().compareTo(slot) <= 0
         && numAttestations < Constants.MAX_ATTESTATIONS) {
-      Attestation attestation = unprocessedAttestationsQueue.remove();
+      Attestation attestation = attestationsQueue.remove();
       // Check if attestation has already been processed in successful block
-      if (!ChainStorage.get(attestation.getAggregate_signature(), this.processedAttestationsMap)
+      if (!ChainStorage.get(attestation.getAggregate_signature(), this.processedAttestations)
           .isPresent()) {
         attestations.add(attestation);
         numAttestations++;
@@ -382,15 +370,18 @@ public class ChainStorageClient implements ChainStorage {
       // TODO: verify attestation is stubbed out, needs to be implemented
       if (AttestationUtil.verifyAttestation(state, attestation)) {
         List<Integer> attestation_participants =
-            get_attesting_indices(
+            BeaconStateUtil.get_attestation_participants(
                 state, attestation.getData(), attestation.getAggregation_bitfield());
 
         for (Integer participantIndex : attestation_participants) {
           Optional<Attestation> latest_attestation = getLatestAttestation(participantIndex);
           if (!latest_attestation.isPresent()
-              || get_attestation_data_slot(state, latest_attestation.get().getData())
-                      .compareTo(get_attestation_data_slot(state, attestation.getData()))
-                  > 0) {
+              || latest_attestation
+                      .get()
+                      .getData()
+                      .getSlot()
+                      .compareTo(attestation.getData().getSlot())
+                  < 0) {
             latestAttestations.put(participantIndex, attestation);
           }
         }
