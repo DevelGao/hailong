@@ -31,47 +31,42 @@ public class Validator implements Copyable<Validator>, Merkleizable {
   private BLSPublicKey pubkey;
   // Withdrawal credentials
   private Bytes32 withdrawal_credentials;
-  // Epoch when became eligible for activation
-  private UnsignedLong activation_eligibility_epoch;
   // Epoch when validator activated
   private UnsignedLong activation_epoch;
   // Epoch when validator exited
   private UnsignedLong exit_epoch;
   // Epoch when validator withdrew
   private UnsignedLong withdrawable_epoch;
+  // Did the validator initiate an exit
+  private boolean initiated_exit;
   // Was the validator slashed
   private boolean slashed;
-  // Effective balance
-  private UnsignedLong effective_balance;
 
   public Validator(
       BLSPublicKey pubkey,
       Bytes32 withdrawal_credentials,
-      UnsignedLong activation_eligibility_epoch,
       UnsignedLong activation_epoch,
       UnsignedLong exit_epoch,
       UnsignedLong withdrawal_epoch,
-      boolean slashed,
-      UnsignedLong effective_balance) {
+      boolean initiated_exit,
+      boolean slashed) {
     this.pubkey = pubkey;
     this.withdrawal_credentials = withdrawal_credentials;
-    this.activation_eligibility_epoch = activation_eligibility_epoch;
     this.activation_epoch = activation_epoch;
     this.exit_epoch = exit_epoch;
     this.withdrawable_epoch = withdrawal_epoch;
+    this.initiated_exit = initiated_exit;
     this.slashed = slashed;
-    this.effective_balance = effective_balance;
   }
 
   public Validator(Validator validator) {
     this.pubkey = new BLSPublicKey(validator.getPubkey().getPublicKey());
-    this.withdrawal_credentials = validator.getWithdrawal_credentials();
-    this.activation_eligibility_epoch = validator.getActivation_eligibility_epoch();
+    this.withdrawal_credentials = validator.getWithdrawal_credentials().copy();
     this.activation_epoch = validator.getActivation_epoch();
     this.exit_epoch = validator.getExit_epoch();
     this.withdrawable_epoch = validator.getWithdrawable_epoch();
+    this.initiated_exit = validator.hasInitiatedExit();
     this.slashed = validator.isSlashed();
-    this.effective_balance = validator.getEffective_balance();
   }
 
   @Override
@@ -89,9 +84,8 @@ public class Validator implements Copyable<Validator>, Merkleizable {
                 UnsignedLong.fromLongBits(reader.readUInt64()),
                 UnsignedLong.fromLongBits(reader.readUInt64()),
                 UnsignedLong.fromLongBits(reader.readUInt64()),
-                UnsignedLong.fromLongBits(reader.readUInt64()),
                 reader.readBoolean(),
-                UnsignedLong.fromLongBits(reader.readUInt64())));
+                reader.readBoolean()));
   }
 
   public Bytes toBytes() {
@@ -99,12 +93,11 @@ public class Validator implements Copyable<Validator>, Merkleizable {
         writer -> {
           writer.writeBytes(pubkey.toBytes());
           writer.writeFixedBytes(32, withdrawal_credentials);
-          writer.writeUInt64(activation_eligibility_epoch.longValue());
           writer.writeUInt64(activation_epoch.longValue());
           writer.writeUInt64(exit_epoch.longValue());
           writer.writeUInt64(withdrawable_epoch.longValue());
+          writer.writeBoolean(initiated_exit);
           writer.writeBoolean(slashed);
-          writer.writeUInt64(effective_balance.longValue());
         });
   }
 
@@ -113,12 +106,11 @@ public class Validator implements Copyable<Validator>, Merkleizable {
     return Objects.hash(
         pubkey,
         withdrawal_credentials,
-        activation_eligibility_epoch,
         activation_epoch,
         exit_epoch,
         withdrawable_epoch,
-        slashed,
-        effective_balance);
+        initiated_exit,
+        slashed);
   }
 
   @Override
@@ -138,12 +130,11 @@ public class Validator implements Copyable<Validator>, Merkleizable {
     Validator other = (Validator) obj;
     return Objects.equals(this.getPubkey(), other.getPubkey())
         && Objects.equals(this.getWithdrawal_credentials(), other.getWithdrawal_credentials())
-        && Objects.equals(this.getActivation_eligibility_epoch(), other.getActivation_eligibility_epoch())
         && Objects.equals(this.getActivation_epoch(), other.getActivation_epoch())
         && Objects.equals(this.getExit_epoch(), other.getExit_epoch())
         && Objects.equals(this.getWithdrawable_epoch(), other.getWithdrawable_epoch())
-        && Objects.equals(this.isSlashed(), other.isSlashed())
-        && Objects.equals(this.getEffective_balance(), other.getEffective_balance());
+        && Objects.equals(this.hasInitiatedExit(), other.hasInitiatedExit())
+        && Objects.equals(this.isSlashed(), other.isSlashed());
   }
 
   public BLSPublicKey getPubkey() {
@@ -162,13 +153,6 @@ public class Validator implements Copyable<Validator>, Merkleizable {
     this.withdrawal_credentials = withdrawal_credentials;
   }
 
-  public UnsignedLong getActivation_eligibility_epoch() {
-    return activation_eligibility_epoch;
-  }
-
-  public void setActivation_eligibility_epoch(UnsignedLong activation_eligibility_epoch) {
-    this.activation_eligibility_epoch = activation_eligibility_epoch;
-  }
   public UnsignedLong getActivation_epoch() {
     return activation_epoch;
   }
@@ -193,20 +177,20 @@ public class Validator implements Copyable<Validator>, Merkleizable {
     this.withdrawable_epoch = withdrawable_epoch;
   }
 
+  public boolean hasInitiatedExit() {
+    return initiated_exit;
+  }
+
+  public void setInitiatedExit(boolean initiated_exit) {
+    this.initiated_exit = initiated_exit;
+  }
+
   public boolean isSlashed() {
     return slashed;
   }
 
   public void setSlashed(boolean slashed) {
     this.slashed = slashed;
-  }
-
-  public UnsignedLong getEffective_balance() {
-    return effective_balance;
-  }
-
-  public void setEffective_balance(UnsignedLong effective_balance) {
-    this.effective_balance = effective_balance;
   }
 
   @Override
@@ -216,13 +200,11 @@ public class Validator implements Copyable<Validator>, Merkleizable {
             HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, pubkey.toBytes()),
             HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, withdrawal_credentials),
             HashTreeUtil.hash_tree_root(
-                        SSZTypes.BASIC, SSZ.encodeUInt64(activation_eligibility_epoch.longValue())),
-            HashTreeUtil.hash_tree_root(
                 SSZTypes.BASIC, SSZ.encodeUInt64(activation_epoch.longValue())),
             HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(exit_epoch.longValue())),
             HashTreeUtil.hash_tree_root(
                 SSZTypes.BASIC, SSZ.encodeUInt64(withdrawable_epoch.longValue())),
-            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeBoolean(slashed)),
-            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(effective_balance.longValue()))));
+            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeBoolean(initiated_exit)),
+            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeBoolean(slashed))));
   }
 }
