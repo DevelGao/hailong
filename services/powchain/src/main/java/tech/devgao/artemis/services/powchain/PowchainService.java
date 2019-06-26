@@ -13,24 +13,10 @@
 
 package tech.devgao.artemis.services.powchain;
 
-import static com.google.common.base.Charsets.UTF_8;
-
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.primitives.UnsignedLong;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.Reader;
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -43,11 +29,9 @@ import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.event.Deposit;
 import tech.devgao.artemis.datastructures.event.Eth2Genesis;
 import tech.devgao.artemis.datastructures.operations.DepositData;
-import tech.devgao.artemis.datastructures.operations.DepositInput;
 import tech.devgao.artemis.ganache.GanacheController;
 import tech.devgao.artemis.pow.DepositContractListener;
 import tech.devgao.artemis.pow.DepositContractListenerFactory;
-import tech.devgao.artemis.pow.contract.DepositContract;
 import tech.devgao.artemis.pow.contract.DepositContract.Eth2GenesisEventResponse;
 import tech.devgao.artemis.service.serviceutils.ServiceConfig;
 import tech.devgao.artemis.service.serviceutils.ServiceInterface;
@@ -57,6 +41,11 @@ import tech.devgao.artemis.util.mikuli.KeyPair;
 import tech.devgao.artemis.validator.client.DepositSimulation;
 import tech.devgao.artemis.validator.client.Validator;
 import tech.devgao.artemis.validator.client.ValidatorClientUtil;
+
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class PowchainService implements ServiceInterface {
 
@@ -104,13 +93,15 @@ public class PowchainService implements ServiceInterface {
       simulations = new ArrayList<DepositSimulation>();
       for (SECP256K1.KeyPair keyPair : controller.getAccounts()) {
         Validator validator = new Validator(Bytes32.random(), KeyPair.random(), keyPair);
+
         simulations.add(
             new DepositSimulation(
                 validator,
-                ValidatorClientUtil.generateDepositData(
-                    validator.getBlsKeys(),
-                    validator.getWithdrawal_credentials(),
-                    Long.parseLong(SIM_DEPOSIT_VALUE_GWEI))));
+                new DepositData(validator.getPubkey(), validator.getWithdrawal_credentials(), UnsignedLong.valueOf(SIM_DEPOSIT_VALUE_GWEI), BLSSignature.fromBytes(ValidatorClientUtil.blsSignatureHelper(
+                        validator.getBlsKeys(),
+                        validator.getWithdrawal_credentials(),
+                        Long.parseLong(SIM_DEPOSIT_VALUE_GWEI))))
+            ));
         try {
           ValidatorClientUtil.registerValidatorEth1(
               validator,
@@ -128,7 +119,7 @@ public class PowchainService implements ServiceInterface {
         }
       }
     } else if (depositMode.equals(Constants.DEPOSIT_SIM) && depositSimFile != null) {
-      JsonParser parser = new JsonParser();
+      JsonParser parser = new JsonParser();/*
       try {
         Reader reader = Files.newBufferedReader(Paths.get(depositSimFile), UTF_8);
         JsonArray validatorsJSON = ((JsonArray) parser.parse(reader));
@@ -191,7 +182,7 @@ public class PowchainService implements ServiceInterface {
         LOG.log(Level.ERROR, e.getMessage());
       } catch (IOException e) {
         LOG.log(Level.ERROR, e.getMessage());
-      }
+      }*/
     } else if (depositMode.equals(Constants.DEPOSIT_TEST)) {
       Eth2GenesisEventResponse response = new Eth2GenesisEventResponse();
       response.log =

@@ -16,17 +16,13 @@ package tech.devgao.artemis.statetransition;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.primitives.UnsignedLong;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.crypto.SECP256K1.PublicKey;
 import tech.devgao.artemis.data.RawRecord;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
+import tech.devgao.artemis.datastructures.blocks.BeaconBlockHeader;
 import tech.devgao.artemis.datastructures.event.Eth2Genesis;
 import tech.devgao.artemis.datastructures.operations.Deposit;
 import tech.devgao.artemis.datastructures.state.BeaconState;
@@ -37,9 +33,19 @@ import tech.devgao.artemis.datastructures.util.DataStructureUtil;
 import tech.devgao.artemis.datastructures.util.DepositUtil;
 import tech.devgao.artemis.pow.api.Eth2GenesisEvent;
 import tech.devgao.artemis.service.serviceutils.ServiceConfig;
+import tech.devgao.artemis.statetransition.util.EpochProcessingException;
+import tech.devgao.artemis.statetransition.util.SlotProcessingException;
 import tech.devgao.artemis.storage.ChainStorageClient;
 import tech.devgao.artemis.util.alogger.ALogger;
 import tech.devgao.artemis.util.config.ArtemisConfiguration;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
+import static tech.devgao.artemis.statetransition.StateTransition.process_slots;
 
 /** Class to manage the state tree and initiate state transitions */
 public class StateProcessor {
@@ -75,6 +81,15 @@ public class StateProcessor {
     this.stateTransition = new StateTransition(true);
     this.store = store;
     this.eventBus.register(this);
+
+    BeaconBlock block = DataStructureUtil.randomBeaconBlock(90000000);
+    BeaconBlockHeader blockHeader =
+            new BeaconBlockHeader(
+                    block.getSlot(),
+                    block.getParent_root(),
+                    block.getState_root(),
+                    block.getBody().hash_tree_root(),
+                    block.getSignature());
   }
 
   @Subscribe
@@ -103,8 +118,9 @@ public class StateProcessor {
       Bytes32 initial_state_root = initial_state.hash_tree_root();
       BeaconBlock genesis_block = BeaconBlockUtil.get_empty_block();
       genesis_block.setState_root(initial_state_root);
-      Bytes32 genesis_block_root = genesis_block.signed_root("signature");
+      Bytes32 genesis_block_root = genesis_block.signing_root("signature");
       STDOUT.log(Level.INFO, "Initial state root is " + initial_state_root.toHexString());
+      STDOUT.log(Level.INFO, "Genesis block root is " + genesis_block_root.toHexString());
       this.store.addState(initial_state_root, initial_state);
       this.store.addProcessedBlock(genesis_block_root, genesis_block);
       this.headBlock = genesis_block;
@@ -138,15 +154,15 @@ public class StateProcessor {
         "Node slot:                             "
             + nodeSlot
             + "  |  "
-            + nodeSlot.longValue() % Constants.GENESIS_SLOT);
+            + nodeSlot.longValue());
 
     Thread.sleep(3000);
     // Get all the unprocessed blocks that are for slots <= nodeSlot
     List<Optional<BeaconBlock>> unprocessedBlocks =
-        this.store.getUnprocessedBlocksUntilSlot(nodeSlot.longValue());
+        this.store.getUnprocessedBlocksUntilSlot(nodeSlot);
 
     // Use each block to build on all possible forks
-    unprocessedBlocks.forEach((block) -> processBlock(block));
+    unprocessedBlocks.forEach(this::processBlock);
 
     // Update the block that is subjectively the head of the chain  using lmd_ghost
     STDOUT.log(Level.INFO, ANSI_PURPLE + "Updating head block using LMDGhost." + ANSI_RESET);
@@ -154,9 +170,9 @@ public class StateProcessor {
     STDOUT.log(
         Level.INFO,
         "Head block slot:                      "
-            + headBlock.getSlot()
+            + headBlock.getSlot().longValue()
             + "  |  "
-            + headBlock.getSlot() % Constants.GENESIS_SLOT);
+            + headBlock.getSlot().longValue());
 
     // Get head block's state, and initialize a newHeadState variable to run state transition on
     BeaconState headBlockState = store.getState(headBlock.getState_root()).get();
@@ -165,44 +181,36 @@ public class StateProcessor {
     STDOUT.log(
         Level.INFO,
         "Justified block epoch:                 "
-            + justifiedEpoch
-            + "  |  "
-            + justifiedEpoch % Constants.GENESIS_EPOCH);
+            + justifiedEpoch);
     STDOUT.log(
         Level.INFO,
         "Finalized block epoch:                 "
-            + finalizedEpoch
-            + "  |  "
-            + finalizedEpoch % Constants.GENESIS_EPOCH);
+            + finalizedEpoch);
 
     BeaconStateWithCache newHeadState =
         BeaconStateWithCache.deepCopy((BeaconStateWithCache) headBlockState);
 
-    // Run state transition with no blocks from the newHeadState.slot to node.slot
-    boolean firstLoop = true;
-    while (newHeadState.getSlot().compareTo(nodeSlot) < 0) {
-      if (firstLoop) {
-        STDOUT.log(
-            Level.INFO,
-            "Transitioning state from slot: " + newHeadState.getSlot() + " to slot: " + nodeSlot);
-        firstLoop = false;
-      }
-      stateTransition.initiate(newHeadState, null);
+    try {
+      process_slots(newHeadState, nodeSlot)
+      this.headState = newHeadState;
+      this.store.addState(newHeadState.hash_tree_root(), newHeadState);
+
+      // TODO: there is a synchronization issue here that needs to be handled
+      // before RPC calls are implemented
+      this.store.updateLatestFinalizedBlock(this.finalizedBlockRoot, this.finalizedEpoch);
+      this.store.updateBestBlock(
+              this.headBlock.hash_tree_root(), UnsignedLong.valueOf(this.headBlock.getSlot()));
+
+      // Send event that headState has been updated
+      this.eventBus.post(
+          new HeadStateEvent(
+              BeaconStateWithCache.deepCopy((BeaconStateWithCache) headState), headBlock));
+      recordData(date);
+    } catch (SlotProcessingException | EpochProcessingException e) {
+      System.out.println("Error in onNewSlot" + e.toString());
+      LOG.log(Level.WARN, e.toString());
+      STDOUT.log(Level.INFO, ANSI_RED + "Unable to update head state" + ANSI_RESET);
     }
-    this.headState = newHeadState;
-    this.store.addState(newHeadState.hash_tree_root(), newHeadState);
-
-    // TODO: there is a synchronization issue here that needs to be handled
-    // before RPC calls are implemented
-    this.store.updateLatestFinalizedBlock(this.finalizedBlockRoot, this.finalizedEpoch);
-    this.store.updateBestBlock(
-        this.headBlock.hash_tree_root(), UnsignedLong.valueOf(this.headBlock.getSlot()));
-
-    // Send event that headState has been updated
-    this.eventBus.post(
-        new HeadStateEvent(
-            BeaconStateWithCache.deepCopy((BeaconStateWithCache) headState), headBlock));
-    recordData(date);
   }
 
   protected Boolean inspectBlock(Optional<BeaconBlock> block) {
@@ -215,7 +223,7 @@ public class StateProcessor {
       return false;
     }
     UnsignedLong blockTime =
-        UnsignedLong.valueOf(block.get().getSlot() * Constants.SECONDS_PER_SLOT);
+        UnsignedLong.valueOf(block.get().getSlot().longValue() * Constants.SECONDS_PER_SLOT);
     // TODO: Here we reject block because time is not there,
     // however, the block is already removed from queue, so
     // we're losing a valid block here.
@@ -233,63 +241,34 @@ public class StateProcessor {
 
         // Get block, block root and block state root
         BeaconBlock block = unprocessedBlock.get();
-        Bytes32 blockRoot = block.signed_root("signature");
-        Bytes32 blockStateRoot = block.getState_root();
+        Bytes32 blockRoot = block.signing_root("signature");
 
         // Get parent block, parent block root, parent block state root, and parent block state
         BeaconBlock parentBlock = this.store.getParent(block).get();
         Bytes32 parentBlockStateRoot = parentBlock.getState_root();
         BeaconState parentBlockState = this.store.getState(parentBlockStateRoot).get();
 
-        // Run state transition with no blocks from the parentBlockState.slot to block.slot - 1
-        boolean firstLoop = true;
         BeaconStateWithCache currentState =
             BeaconStateWithCache.deepCopy((BeaconStateWithCache) parentBlockState);
-        while (currentState.getSlot().compareTo(UnsignedLong.valueOf(block.getSlot() - 1)) < 0) {
-          if (firstLoop) {
-            STDOUT.log(
-                Level.INFO,
-                "Running state transition with no blocks from parent block slot: "
-                    + currentState.getSlot()
-                    + " to slot: "
-                    + (block.getSlot() - 1));
-            firstLoop = false;
-          }
-          stateTransition.initiate(currentState, null);
-        }
 
         // Run state transition with the block
         STDOUT.log(Level.INFO, ANSI_PURPLE + "Running state transition with block." + ANSI_RESET);
-        stateTransition.initiate(currentState, block);
+        boolean validate_state_root = true;
+        Bytes32 newStateRoot = stateTransition.initiate(currentState, block, validate_state_root);
+        this.store.addProcessedBlock(blockRoot, block);
+        this.store.addState(newStateRoot, currentState);
 
-        Bytes32 newStateRoot = currentState.hash_tree_root();
-
-        // Verify that the state root we have computed is the state root that block is
-        // claiming us we should reach, save the block and the state if its correct.
-        if (blockStateRoot.equals(newStateRoot)) {
-          STDOUT.log(
-              Level.INFO,
-              ANSI_PURPLE + "Block state root matches the calculated state root." + ANSI_RESET);
-          this.store.addProcessedBlock(blockRoot, block);
-          this.store.addState(newStateRoot, currentState);
-          block
-              .getBody()
-              .getAttestations()
-              .forEach(attestation -> this.store.addProcessedAttestation(attestation));
-        } else {
-          STDOUT.log(
-              Level.INFO,
-              ANSI_RED + "Block state root does NOT match the calculated state root!" + ANSI_RESET);
-          STDOUT.log(
-              Level.INFO,
-              ANSI_RED + "Block state root: " + blockStateRoot.toHexString() + ANSI_RESET);
-          STDOUT.log(
-              Level.INFO, ANSI_RED + "New state root: " + newStateRoot.toHexString() + ANSI_RESET);
-        }
+        // Add attestations that were processed in the block to processed attestations storage
+        block
+            .getBody()
+            .getAttestations()
+            .forEach(attestation -> this.store.addProcessedAttestation(attestation));
       } else {
+        System.out.println("Skipped processing block");
         STDOUT.log(Level.INFO, "Skipped processing block");
       }
     } catch (NoSuchElementException | IllegalArgumentException | StateTransitionException e) {
+      System.out.println("Error in processBlock" + e.toString());
       LOG.log(Level.WARN, e.toString());
     }
   }
