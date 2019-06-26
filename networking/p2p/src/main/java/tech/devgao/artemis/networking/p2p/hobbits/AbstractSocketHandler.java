@@ -14,6 +14,7 @@
 package tech.devgao.artemis.networking.p2p.hobbits;
 
 import com.google.common.eventbus.EventBus;
+import com.google.common.primitives.UnsignedLong;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 import java.time.Instant;
@@ -46,7 +47,6 @@ import tech.devgao.artemis.networking.p2p.hobbits.rpc.RequestAttestationMessage;
 import tech.devgao.artemis.networking.p2p.hobbits.rpc.RequestBlocksMessage;
 import tech.devgao.artemis.storage.ChainStorageClient;
 import tech.devgao.artemis.util.alogger.ALogger;
-import tech.devgao.artemis.util.bls.BLSSignature;
 
 /** TCP persistent connection handler for hobbits messages. */
 public abstract class AbstractSocketHandler {
@@ -144,9 +144,9 @@ public abstract class AbstractSocketHandler {
         replyStatus(rpcMessage.requestId());
       }
       peer.setPeerStatus(rpcMessage.bodyAs(GetStatusMessage.class));
-    } else if (RPCMethod.GET_ATTESTATION.equals(rpcMessage.method())) {
+    } else if (RPCMethod.GET_ATTESTATIONS.equals(rpcMessage.method())) {
       if (!pendingResponses.remove(rpcMessage.requestId())) {
-        replyAttestation(rpcMessage);
+        replyAttestations(rpcMessage);
       }
     } else if (RPCMethod.GET_BLOCK_HEADERS.equals(rpcMessage.method())) {
       if (!pendingResponses.remove(rpcMessage.requestId())) {
@@ -223,16 +223,14 @@ public abstract class AbstractSocketHandler {
         RPCMethod.GET_STATUS, new GetStatusMessage(userAgent, Instant.now().toEpochMilli()));
   }
 
-  public void replyAttestation(RPCMessage rpcMessage) {
-    RequestAttestationMessage rb = rpcMessage.bodyAs(RequestAttestationMessage.class);
-    BLSSignature signature = rb.aggregateSignature();
-    store
-        .getUnprocessedAttestation(signature)
-        .ifPresent(a -> sendReply(RPCMethod.ATTESTATION, a.toBytes(), rpcMessage.requestId()));
+  public void replyAttestations(RPCMessage rpcMessage) {
+
+    // TODO: use the ChainStorageClient to get the attestation being requestedi
+    // Hint: look at replyBlockBodies
   }
 
-  public void sendGetAttestations(BLSSignature signature) {
-    sendMessage(RPCMethod.GET_ATTESTATION, new RequestAttestationMessage(signature));
+  public void sendGetAttestations(Bytes32 signature) {
+    sendMessage(RPCMethod.GET_ATTESTATIONS, new RequestAttestationMessage(signature));
   }
 
   public void replyBlockHeaders(RPCMessage rpcMessage) {
@@ -245,8 +243,8 @@ public abstract class AbstractSocketHandler {
           if (block.isPresent()) {
             blockHeaders.add(
                 new BeaconBlockHeader(
-                        block.get().getSlot(),
-                        block.get().getParent_root(),
+                        UnsignedLong.valueOf(block.get().getSlot()),
+                        block.get().getPrevious_block_root(),
                         block.get().getState_root(),
                         block.get().getBody().hash_tree_root(),
                         block.get().getSignature())

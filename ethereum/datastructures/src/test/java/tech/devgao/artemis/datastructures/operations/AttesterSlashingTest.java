@@ -15,7 +15,7 @@ package tech.devgao.artemis.datastructures.operations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomIndexedAttestation;
+import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomSlashableAttestation;
 
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 
 class AttesterSlashingTest {
 
-  private IndexedAttestation slashableAttestation1 = randomIndexedAttestation();
-  private IndexedAttestation slashableAttestation2 = randomIndexedAttestation();
+  private SlashableAttestation slashableAttestation1 = randomSlashableAttestation();
+  private SlashableAttestation slashableAttestation2 = randomSlashableAttestation();
 
   private AttesterSlashing attesterSlashing =
       new AttesterSlashing(slashableAttestation1, slashableAttestation2);
@@ -45,31 +45,31 @@ class AttesterSlashingTest {
   }
 
   @Test
-  void equalsReturnsFalseWhenIndexedAttestation1IsDifferent() {
-    // IndexedAttestation is rather involved to create. Just create a random one until it is not
+  void equalsReturnsFalseWhenSlashableAttestation1IsDifferent() {
+    // SlashableAttestation is rather involved to create. Just create a random one until it is not
     // the same as the original.
-    IndexedAttestation otherIndexedAttestation1 = randomIndexedAttestation();
-    while (Objects.equals(otherIndexedAttestation1, slashableAttestation1)) {
-      otherIndexedAttestation1 = randomIndexedAttestation();
+    SlashableAttestation otherSlashableAttestation1 = randomSlashableAttestation();
+    while (Objects.equals(otherSlashableAttestation1, slashableAttestation1)) {
+      otherSlashableAttestation1 = randomSlashableAttestation();
     }
 
     AttesterSlashing testAttesterSlashing =
-        new AttesterSlashing(otherIndexedAttestation1, slashableAttestation2);
+        new AttesterSlashing(otherSlashableAttestation1, slashableAttestation2);
 
     assertNotEquals(attesterSlashing, testAttesterSlashing);
   }
 
   @Test
-  void equalsReturnsFalseWhenIndexedAttestation2IsDifferent() {
-    // IndexedAttestation is rather involved to create. Just create a random one until it is not
+  void equalsReturnsFalseWhenSlashableAttestation2IsDifferent() {
+    // SlashableAttestation is rather involved to create. Just create a random one until it is not
     // the ame as the original.
-    IndexedAttestation otherIndexedAttestation2 = randomIndexedAttestation();
-    while (Objects.equals(otherIndexedAttestation2, slashableAttestation2)) {
-      otherIndexedAttestation2 = randomIndexedAttestation();
+    SlashableAttestation otherSlashableAttestation2 = randomSlashableAttestation();
+    while (Objects.equals(otherSlashableAttestation2, slashableAttestation2)) {
+      otherSlashableAttestation2 = randomSlashableAttestation();
     }
 
     AttesterSlashing testAttesterSlashing =
-        new AttesterSlashing(slashableAttestation1, otherIndexedAttestation2);
+        new AttesterSlashing(slashableAttestation1, otherSlashableAttestation2);
 
     assertNotEquals(attesterSlashing, testAttesterSlashing);
   }

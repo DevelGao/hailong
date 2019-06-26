@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomAttestation;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomAttesterSlashing;
-import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomBytes32;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDeposit;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomEth1Data;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomProposerSlashing;
@@ -29,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 import tech.devgao.artemis.datastructures.operations.Attestation;
 import tech.devgao.artemis.datastructures.operations.AttesterSlashing;
@@ -43,7 +41,6 @@ class BeaconBlockBodyTest {
 
   private BLSSignature blsSignature = BLSSignature.random();
   private Eth1Data eth1Data = randomEth1Data();
-  private Bytes32 graffiti = randomBytes32();
   private List<ProposerSlashing> proposerSlashings =
       Arrays.asList(randomProposerSlashing(), randomProposerSlashing(), randomProposerSlashing());
   private List<AttesterSlashing> attesterSlashings =
@@ -59,7 +56,6 @@ class BeaconBlockBodyTest {
       new BeaconBlockBody(
           blsSignature,
           eth1Data,
-          graffiti,
           proposerSlashings,
           attesterSlashings,
           attestations,
@@ -80,7 +76,6 @@ class BeaconBlockBodyTest {
         new BeaconBlockBody(
             blsSignature,
             eth1Data,
-            graffiti,
             proposerSlashings,
             attesterSlashings,
             attestations,
@@ -101,7 +96,6 @@ class BeaconBlockBodyTest {
         new BeaconBlockBody(
             blsSignature,
             eth1Data,
-            graffiti,
             reverseProposerSlashings,
             attesterSlashings,
             attestations,
@@ -122,7 +116,6 @@ class BeaconBlockBodyTest {
         new BeaconBlockBody(
             blsSignature,
             eth1Data,
-            graffiti,
             proposerSlashings,
             reverseAttesterSlashings,
             attestations,
@@ -143,7 +136,6 @@ class BeaconBlockBodyTest {
         new BeaconBlockBody(
             blsSignature,
             eth1Data,
-            graffiti,
             proposerSlashings,
             attesterSlashings,
             reverseAttestations,
@@ -164,7 +156,6 @@ class BeaconBlockBodyTest {
         new BeaconBlockBody(
             blsSignature,
             eth1Data,
-            graffiti,
             proposerSlashings,
             attesterSlashings,
             attestations,
@@ -185,7 +176,6 @@ class BeaconBlockBodyTest {
         new BeaconBlockBody(
             blsSignature,
             eth1Data,
-            graffiti,
             proposerSlashings,
             attesterSlashings,
             attestations,
@@ -206,7 +196,6 @@ class BeaconBlockBodyTest {
         new BeaconBlockBody(
             blsSignature,
             eth1Data,
-            graffiti,
             proposerSlashings,
             attesterSlashings,
             attestations,

@@ -15,76 +15,72 @@ package tech.devgao.artemis.datastructures.operations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDepositInput;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomUnsignedLong;
 
 import com.google.common.primitives.UnsignedLong;
+import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.junit.BouncyCastleExtension;
 import org.junit.jupiter.api.Test;
-import tech.devgao.artemis.util.bls.BLSPublicKey;
-import tech.devgao.artemis.util.bls.BLSSignature;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(BouncyCastleExtension.class)
 class DepositDataTest {
 
-  private BLSPublicKey pubkey = BLSPublicKey.random();
-  private Bytes32 withdrawalCredentials = Bytes32.random();
   private UnsignedLong amount = randomUnsignedLong();
-  private BLSSignature signature = BLSSignature.random();
+  private UnsignedLong timestamp = randomUnsignedLong();
+  private DepositInput depositInput = randomDepositInput();
 
-  private DepositData depositInput =
-      new DepositData(pubkey, withdrawalCredentials, amount, signature);
+  private DepositData depositData = new DepositData(amount, timestamp, depositInput);
 
   @Test
-  void equalsReturnsTrueWhenObjectsAreSame() {
-    DepositData testDepositInput = depositInput;
+  void equalsReturnsTrueWhenObjectAreSame() {
+    DepositData testDepositData = depositData;
 
-    assertEquals(depositInput, testDepositInput);
+    assertEquals(depositData, testDepositData);
   }
 
   @Test
   void equalsReturnsTrueWhenObjectFieldsAreEqual() {
-    DepositData testDepositInput =
-        new DepositData(pubkey, withdrawalCredentials, amount, signature);
+    DepositData testDepositData = new DepositData(amount, timestamp, depositInput);
 
-    assertEquals(depositInput, testDepositInput);
+    assertEquals(depositData, testDepositData);
   }
 
   @Test
-  void equalsReturnsFalseWhenPubkeysAreDifferent() {
-    BLSPublicKey differentPublicKey = BLSPublicKey.random();
-    while (pubkey.equals(differentPublicKey)) {
-      differentPublicKey = BLSPublicKey.random();
-    }
-    DepositData testDepositInput =
-        new DepositData(differentPublicKey, withdrawalCredentials, amount, signature);
+  void equalsReturnsFalseWhenAmountsAreDifferent() {
+    DepositData testDepositData =
+        new DepositData(amount.plus(randomUnsignedLong()), timestamp, depositInput);
 
-    assertNotEquals(depositInput, testDepositInput);
+    assertNotEquals(depositData, testDepositData);
   }
 
   @Test
-  void equalsReturnsFalseWhenWithdrawalCredentialsAreDifferent() {
-    DepositData testDepositInput =
-        new DepositData(pubkey, withdrawalCredentials.not(), amount, signature);
+  void equalsReturnsFalseWhenTimestampsAreDifferent() {
+    DepositData testDepositData =
+        new DepositData(amount, timestamp.plus(randomUnsignedLong()), depositInput);
 
-    assertNotEquals(depositInput, testDepositInput);
+    assertNotEquals(depositData, testDepositData);
   }
 
   @Test
-  void equalsReturnsFalseWhenProofsOfPosessionAreDifferent() {
-    BLSSignature differentSignature = BLSSignature.random();
-    while (differentSignature.equals(signature)) {
-      differentSignature = BLSSignature.random();
+  void equalsReturnsFalseWhenDepositInputsAreDifferent() {
+    // DepositInput is rather involved to create. Just create a random one until it is not the same
+    // as the original.
+    DepositInput otherDepositInput = randomDepositInput();
+    while (Objects.equals(otherDepositInput, depositInput)) {
+      otherDepositInput = randomDepositInput();
     }
 
-    DepositData testDepositInput =
-        new DepositData(pubkey, withdrawalCredentials, amount, differentSignature);
+    DepositData testDepositData = new DepositData(amount, timestamp, otherDepositInput);
 
-    assertNotEquals(depositInput, testDepositInput);
+    assertNotEquals(depositData, testDepositData);
   }
 
   @Test
   void roundtripSSZ() {
-    Bytes sszDepositInputBytes = depositInput.toBytes();
-    assertEquals(depositInput, DepositData.fromBytes(sszDepositInputBytes));
+    Bytes sszDepositDataBytes = depositData.toBytes();
+    assertEquals(depositData, DepositData.fromBytes(sszDepositDataBytes));
   }
 }

@@ -14,6 +14,7 @@
 package tech.devgao.artemis.datastructures;
 
 import com.google.common.primitives.UnsignedLong;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.artemis.util.bls.BLSSignature;
 import tech.devgao.artemis.util.config.ArtemisConfiguration;
@@ -26,43 +27,41 @@ public class Constants {
   // Misc
   public static int SHARD_COUNT = 1024; // 2^10 shards
   public static int TARGET_COMMITTEE_SIZE = 128; // 2^7 validators
-  public static int MAX_INDICES_PER_ATTESTATION = 4096; // 2^5
-  public static int MIN_PER_EPOCH_CHURN_LIMIT = 4; // 2^2 withdrawals
-  public static int CHURN_LIMIT_QUOTIENT = 65536; // 2^2 withdrawals
-  public static int BASE_REWARDS_PER_EPOCH = 5; // 2^2 withdrawals
+  public static int MAX_BALANCE_CHURN_QUOTIENT = 32; // 2^5
+  public static int MAX_INDICES_PER_SLASHABLE_VOTE = 4096; // 2^12 votes
+  public static int MAX_EXIT_DEQUEUES_PER_EPOCH = 4; // 2^2 withdrawals
   public static int SHUFFLE_ROUND_COUNT = 90;
 
   // Deposit contract
+  public static String DEPOSIT_CONTRACT_ADDRESS = "0x0"; // This is TBD in the spec.
   public static int DEPOSIT_CONTRACT_TREE_DEPTH = 32; // 2^5
 
   // Gwei values
   public static long MIN_DEPOSIT_AMOUNT = 1000000000L; // 2^0 * 1E9 Gwei
-  public static long MAX_EFFECTIVE_BALANCE = 32000000000L; // 2^5 * 1E9 Gwei
+  public static long MAX_DEPOSIT_AMOUNT = 32000000000L; // 2^5 * 1E9 Gwei
+  public static long FORK_CHOICE_BALANCE_INCREMENT = 1000000000L; // 2^0 * 1E9 Gwei
   public static long EJECTION_BALANCE = 16000000000L; // 2^4 * 1E9 Gwei
-  public static long EFFECTIVE_BALANCE_INCREMENT = 1000000000L; // 2^0 * 1E9 Gwei
-
-  // Initial values
-  public static long GENESIS_SLOT = 0; // 2^32
-  public static long GENESIS_EPOCH = 0;
-  public static long GENESIS_FORK_VERSION = 0;
-  public static UnsignedLong FAR_FUTURE_EPOCH = UnsignedLong.MAX_VALUE;
-  public static Bytes32 ZERO_HASH = Bytes32.ZERO; // TODO confirm if equals to b'\x00' * 32
-  public static int BLS_WITHDRAWAL_PREFIX = 0;
 
   // Time parameters
+  public static int SECONDS_PER_SLOT = 6; // 6 seconds
   public static int MIN_ATTESTATION_INCLUSION_DELAY = 4; // 2^2 slots
   public static int SLOTS_PER_EPOCH = 64; // 2^6 slots
   public static int MIN_SEED_LOOKAHEAD = 1; // 2^0 epochs (6.4 minutes)
   public static int ACTIVATION_EXIT_DELAY = 4; // 2^2 epochs (25.6 minutes)
-  public static int SLOTS_PER_ETH1_VOTING_PERIOD = 1024; // 2^4 epochs (~1.7 hours)
+  public static int EPOCHS_PER_ETH1_VOTING_PERIOD = 16; // 2^4 epochs (~1.7 hours)
   public static int SLOTS_PER_HISTORICAL_ROOT = 8192; // 2^13 slots (~13 hours)
   public static int MIN_VALIDATOR_WITHDRAWABILITY_DELAY = 256; // 2^8 epochs (~27 hours)
   public static int PERSISTENT_COMMITTEE_PERIOD = 2048; // 2^11 epochs (~9 days)
-  public static int MAX_EPOCHS_PER_CROSSLINK = 64; // 2^11 epochs (~9 days)
-  public static int MIN_EPOCHS_TO_INACTIVITY_PENALTY = 4; // 2^11 epochs (~9 days)
 
-  public static int SECONDS_PER_SLOT =
-      6; // removed in 7.1 main spec for some reason but keep for now
+  // Initial values
+  public static int GENESIS_FORK_VERSION = 0;
+  public static long GENESIS_SLOT = 4294967296L; // 2^32
+  public static long GENESIS_EPOCH = slot_to_epoch(GENESIS_SLOT);
+  public static long GENESIS_START_SHARD = 0;
+  public static UnsignedLong FAR_FUTURE_EPOCH = UnsignedLong.MAX_VALUE;
+  public static Bytes32 ZERO_HASH = Bytes32.ZERO;
+  public static BLSSignature EMPTY_SIGNATURE = BLSSignature.empty();
+  public static Bytes BLS_WITHDRAWAL_PREFIX_BYTE = Bytes.EMPTY;
 
   // State list lengths
   public static int LATEST_RANDAO_MIXES_LENGTH = 8192; // 2^13 epochs (~36 days)
@@ -70,11 +69,11 @@ public class Constants {
   public static int LATEST_SLASHED_EXIT_LENGTH = 8192; // 2^13 epochs (~36 days)
 
   // Reward and penalty quotients
-  public static int BASE_REWARD_FACTOR = 32; // 2^5
-  public static int WHISTLEBLOWING_REWARD_QUOTIENT = 512; // 2^9
-  public static int PROPOSER_REWARD_QUOTIENT = 8; // 2^3
-  public static int INACTIVITY_PENALTY_QUOTIENT = 33554432; // 2^25
-  public static int MIN_SLASHING_PENALTY_QUOTIENT = 32; // 2^5
+  public static int BASE_REWARD_QUOTIENT = 32; // 2^5
+  public static int WHISTLEBLOWER_REWARD_QUOTIENT = 512; // 2^9
+  public static int ATTESTATION_INCLUSION_REWARD_QUOTIENT = 8; // 2^3
+  public static int INACTIVITY_PENALTY_QUOTIENT = 16777216; // 2^24
+  public static int MIN_PENALTY_QUOTIENT = 32; // 2^5
 
   // Max transactions per block
   public static int MAX_PROPOSER_SLASHINGS = 16; // 2^4
@@ -85,7 +84,7 @@ public class Constants {
   public static int MAX_TRANSFERS = 16; // 2^4
 
   // Signature domains
-  public static int DOMAIN_BEACON_PROPOSER = 0;
+  public static int DOMAIN_BEACON_BLOCK = 0;
   public static int DOMAIN_RANDAO = 1;
   public static int DOMAIN_ATTESTATION = 2;
   public static int DOMAIN_DEPOSIT = 3;
@@ -102,8 +101,6 @@ public class Constants {
   public static String DEPOSIT_TEST = "test";
   public static String DEPOSIT_SIM = "simulation";
 
-  public static BLSSignature EMPTY_SIGNATURE = BLSSignature.empty();
-
   public static void init(ArtemisConfiguration config) {
     // Misc
     SHARD_COUNT =
@@ -114,23 +111,28 @@ public class Constants {
         config.getTargetCommitteeSize() != Integer.MIN_VALUE
             ? config.getTargetCommitteeSize()
             : TARGET_COMMITTEE_SIZE; // 2^7 validators
-    MAX_INDICES_PER_ATTESTATION =
-        config.getMaxIndicesPerAttestation() != Integer.MIN_VALUE
-            ? config.getMaxIndicesPerAttestation()
-            : MAX_INDICES_PER_ATTESTATION; // 2^7 validators
-    CHURN_LIMIT_QUOTIENT =
-        config.getChurnLimitQuotient() != Integer.MIN_VALUE
-            ? config.getChurnLimitQuotient()
-            : CHURN_LIMIT_QUOTIENT; // 2^7 validators
-    BASE_REWARDS_PER_EPOCH =
-        config.getBaseRewardsPerEpoch() != Integer.MIN_VALUE
-            ? config.getBaseRewardsPerEpoch()
-            : BASE_REWARDS_PER_EPOCH; // 2^7 validators
+    MAX_BALANCE_CHURN_QUOTIENT =
+        config.getMaxBalanceChurnQuotient() != Integer.MIN_VALUE
+            ? config.getMaxBalanceChurnQuotient()
+            : MAX_BALANCE_CHURN_QUOTIENT; // 2^5
+    MAX_INDICES_PER_SLASHABLE_VOTE =
+        config.getMaxIndicesPerSlashableVote() != Integer.MIN_VALUE
+            ? config.getMaxIndicesPerSlashableVote()
+            : MAX_INDICES_PER_SLASHABLE_VOTE; // 2^12 votes
+    MAX_EXIT_DEQUEUES_PER_EPOCH =
+        config.getMaxExitDequeuesPerEpoch() != Integer.MIN_VALUE
+            ? config.getMaxExitDequeuesPerEpoch()
+            : MAX_EXIT_DEQUEUES_PER_EPOCH; // 2^2 withdrawals
     SHUFFLE_ROUND_COUNT =
         config.getShuffleRoundCount() != Integer.MIN_VALUE
             ? config.getShuffleRoundCount()
             : SHUFFLE_ROUND_COUNT;
 
+    // Deposit contract
+    DEPOSIT_CONTRACT_ADDRESS =
+        !config.getDepositContractAddress().equals("")
+            ? config.getDepositContractAddress()
+            : DEPOSIT_CONTRACT_ADDRESS; // This is TBD in the spec.
     DEPOSIT_CONTRACT_TREE_DEPTH =
         config.getDepositContractTreeDepth() != Integer.MIN_VALUE
             ? config.getDepositContractTreeDepth()
@@ -141,18 +143,18 @@ public class Constants {
         config.getMinDepositAmount() != Long.MIN_VALUE
             ? config.getMinDepositAmount()
             : MIN_DEPOSIT_AMOUNT; // 2^0 * 1E9 Gwei
-    MAX_EFFECTIVE_BALANCE =
-        config.getMaxEffectiveBalance() != Long.MIN_VALUE
-            ? config.getMaxEffectiveBalance()
-            : MAX_EFFECTIVE_BALANCE; // 2^7 validators
+    MAX_DEPOSIT_AMOUNT =
+        config.getMaxDepositAmount() != Long.MIN_VALUE
+            ? config.getMaxDepositAmount()
+            : MAX_DEPOSIT_AMOUNT; // 2^5 * 1E9 Gwei
+    FORK_CHOICE_BALANCE_INCREMENT =
+        config.getForkChoiceBalanceIncrement() != Long.MIN_VALUE
+            ? config.getForkChoiceBalanceIncrement()
+            : FORK_CHOICE_BALANCE_INCREMENT;
     EJECTION_BALANCE =
         config.getEjectionBalance() != Long.MIN_VALUE
             ? config.getEjectionBalance()
             : EJECTION_BALANCE; // 2^4 * 1E9 Gwei
-    EFFECTIVE_BALANCE_INCREMENT =
-        config.getEffectiveBalanceIncrement() != Long.MIN_VALUE
-            ? config.getEffectiveBalanceIncrement()
-            : EFFECTIVE_BALANCE_INCREMENT; // 2^4 * 1E9 Gwei
 
     // Time parameters
     SECONDS_PER_SLOT =
@@ -175,10 +177,10 @@ public class Constants {
         config.getActivationExitDelay() != Integer.MIN_VALUE
             ? config.getActivationExitDelay()
             : ACTIVATION_EXIT_DELAY; // 2^2 epochs (25.6 minutes)
-    SLOTS_PER_ETH1_VOTING_PERIOD =
-        config.getSlotsPerEth1VotingPeriod() != Integer.MIN_VALUE
-            ? config.getSlotsPerEth1VotingPeriod()
-            : SLOTS_PER_ETH1_VOTING_PERIOD;
+    EPOCHS_PER_ETH1_VOTING_PERIOD =
+        config.getEpochsPerEth1VotingPeriod() != Integer.MIN_VALUE
+            ? config.getEpochsPerEth1VotingPeriod()
+            : EPOCHS_PER_ETH1_VOTING_PERIOD; // 2^4 epochs (~1.7 hours)
     SLOTS_PER_HISTORICAL_ROOT =
         config.getSlotsPerHistoricalRoot() != Integer.MIN_VALUE
             ? config.getSlotsPerHistoricalRoot()
@@ -187,30 +189,36 @@ public class Constants {
         config.getMinValidatorWithdrawabilityDelay() != Integer.MIN_VALUE
             ? config.getMinValidatorWithdrawabilityDelay()
             : MIN_VALIDATOR_WITHDRAWABILITY_DELAY; // 2^8 epochs (~27 hours)
-    PERSISTENT_COMMITTEE_PERIOD =
-        config.getPersistentCommitteePeriod() != Integer.MIN_VALUE
-            ? config.getPersistentCommitteePeriod()
-            : PERSISTENT_COMMITTEE_PERIOD;
-    MAX_EPOCHS_PER_CROSSLINK =
-        config.getMaxEpochsPerCrosslink() != Integer.MIN_VALUE
-            ? config.getMaxEpochsPerCrosslink()
-            : MAX_EPOCHS_PER_CROSSLINK;
-    MIN_EPOCHS_TO_INACTIVITY_PENALTY =
-        config.getMinEpochsToInactivityPenalty() != Integer.MIN_VALUE
-            ? config.getMinEpochsToInactivityPenalty()
-            : MIN_EPOCHS_TO_INACTIVITY_PENALTY;
 
     // Initial values
+    GENESIS_FORK_VERSION =
+        config.getGenesisForkVersion() != Integer.MIN_VALUE
+            ? config.getGenesisForkVersion()
+            : GENESIS_FORK_VERSION;
     GENESIS_SLOT =
         config.getGenesisSlot() != Long.MIN_VALUE ? config.getGenesisSlot() : GENESIS_SLOT; // 2^32
+    GENESIS_EPOCH =
+        config.getGenesisEpoch() != Long.MIN_VALUE ? config.getGenesisEpoch() : GENESIS_EPOCH;
+    GENESIS_START_SHARD =
+        config.getGenesisStartShard() != Integer.MIN_VALUE
+            ? config.getGenesisStartShard()
+            : GENESIS_START_SHARD;
     FAR_FUTURE_EPOCH =
         config.getFarFutureEpoch() != Long.MAX_VALUE
             ? UnsignedLong.valueOf(config.getFarFutureEpoch())
             : FAR_FUTURE_EPOCH;
-    BLS_WITHDRAWAL_PREFIX =
-        config.getBlsWithdrawalPrefix() != 0
-            ? config.getBlsWithdrawalPrefix()
-            : BLS_WITHDRAWAL_PREFIX;
+    ZERO_HASH =
+        !config.getZeroHash().equals(Bytes32.ZERO)
+            ? (Bytes32) config.getZeroHash()
+            : ZERO_HASH; // TODO Verify
+    EMPTY_SIGNATURE =
+        !config.getEmptySignature().equals(BLSSignature.empty())
+            ? (BLSSignature) config.getEmptySignature()
+            : EMPTY_SIGNATURE;
+    BLS_WITHDRAWAL_PREFIX_BYTE =
+        !config.getBlsWithdrawalPrefixByte().equals(Bytes32.EMPTY)
+            ? (Bytes32) config.getBlsWithdrawalPrefixByte()
+            : BLS_WITHDRAWAL_PREFIX_BYTE; // TODO Verify
 
     // State list lengths
     LATEST_RANDAO_MIXES_LENGTH =
@@ -227,26 +235,26 @@ public class Constants {
             : LATEST_SLASHED_EXIT_LENGTH; // 2^13 epochs (~36 days)
 
     // Reward and penalty quotients
-    BASE_REWARD_FACTOR =
-        config.getBaseRewardFactor() != Integer.MIN_VALUE
-            ? config.getBaseRewardFactor()
-            : BASE_REWARD_FACTOR; // 2^5
-    WHISTLEBLOWING_REWARD_QUOTIENT =
-        config.getWhistleblowingRewardQuotient() != Integer.MIN_VALUE
-            ? config.getWhistleblowingRewardQuotient()
-            : WHISTLEBLOWING_REWARD_QUOTIENT; // 2^9
-    PROPOSER_REWARD_QUOTIENT =
-        config.getProposerRewardQuotient() != Integer.MIN_VALUE
-            ? config.getProposerRewardQuotient()
-            : PROPOSER_REWARD_QUOTIENT; // 2^3
+    BASE_REWARD_QUOTIENT =
+        config.getBaseRewardQuotient() != Integer.MIN_VALUE
+            ? config.getBaseRewardQuotient()
+            : BASE_REWARD_QUOTIENT; // 2^5
+    WHISTLEBLOWER_REWARD_QUOTIENT =
+        config.getWhistleblowerRewardQuotient() != Integer.MIN_VALUE
+            ? config.getWhistleblowerRewardQuotient()
+            : WHISTLEBLOWER_REWARD_QUOTIENT; // 2^9
+    ATTESTATION_INCLUSION_REWARD_QUOTIENT =
+        config.getAttestationInclusionRewardQuotient() != Integer.MIN_VALUE
+            ? config.getAttestationInclusionRewardQuotient()
+            : ATTESTATION_INCLUSION_REWARD_QUOTIENT; // 2^3
     INACTIVITY_PENALTY_QUOTIENT =
         config.getInactivityPenaltyQuotient() != Integer.MIN_VALUE
             ? config.getInactivityPenaltyQuotient()
             : INACTIVITY_PENALTY_QUOTIENT; // 2^24
-    MIN_SLASHING_PENALTY_QUOTIENT =
-        config.getMinSlashingPenaltyQuotient() != Integer.MIN_VALUE
-            ? config.getMinSlashingPenaltyQuotient()
-            : MIN_SLASHING_PENALTY_QUOTIENT; // 2^5
+    MIN_PENALTY_QUOTIENT =
+        config.getMinPenaltyQuotient() != Integer.MIN_VALUE
+            ? config.getMinPenaltyQuotient()
+            : MIN_PENALTY_QUOTIENT; // 2^5
 
     // Max transactions per block
     MAX_PROPOSER_SLASHINGS =
@@ -275,10 +283,10 @@ public class Constants {
             : MAX_TRANSFERS; // 2^4
 
     // Signature domains
-    DOMAIN_BEACON_PROPOSER =
-        config.getDomainBeaconProposer() != Integer.MIN_VALUE
-            ? config.getDomainBeaconProposer()
-            : DOMAIN_BEACON_PROPOSER;
+    DOMAIN_BEACON_BLOCK =
+        config.getDomainBeaconBlock() != Integer.MIN_VALUE
+            ? config.getDomainBeaconBlock()
+            : DOMAIN_BEACON_BLOCK;
     DOMAIN_RANDAO =
         config.getDomainRandao() != Integer.MIN_VALUE ? config.getDomainRandao() : DOMAIN_RANDAO;
     DOMAIN_ATTESTATION =

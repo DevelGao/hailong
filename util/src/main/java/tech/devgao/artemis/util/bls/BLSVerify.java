@@ -13,6 +13,7 @@
 
 package tech.devgao.artemis.util.bls;
 
+import com.google.common.primitives.UnsignedLong;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.tuweni.bytes.Bytes;
@@ -30,9 +31,9 @@ public class BLSVerify {
    * @return true if the signature is valid over these parameters, false if not
    */
   public static boolean bls_verify(
-      BLSPublicKey pubkey, Bytes32 messageHash, BLSSignature signature, long domain) {
+      BLSPublicKey pubkey, Bytes32 messageHash, BLSSignature signature, UnsignedLong domain) {
     try {
-      return signature.checkSignature(pubkey, Bytes.wrap(messageHash), domain);
+      return signature.checkSignature(pubkey, Bytes.wrap(messageHash), domain.longValue());
     } catch (BLSException e) {
       return false;
     }
@@ -53,11 +54,11 @@ public class BLSVerify {
       List<BLSPublicKey> pubkeys,
       List<Bytes32> messageHashes,
       BLSSignature aggregateSignature,
-      long domain) {
+      UnsignedLong domain) {
     try {
       List<Bytes> messageHashesAsBytes =
           messageHashes.stream().map(x -> Bytes.wrap(x)).collect(Collectors.toList());
-      return aggregateSignature.checkSignature(pubkeys, messageHashesAsBytes, domain);
+      return aggregateSignature.checkSignature(pubkeys, messageHashesAsBytes, domain.longValue());
     } catch (BLSException e) {
       return false;
     }

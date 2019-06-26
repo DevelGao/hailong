@@ -16,7 +16,9 @@ package tech.devgao.artemis.datastructures.operations;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomDepositData;
+import static tech.devgao.artemis.datastructures.util.DataStructureUtil.randomUnsignedLong;
 
+import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,9 +35,10 @@ class DepositTest {
 
   private List<Bytes32> branch =
       Arrays.asList(Bytes32.random(), Bytes32.random(), Bytes32.random());
+  private UnsignedLong index = randomUnsignedLong();
   private DepositData depositData = randomDepositData();
 
-  private Deposit deposit = new Deposit(branch, depositData);
+  private Deposit deposit = new Deposit(branch, index, depositData);
 
   @Test
   void equalsReturnsTrueWhenObjectsAreSame() {
@@ -46,7 +49,7 @@ class DepositTest {
 
   @Test
   void equalsReturnsTrueWhenObjectFieldsAreEqual() {
-    Deposit testDeposit = new Deposit(branch, depositData);
+    Deposit testDeposit = new Deposit(branch, index, depositData);
 
     assertEquals(deposit, testDeposit);
   }
@@ -57,7 +60,14 @@ class DepositTest {
     List<Bytes32> reverseBranch = new ArrayList<>(branch);
     Collections.reverse(reverseBranch);
 
-    Deposit testDeposit = new Deposit(reverseBranch, depositData);
+    Deposit testDeposit = new Deposit(reverseBranch, index, depositData);
+
+    assertNotEquals(deposit, testDeposit);
+  }
+
+  @Test
+  void equalsReturnsFalseWhenIndicesAreDifferent() {
+    Deposit testDeposit = new Deposit(branch, index.plus(randomUnsignedLong()), depositData);
 
     assertNotEquals(deposit, testDeposit);
   }
@@ -71,7 +81,7 @@ class DepositTest {
       otherDepositData = randomDepositData();
     }
 
-    Deposit testDeposit = new Deposit(branch, otherDepositData);
+    Deposit testDeposit = new Deposit(branch, index, otherDepositData);
 
     assertNotEquals(deposit, testDeposit);
   }
@@ -80,7 +90,6 @@ class DepositTest {
   void roundtripSSZ() {
     deposit.setProof(Collections.nCopies(32, Bytes32.random()));
     Bytes sszDepositBytes = deposit.toBytes();
-    Deposit sszDeposit = Deposit.fromBytes(sszDepositBytes);
-    assertEquals(deposit, sszDeposit);
+    assertEquals(deposit, Deposit.fromBytes(sszDepositBytes));
   }
 }

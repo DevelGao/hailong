@@ -27,23 +27,21 @@ class ValidatorTest {
 
   private BLSPublicKey pubkey = BLSPublicKey.random();
   private Bytes32 withdrawalCredentials = Bytes32.random();
-  private UnsignedLong activationEligibilityEpoch = randomUnsignedLong();
   private UnsignedLong activationEpoch = randomUnsignedLong();
   private UnsignedLong exitEpoch = randomUnsignedLong();
   private UnsignedLong withdrawalEpoch = randomUnsignedLong();
   private boolean initiatedExit = false;
-  private UnsignedLong effectiveBalance = randomUnsignedLong();
+  private boolean slashed = false;
 
   private Validator validator =
       new Validator(
           pubkey,
           withdrawalCredentials,
-          activationEligibilityEpoch,
           activationEpoch,
           exitEpoch,
           withdrawalEpoch,
           initiatedExit,
-          effectiveBalance);
+          slashed);
 
   @Test
   void equalsReturnsTrueWhenObjectAreSame() {
@@ -58,12 +56,11 @@ class ValidatorTest {
         new Validator(
             pubkey,
             withdrawalCredentials,
-            activationEligibilityEpoch,
             activationEpoch,
             exitEpoch,
             withdrawalEpoch,
             initiatedExit,
-            effectiveBalance);
+            slashed);
 
     assertEquals(validator, testValidator);
   }
@@ -78,12 +75,11 @@ class ValidatorTest {
         new Validator(
             differentPublicKey,
             withdrawalCredentials,
-            activationEligibilityEpoch,
             activationEpoch,
             exitEpoch,
             withdrawalEpoch,
             initiatedExit,
-            effectiveBalance);
+            slashed);
 
     assertNotEquals(validator, testValidator);
   }
@@ -94,12 +90,11 @@ class ValidatorTest {
         new Validator(
             pubkey,
             withdrawalCredentials.not(),
-            activationEligibilityEpoch,
             activationEpoch,
             exitEpoch,
             withdrawalEpoch,
             initiatedExit,
-            effectiveBalance);
+            slashed);
 
     assertNotEquals(validator, testValidator);
   }
@@ -110,12 +105,11 @@ class ValidatorTest {
         new Validator(
             pubkey,
             withdrawalCredentials,
-            activationEligibilityEpoch,
             activationEpoch.plus(randomUnsignedLong()),
             exitEpoch,
             withdrawalEpoch,
             initiatedExit,
-            effectiveBalance);
+            slashed);
 
     assertNotEquals(validator, testValidator);
   }
@@ -126,12 +120,11 @@ class ValidatorTest {
         new Validator(
             pubkey,
             withdrawalCredentials,
-            activationEligibilityEpoch,
             activationEpoch,
             exitEpoch.plus(randomUnsignedLong()),
             withdrawalEpoch,
             initiatedExit,
-            effectiveBalance);
+            slashed);
 
     assertNotEquals(validator, testValidator);
   }
@@ -142,12 +135,11 @@ class ValidatorTest {
         new Validator(
             pubkey,
             withdrawalCredentials,
-            activationEligibilityEpoch,
             activationEpoch,
             exitEpoch,
             withdrawalEpoch.plus(randomUnsignedLong()),
             initiatedExit,
-            effectiveBalance);
+            slashed);
 
     assertNotEquals(validator, testValidator);
   }
@@ -158,12 +150,26 @@ class ValidatorTest {
         new Validator(
             pubkey,
             withdrawalCredentials,
-            activationEligibilityEpoch,
             activationEpoch,
             exitEpoch,
             withdrawalEpoch,
             !initiatedExit,
-            effectiveBalance);
+            slashed);
+
+    assertNotEquals(validator, testValidator);
+  }
+
+  @Test
+  void equalsReturnsFalseWhenSlashedIsDifferent() {
+    Validator testValidator =
+        new Validator(
+            pubkey,
+            withdrawalCredentials,
+            activationEpoch,
+            exitEpoch,
+            withdrawalEpoch,
+            initiatedExit,
+            !slashed);
 
     assertNotEquals(validator, testValidator);
   }
