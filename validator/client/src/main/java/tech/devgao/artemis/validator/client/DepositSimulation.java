@@ -19,16 +19,15 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import tech.devgao.artemis.datastructures.event.Deposit;
-import tech.devgao.artemis.datastructures.event.Eth2Genesis;
-import tech.devgao.artemis.datastructures.interfaces.IRecordAdapter;
-import tech.devgao.artemis.datastructures.operations.DepositData;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import tech.devgao.artemis.datastructures.event.Deposit;
+import tech.devgao.artemis.datastructures.event.Eth2Genesis;
+import tech.devgao.artemis.datastructures.interfaces.IRecordAdapter;
+import tech.devgao.artemis.datastructures.operations.DepositData;
 
 public class DepositSimulation implements IRecordAdapter {
 
