@@ -18,26 +18,11 @@ import java.util.ArrayList;
 import tech.devgao.artemis.datastructures.Constants;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlockBody;
-import tech.devgao.artemis.datastructures.blocks.BeaconBlockHeader;
 import tech.devgao.artemis.datastructures.blocks.Eth1Data;
 import tech.devgao.artemis.util.alogger.ALogger;
 
 public class BeaconBlockUtil {
   private static final ALogger LOG = new ALogger(BeaconBlockUtil.class.getName());
-  /**
-   * Return the block header corresponding to a block with ``state_root`` set to ``ZERO_HASH``.
-   *
-   * @param block
-   * @return
-   */
-  public static BeaconBlockHeader get_temporary_block_header(BeaconBlock block) {
-    return new BeaconBlockHeader(
-        UnsignedLong.valueOf(block.getSlot()),
-        block.getPrevious_block_root(),
-        Constants.ZERO_HASH,
-        block.getBody().hash_tree_root(),
-        Constants.EMPTY_SIGNATURE);
-  }
 
   /**
    * Get an empty ``BeaconBlock``.
@@ -46,12 +31,13 @@ public class BeaconBlockUtil {
    */
   public static BeaconBlock get_empty_block() {
     return new BeaconBlock(
-        Constants.GENESIS_SLOT,
+        UnsignedLong.valueOf(Constants.GENESIS_SLOT),
         Constants.ZERO_HASH,
         Constants.ZERO_HASH,
         new BeaconBlockBody(
             Constants.EMPTY_SIGNATURE,
-            new Eth1Data(Constants.ZERO_HASH, Constants.ZERO_HASH),
+            new Eth1Data(Constants.ZERO_HASH, UnsignedLong.ZERO, Constants.ZERO_HASH),
+            Constants.ZERO_HASH,
             new ArrayList<>(),
             new ArrayList<>(),
             new ArrayList<>(),

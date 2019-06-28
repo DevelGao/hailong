@@ -32,7 +32,7 @@ public class DepositUtil {
     for (int i = 0; i < deposits.size(); i++)
       merkleTree.add(
           deposits.get(i).getIndex().intValue(),
-          Hash.sha2_256(deposits.get(i).getDeposit_data().serialize()));
+          Hash.sha2_256(deposits.get(i).getData().serialize()));
     for (int i = 0; i < deposits.size(); i++)
       deposits.get(i).setProof(merkleTree.getProofTreeByIndex(i));
     return deposits;
@@ -41,7 +41,7 @@ public class DepositUtil {
   public static boolean validateDeposits(List<Deposit> deposits, Bytes32 root, int height) {
     for (int i = 0; i < deposits.size(); i++) {
       if (BeaconStateUtil.verify_merkle_branch(
-          Hash.sha2_256(deposits.get(i).getDeposit_data().serialize()),
+          Hash.sha2_256(deposits.get(i).getData().serialize()),
           deposits.get(i).getProof(),
           height,
           i,
@@ -92,12 +92,7 @@ public class DepositUtil {
   public static Bytes32 calculatePubKeyRoot(Deposit deposit) {
     return Hash.sha2_256(
         Bytes.concatenate(
-            deposit
-                .getDeposit_data()
-                .getDeposit_input()
-                .getPubkey()
-                .getPublicKey()
-                .toBytesCompressed(),
+            deposit.getData().getPubkey().getPublicKey().toBytesCompressed(),
             Bytes.wrap(new byte[16])));
   }
 
@@ -106,13 +101,7 @@ public class DepositUtil {
         Hash.sha2_256(
             Bytes.wrap(
                 Arrays.copyOfRange(
-                    deposit
-                        .getDeposit_data()
-                        .getDeposit_input()
-                        .getProof_of_possession()
-                        .getSignature()
-                        .toBytesCompressed()
-                        .toArray(),
+                    deposit.getData().getSignature().getSignature().toBytesCompressed().toArray(),
                     0,
                     64)));
     Bytes signature_root_end =
@@ -121,9 +110,8 @@ public class DepositUtil {
                 Bytes.wrap(
                     Arrays.copyOfRange(
                         deposit
-                            .getDeposit_data()
-                            .getDeposit_input()
-                            .getProof_of_possession()
+                            .getData()
+                            .getSignature()
                             .getSignature()
                             .toBytesCompressed()
                             .toArray(),
@@ -137,13 +125,11 @@ public class DepositUtil {
       Bytes32 pubkey_root, Bytes32 signature_root, Deposit deposit) {
     Bytes32 value_start =
         Hash.sha2_256(
-            Bytes.concatenate(
-                pubkey_root,
-                deposit.getDeposit_data().getDeposit_input().getWithdrawal_credentials()));
+            Bytes.concatenate(pubkey_root, deposit.getData().getWithdrawal_credentials()));
     Bytes32 value_end =
         Hash.sha2_256(
             Bytes.concatenate(
-                Bytes.ofUnsignedLong(deposit.getDeposit_data().getAmount().longValue()),
+                Bytes.ofUnsignedLong(deposit.getData().getAmount().longValue()),
                 Bytes.wrap(new byte[24]),
                 signature_root));
 

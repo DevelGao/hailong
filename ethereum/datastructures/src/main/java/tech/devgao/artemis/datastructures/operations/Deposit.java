@@ -31,13 +31,23 @@ import tech.devgao.artemis.util.hashtree.Merkleizable;
 public class Deposit implements Merkleizable {
 
   private List<Bytes32> proof; // Bounded by DEPOSIT_CONTRACT_TREE_DEPTH
+  private DepositData data;
   private UnsignedLong index;
-  private DepositData deposit_data;
 
-  public Deposit(List<Bytes32> proof, UnsignedLong index, DepositData deposit_data) {
+  public Deposit(List<Bytes32> proof, DepositData data, UnsignedLong index) {
     this.proof = proof;
+    this.data = data;
     this.index = index;
-    this.deposit_data = deposit_data;
+  }
+
+  public Deposit(List<Bytes32> proof, DepositData data) {
+    this.proof = proof;
+    this.data = data;
+  }
+
+  public Deposit(DepositData data, UnsignedLong index) {
+    this.data = data;
+    this.index = index;
   }
 
   public static Deposit fromBytes(Bytes bytes) {
@@ -45,10 +55,9 @@ public class Deposit implements Merkleizable {
         bytes,
         reader ->
             new Deposit(
-                reader.readFixedBytesList((long) Constants.DEPOSIT_CONTRACT_TREE_DEPTH, 32).stream()
+                reader.readFixedBytesVector(Constants.DEPOSIT_CONTRACT_TREE_DEPTH, 32).stream()
                     .map(Bytes32::wrap)
                     .collect(Collectors.toList()),
-                UnsignedLong.fromLongBits(reader.readUInt64()),
                 DepositData.fromBytes(reader.readBytes())));
   }
 
@@ -66,16 +75,14 @@ public class Deposit implements Merkleizable {
 
     return SSZ.encode(
         writer -> {
-          writer.writeFixedBytesList(
-              (long) Constants.DEPOSIT_CONTRACT_TREE_DEPTH, 32, filledProofList);
-          writer.writeUInt64(index.longValue());
-          writer.writeBytes(deposit_data.toBytes());
+          writer.writeFixedBytesVector(filledProofList);
+          writer.writeBytes(data.toBytes());
         });
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(proof, index, deposit_data);
+    return Objects.hash(proof, data);
   }
 
   @Override
@@ -94,8 +101,7 @@ public class Deposit implements Merkleizable {
 
     Deposit other = (Deposit) obj;
     return Objects.equals(this.getProof(), other.getProof())
-        && Objects.equals(this.getIndex(), other.getIndex())
-        && Objects.equals(this.getDeposit_data(), other.getDeposit_data());
+        && Objects.equals(this.getData(), other.getData());
   }
 
   /** ******************* * GETTERS & SETTERS * * ******************* */
@@ -107,20 +113,12 @@ public class Deposit implements Merkleizable {
     this.proof = branch;
   }
 
-  public UnsignedLong getIndex() {
-    return index;
+  public DepositData getData() {
+    return data;
   }
 
-  public void setIndex(UnsignedLong index) {
-    this.index = index;
-  }
-
-  public DepositData getDeposit_data() {
-    return deposit_data;
-  }
-
-  public void setDeposit_data(DepositData deposit_data) {
-    this.deposit_data = deposit_data;
+  public void setData(DepositData data) {
+    this.data = data;
   }
 
   @Override
@@ -129,7 +127,10 @@ public class Deposit implements Merkleizable {
         Arrays.asList(
             // TODO Look at this - is this a TUPLE_OF_COMPOSITE
             HashTreeUtil.hash_tree_root(SSZTypes.BASIC, proof.toArray(new Bytes32[0])),
-            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(index.longValue())),
-            deposit_data.hash_tree_root()));
+            data.hash_tree_root()));
+  }
+
+  public UnsignedLong getIndex() {
+    return index;
   }
 }
