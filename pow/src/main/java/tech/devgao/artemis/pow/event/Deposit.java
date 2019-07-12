@@ -15,56 +15,53 @@ package tech.devgao.artemis.pow.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.ByteOrder;
+import com.google.common.primitives.UnsignedLong;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import tech.devgao.artemis.data.IRecordAdapter;
+import tech.devgao.artemis.datastructures.interfaces.IRecordAdapter;
 import tech.devgao.artemis.pow.api.DepositEvent;
 import tech.devgao.artemis.pow.contract.DepositContract.DepositEventResponse;
 import tech.devgao.artemis.util.bls.BLSPublicKey;
+import tech.devgao.artemis.util.bls.BLSSignature;
 
 public class Deposit extends AbstractEvent<DepositEventResponse>
     implements DepositEvent, IRecordAdapter {
   // processed fields
   private BLSPublicKey pubkey;
   private Bytes32 withdrawal_credentials;
-  private Bytes proof_of_possession;
-  private long amount;
+  private BLSSignature signature;
+  private UnsignedLong amount;
+  private UnsignedLong merkle_tree_index;
 
   private static final ObjectMapper mapper = new ObjectMapper();
 
-  // raw fields
-  private Bytes data;
-  private Bytes merkel_tree_index;
   private Map<String, Object> outputFieldMap = new HashMap<>();
 
   public Deposit(DepositEventResponse response) {
     super(response);
-    // raw fields
-    this.data = Bytes.wrap(response.data);
-    this.merkel_tree_index = Bytes.wrap(response.merkle_tree_index);
 
-    // process fields
-    this.pubkey = BLSPublicKey.fromBytesCompressed(data.slice(0, 48).reverse());
-    this.withdrawal_credentials = Bytes32.wrap(data.slice(48, 32).reverse());
-    this.proof_of_possession = data.slice(88, 96).reverse();
-    this.amount = data.slice(80, 8).toLong(ByteOrder.LITTLE_ENDIAN);
+    ArrayUtils.reverse(response.merkle_tree_index);
+    this.merkle_tree_index = UnsignedLong.valueOf(Bytes.wrap(response.merkle_tree_index).toLong());
+
+    ArrayUtils.reverse(response.pubkey);
+    this.pubkey = BLSPublicKey.fromBytesCompressed(Bytes.wrap(response.pubkey));
+
+    ArrayUtils.reverse(response.withdrawal_credentials);
+    this.withdrawal_credentials = Bytes32.wrap(response.withdrawal_credentials);
+
+    ArrayUtils.reverse(response.signature);
+    this.signature = BLSSignature.fromBytes(Bytes.wrap(response.signature));
+
+    ArrayUtils.reverse(response.amount);
+    this.amount = UnsignedLong.valueOf(Bytes.wrap(response.amount).toLong());
   }
 
-  public Bytes getData() {
-    return data;
-  }
-
-  public Bytes getMerkle_tree_index() {
-    return merkel_tree_index;
-  }
-
-  @Override
-  public String toString() {
-    return data.toString() + "\n" + merkel_tree_index.toString();
+  public UnsignedLong getMerkle_tree_index() {
+    return merkle_tree_index;
   }
 
   public BLSPublicKey getPubkey() {
@@ -75,12 +72,32 @@ public class Deposit extends AbstractEvent<DepositEventResponse>
     return withdrawal_credentials;
   }
 
-  public Bytes getProof_of_possession() {
-    return proof_of_possession;
+  public UnsignedLong getAmount() {
+    return amount;
   }
 
-  public long getAmount() {
-    return amount;
+  public void setPubkey(BLSPublicKey pubkey) {
+    this.pubkey = pubkey;
+  }
+
+  public void setWithdrawal_credentials(Bytes32 withdrawal_credentials) {
+    this.withdrawal_credentials = withdrawal_credentials;
+  }
+
+  public BLSSignature getSignature() {
+    return signature;
+  }
+
+  public void setSignature(BLSSignature signature) {
+    this.signature = signature;
+  }
+
+  public void setAmount(UnsignedLong amount) {
+    this.amount = amount;
+  }
+
+  public void setMerkle_tree_index(UnsignedLong merkle_tree_index) {
+    this.merkle_tree_index = merkle_tree_index;
   }
 
   @Override
@@ -97,16 +114,17 @@ public class Deposit extends AbstractEvent<DepositEventResponse>
           this.outputFieldMap.put("withdrawal_credentials", withdrawal_credentials.toHexString());
           break;
 
-        case "proof_of_possession":
-          this.outputFieldMap.put("proof_of_possession", proof_of_possession.toHexString());
+        case "signature":
+          this.outputFieldMap.put(
+              "signature", signature.getSignature().toBytesCompressed().toHexString());
           break;
 
         case "amount":
           this.outputFieldMap.put("amount", amount);
           break;
 
-        case "merkel_tree_index":
-          this.outputFieldMap.put("merkel_tree_index", merkel_tree_index.toHexString());
+        case "merkle_tree_index":
+          this.outputFieldMap.put("merkle_tree_index", merkle_tree_index.toString());
           break;
       }
     }

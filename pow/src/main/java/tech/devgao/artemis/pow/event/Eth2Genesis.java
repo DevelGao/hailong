@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import tech.devgao.artemis.data.IRecordAdapter;
+import tech.devgao.artemis.datastructures.interfaces.IRecordAdapter;
 import tech.devgao.artemis.pow.api.Eth2GenesisEvent;
 import tech.devgao.artemis.pow.contract.DepositContract.Eth2GenesisEventResponse;
 
