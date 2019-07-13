@@ -16,16 +16,14 @@ package tech.devgao.artemis.networking.p2p.hobbits;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import io.vertx.core.net.NetSocket;
-import java.math.BigInteger;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.Level;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.plumtree.MessageSender;
 import org.apache.tuweni.plumtree.State;
 import tech.devgao.artemis.datastructures.blocks.BeaconBlock;
 import tech.devgao.artemis.datastructures.operations.Attestation;
-import tech.devgao.artemis.networking.p2p.hobbits.gossip.GossipCodec;
 import tech.devgao.artemis.networking.p2p.hobbits.gossip.GossipMessage;
 import tech.devgao.artemis.storage.ChainStorageClient;
 import tech.devgao.artemis.util.alogger.ALogger;
@@ -46,35 +44,18 @@ public final class FloodsubSocketHandler extends AbstractSocketHandler {
   }
 
   @Override
-  public void gossipMessage(
-      int method, String topic, long timestamp, Bytes messageHash, Bytes32 hash, Bytes body) {
-    // TODO: Hack to make compatible with HOBBITS FloodSub spec
-    method = 0;
-    hash = Bytes32.wrap(body);
-    Bytes bytes =
-        GossipCodec.encode(
-                method,
-                topic,
-                BigInteger.valueOf(timestamp),
-                messageHash.toArrayUnsafe(),
-                hash.toArrayUnsafe(),
-                Bytes.EMPTY.toArrayUnsafe())
-            .toBytes();
-    sendBytes(bytes);
-  }
-
-  @Override
   @SuppressWarnings("StringSplitter")
   protected void handleGossipMessage(GossipMessage gossipMessage) {
-    if (gossipMessage.method() == 0) {
-      Bytes32 hash = Bytes32.wrap(gossipMessage.hash());
-      String key = hash.toHexString();
+    if (MessageSender.Verb.GOSSIP.ordinal() == gossipMessage.method()) {
+      String key = gossipMessage.body().toHexString();
       if (!receivedMessages.containsKey(key)) {
-        peer.setPeerGossip(hash);
+        peer.setPeerGossip(gossipMessage.body());
         if (gossipMessage.getTopic().equalsIgnoreCase("ATTESTATION")) {
-          this.sendGetAttestation(hash);
+          Bytes32 attestationHash = Bytes32.wrap(gossipMessage.body());
+          this.sendGetAttestation(attestationHash);
         } else if (gossipMessage.getTopic().equalsIgnoreCase("BLOCK")) {
-          this.sendGetBlockBodies(hash);
+          Bytes32 blockRoot = Bytes32.wrap(gossipMessage.body());
+          this.sendGetBlockBodies(blockRoot);
         }
         receivedMessages.put(key, true);
       }

@@ -84,7 +84,5 @@ dependencyManagement {
     dependency 'org.web3j:crypto:4.1.1'
 
     dependency 'org.xerial.snappy:snappy-java:1.1.7.2'
-
-    dependency 'tech.devgao.pantheon.internal:metrics-core:1.2.1'
   }
 }

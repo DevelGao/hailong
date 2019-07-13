@@ -15,23 +15,23 @@ package tech.devgao.artemis.networking.p2p.hobbits.rpc;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.math.BigInteger;
+import org.apache.tuweni.bytes.Bytes32;
 
 public final class RequestBlocksMessage {
 
-  private final byte[] startRoot;
-  private final BigInteger startSlot;
-  private final BigInteger max;
-  private final BigInteger skip;
+  private final Bytes32 startRoot;
+  private final long startSlot;
+  private final long max;
+  private final long skip;
   private final boolean direction;
 
   @JsonCreator
   public RequestBlocksMessage(
-      @JsonProperty("start_root") byte[] startRoot,
-      @JsonProperty("start_slot") BigInteger startSlot,
-      @JsonProperty("max") BigInteger max,
-      @JsonProperty("skip") BigInteger skip,
-      @JsonProperty("direction") short direction) {
+      @JsonProperty("startRoot") Bytes32 startRoot,
+      @JsonProperty("startSlot") long startSlot,
+      @JsonProperty("max") long max,
+      @JsonProperty("skip") long skip,
+      @JsonProperty("direction") int direction) {
     this.startRoot = startRoot;
     this.startSlot = startSlot;
     this.max = max;
@@ -39,23 +39,23 @@ public final class RequestBlocksMessage {
     this.direction = direction == 1;
   }
 
-  @JsonProperty("start_root")
-  public byte[] startRoot() {
+  @JsonProperty("startRoot")
+  public Bytes32 startRoot() {
     return startRoot;
   }
 
-  @JsonProperty("start_slot")
-  public BigInteger startSlot() {
+  @JsonProperty("startSlot")
+  public long startSlot() {
     return startSlot;
   }
 
   @JsonProperty("max")
-  public BigInteger max() {
+  public long max() {
     return max;
   }
 
   @JsonProperty("skip")
-  public BigInteger skip() {
+  public long skip() {
     return skip;
   }
 
@@ -64,7 +64,7 @@ public final class RequestBlocksMessage {
   }
 
   @JsonProperty("direction")
-  public short directionAsShort() {
-    return direction ? (short) 1 : 0;
+  public int directionAsInt() {
+    return direction ? 1 : 0;
   }
 }

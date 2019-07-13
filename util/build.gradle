@@ -1,3 +1,11 @@
+jar {
+  baseName 'artemis-util'
+  manifest {
+    attributes('Implementation-Title': baseName,
+    'Implementation-Version': project.version)
+  }
+}
+
 dependencies {
   api 'org.bouncycastle:bcprov-jdk15on'
 

@@ -1,3 +1,11 @@
+jar {
+  baseName 'artemis'
+  manifest {
+    attributes('Implementation-Title': baseName,
+    'Implementation-Version': project.version)
+  }
+}
+
 dependencies {
   implementation project(':networking:p2p')
   implementation project(':services:powchain')
@@ -26,7 +34,6 @@ dependencies {
   implementation 'io.vertx:vertx-web'
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.slf4j:slf4j-nop:1.7.25'
-  implementation 'tech.devgao.pantheon.internal:metrics-core'
 
   runtimeOnly 'org.apache.logging.log4j:log4j-core'
 

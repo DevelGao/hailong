@@ -2,9 +2,9 @@
 
 # Create the configuration file for a specific node
 create_config() {
-  local MODE="$1"; local NODE="$2"; local TOTAL="$3"; local TEMPLATE="$4"
+  local NODE="$1"; local TOTAL="$2"; local TEMPLATE="$3"
 
-  # Create the peer list by removing this node's peer url from the peer list
+  # Create the peer list by removing this node's peer url from the peer list 
   local PEERS=$(echo "$PEERS" | sed "s/\"hob+tcp:\/\/abcf@localhost:$((19000 + $NODE))\"//g")
   PEERS="[$(echo $PEERS | tr ' ' ',')]"
 
@@ -14,27 +14,23 @@ create_config() {
   # Set IDENTITY to the one byte hexadecimal representation of the node number
   local IDENTITY; setAsHex $NODE "IDENTITY"
 
-  local BOOTNODES=$(cat ~/.mothra/network/enr.dat)
-
   # Create the configuration file for the node
   cat $TEMPLATE | \
     sed "s/logFile\ =.*/logFile = \"artemis-$NODE.log\"/"             |# Use a unique log file
     sed "s/advertisedPort\ =.*//"                                     |# Remove the advertised port field
     sed "s/identity\ =.*/identity\ =\ \"$IDENTITY\"/"                 |# Update the identity field to the value set above
-    sed "s/bootnodes\ =.*/bootnodes\ =\ \"$BOOTNODES\"/"              |# Update the bootnodes
     sed "s/port\ =.*/port\ =\ $PORT/"                                 |# Update the port field to the value set above
-    awk -v peers="$PEERS" '/port/{print;print "peers = "peers;next}1' |# Update the peer list
+    awk -v peers="$PEERS" '/port/{print;print "peers = "peers;next}1' |# Update the peer list 
     sed "s/numNodes\ =.*/numNodes\ =\ $TOTAL/"                        |# Update the number of nodes to the total number of nodes
     sed "s/networkInterface\ =.*/networkInterface\ =\ \"127.0.0.1\"/" |# Update the network interface to localhost
-    sed "s/networkMode\ =.*/networkMode\ =\ \"$MODE\"/" \
+    sed "s/networkMode\ =.*/networkMode\ =\ \"hobbits\"/" \
     > ../config/runConfig.$NODE.toml
 }
 
 # Unpacks the build tar files, puts them in a special directory for the node,
 # and creates the configuration file for the node.
 configure_node() {
-  local MODE=$1
-  local NODE=$2
+  local NODE=$1
 
   # Unpack the build tar files and move them to the appropriate directory
   # for the node.
@@ -42,23 +38,20 @@ configure_node() {
   mv ./demo/artemis-* ./demo/node_$NODE
 
   # Create symbolic links for the demo
-  ln -sf ../../../config ./demo/node_$NODE/
-  cd demo/node_$NODE && ln -sf ./bin/artemis . && cd ../../
+  ln -s ../../../config ./demo/node_$NODE/
+  cd demo/node_$NODE && ln -s ./bin/artemis . && cd ../../
 
   # Create the configuration file for the node
-  if [ "$4" == "" ]
+  if [ "$3" == "" ] 
   then 
-    create_config $MODE $NODE $3 "../config/config.toml"
+    create_config $NODE $2 "../config/config.toml"
   else
-    create_config $MODE $NODE $3 $4
+    create_config $NODE $2 $3
   fi
 
   # in
   rm -rf demo/node_$NODE/*.json
   cp ../*.json demo/node_$NODE/
-  cp -f ../libs/libmothra-egress.dylib demo/node_$NODE/
-  cp -f ../libs/libmothra-ingress.dylib demo/node_$NODE/
-  cp -rf ../libs/release demo/node_$NODE/
 }
 
 # Create tmux panes in the current window for the next "node group".
@@ -97,7 +90,7 @@ create_tmux_windows() {
   create_tmux_panes $idx
 
   ## Use the vertical layout if the flag is set
-  if [ "$VERTICAL" == true ]
+  if [ $VERTICAL == true ]
   then
     tmux select-layout even-vertical
   else
@@ -106,7 +99,7 @@ create_tmux_windows() {
   fi
 
   # Rename the window to add some spice
-  tmux rename-window 'the dude abides...'
+  tmux rename-window 'wwjdd'
 
   # Loop over the remaining nodes
   while [[ $idx -lt $NODES ]]

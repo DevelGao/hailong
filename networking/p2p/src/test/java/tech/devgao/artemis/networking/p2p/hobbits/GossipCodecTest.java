@@ -15,9 +15,7 @@ package tech.devgao.artemis.networking.p2p.hobbits;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.math.BigInteger;
 import java.util.Date;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.hobbits.Message;
 import org.apache.tuweni.plumtree.MessageSender;
@@ -37,13 +35,13 @@ final class GossipCodecTest {
         GossipCodec.encode(
             MessageSender.Verb.GOSSIP.ordinal(),
             "BLOCK",
-            BigInteger.valueOf(new Date().getTime()),
-            Bytes32.random().toArrayUnsafe(),
-            Bytes32.random().toArrayUnsafe(),
-            block.toBytes().toArrayUnsafe());
+            new Date().getTime(),
+            Bytes32.random(),
+            Bytes32.random(),
+            block.toBytes());
     GossipMessage message = GossipCodec.decode(encoded);
     assertEquals(MessageSender.Verb.GOSSIP.ordinal(), message.method());
-    BeaconBlock read = BeaconBlock.fromBytes(Bytes.wrap(message.body()));
+    BeaconBlock read = BeaconBlock.fromBytes(message.body());
     assertEquals(read.getSignature(), block.getSignature());
   }
 }

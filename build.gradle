@@ -1,7 +1,5 @@
 import net.ltgt.gradle.errorprone.CheckSeverity
 
-import java.text.SimpleDateFormat
-
 plugins {
   id 'com.diffplug.gradle.spotless' version '3.18.0'
   id 'com.jfrog.bintray' version '1.8.4'
@@ -36,6 +34,8 @@ gradle.startParameter.taskNames.each {
 }
 gradle.startParameter.taskNames = expandedTaskList.flatten() as Iterable<String>
 
+def baseVersion = '1.0.0'
+project.version = baseVersion + '-SNAPSHOT'
 def userHome = System.getProperty("user.home")
 allprojects {
   apply plugin: 'java-library'
@@ -240,26 +240,6 @@ subprojects {
     baseName = "${project.name}-support-test"
     from sourceSets.testSupport.output
   }
-  def jarName = project.name
-  def parent = project.parent
-  while (parent != null) {
-    if (parent != rootProject || jarName != 'artemis') {
-      jarName = parent.name + '-' + jarName
-    }
-    parent = parent.parent
-  }
-
-  jar {
-    baseName jarName
-    manifest {
-      attributes(
-          'Specification-Title': jarName,
-          'Specification-Version': project.version,
-          'Implementation-Title': jarName,
-          'Implementation-Version': calculateVersion()
-      )
-    }
-  }
 
   dependencies {
     testImplementation sourceSets.testSupport.output
@@ -345,83 +325,6 @@ distZip {
   }
 }
 
-// rename the top level dir from artemis-<version> to artemis and this makes it really
-// simple for use in docker
-tasks.register("dockerDistUntar") {
-  dependsOn distTar
-  def dockerBuildDir = "build/docker-artemis/"
-  def distTarFile = distTar.outputs.files.singleFile
-  def distTarFileName = distTar.outputs.files.singleFile.name.replace(".tar.gz", "")
-
-  doFirst {
-    new File(dockerBuildDir).mkdir()
-    copy {
-      from tarTree(distTarFile)
-      into(dockerBuildDir)
-    }
-    file("${dockerBuildDir}/${distTarFileName}").renameTo("${dockerBuildDir}/artemis")
-  }
-}
-
-task distDocker(type: Exec) {
-  dependsOn dockerDistUntar
-
-  def dockerBuildVersion = project.hasProperty('release.releaseVersion') ? project.property('release.releaseVersion') : "${rootProject.version}"
-  def image = project.hasProperty('release.releaseVersion') ? "devgaoeng/artemis:" + project.property('release.releaseVersion') : "devgaoeng/artemis:develop"
-  def dockerBuildDir = "build/docker-artemis/"
-  workingDir "${dockerBuildDir}"
-
-  doFirst {
-    copy {
-      from file("${projectDir}/docker/Dockerfile")
-      into(workingDir)
-    }
-  }
-
-  executable "sh"
-  args "-c", "docker build --build-arg BUILD_DATE=${buildTime()} --build-arg VERSION=${dockerBuildVersion} --build-arg VCS_REF=${getCheckedOutGitCommitHash()} -t ${image} ."
-}
-
-// http://label-schema.org/rc1/
-// using the RFC3339 format "2016-04-12T23:20:50.52Z"
-def buildTime() {
-  def df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'")
-  df.setTimeZone(TimeZone.getTimeZone("UTC"))
-  return df.format(new Date())
-}
-
-// Takes the version, and if -SNAPSHOT is part of it replaces SNAPSHOT
-// with the git commit version.
-def calculateVersion() {
-  String version = rootProject.version
-  if (version.endsWith("-SNAPSHOT")) {
-    version = version.replace("-SNAPSHOT", "-dev-" + getCheckedOutGitCommitHash())
-  }
-  return version
-}
-
-def getCheckedOutGitCommitHash() {
-  def gitFolder = "$projectDir/.git/"
-  if (!file(gitFolder).isDirectory()) {
-    // We are in a submodule.  The file's contents are `gitdir: <gitFolder>\n`.
-    // Read the file, cut off the front, and trim the whitespace.
-    gitFolder = file(gitFolder).text.substring(8).trim() + "/"
-  }
-  def takeFromHash = 8
-  /*
-   * '.git/HEAD' contains either
-   *      in case of detached head: the currently checked out commit hash
-   *      otherwise: a reference to a file containing the current commit hash
-   */
-  def head = new File(gitFolder + "HEAD").text.split(":") // .git/HEAD
-  def isCommit = head.length == 1 // e5a7c79edabbf7dd39888442df081b1c9d8e88fd
-
-  if (isCommit) return head[0].trim().take(takeFromHash) // e5a7c79edabb
-
-  def refHead = new File(gitFolder + head[1].trim()) // .git/refs/heads/master
-  refHead.text.trim().take takeFromHash
-}
-
 task jacocoRootReport(type: JacocoReport) {
   additionalSourceDirs.from = files(subprojects.sourceSets.main.allSource.srcDirs)
   sourceDirectories.from = files(subprojects.sourceSets.main.allSource.srcDirs)
@@ -449,43 +352,3 @@ configure(subprojects.findAll {it.name != 'errorprone-checks'}) {
     options.annotationProcessorPath = configurations.annotationProcessor
   }
 }
-
-apply plugin: 'com.jfrog.bintray'
-
-def bintrayUser = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-def bintrayKey = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_KEY')
-
-def bintrayPackage = bintray.pkg {
-  repo = 'devgao-repo'
-  name = 'artemis'
-  userOrg = 'develgao'
-  desc = 'Java Implementation of the Ethereum 2.0 Beacon Chain'
-  licenses = ['Apache-2.0']
-  websiteUrl = 'https://github.com/devgaoEng/artemis'
-  issueTrackerUrl = 'https://github.com/devgaoEng/artemis/issues'
-  vcsUrl = 'https://github.com/devgaoEng/artemis.git'
-
-  version {
-    name = project.version
-    released = new Date()
-  }
-}
-
-bintray {
-  user = bintrayUser
-  key = bintrayKey
-
-  filesSpec {
-    from distTar.destinationDir.path
-    from distZip.destinationDir.path
-    into '.'
-  }
-
-  publish = true
-  override = version.endsWith('SNAPSHOT')
-
-  pkg = bintrayPackage
-}
-
-bintrayUpload.mustRunAfter(distTar)
-bintrayUpload.mustRunAfter(distZip)

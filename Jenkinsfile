@@ -45,7 +45,7 @@ abortPreviousBuilds()
 try {
     node {
         checkout scm
-        docker.image('devgaoeng/pantheon-build:0.0.7-jdk11').inside {
+        docker.image('openjdk:11-jdk-stretch').inside {
             try {
                 stage('Build') {
                     sh './gradlew --no-daemon --parallel build'
@@ -54,28 +54,6 @@ try {
                     sh './gradlew --no-daemon --parallel test'
                     // Disable Artemis Runtime Tests During Upgrade
                     // sh './artemis/src/main/resources/artemisTestScript.sh'
-                }
-                stage('Build Docker Image') {
-                    sh './gradlew --no-daemon --parallel distDocker'
-                }
-                if (env.BRANCH_NAME == "master") {
-                    stage('Push Docker Image') {
-                        docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-devgaoengci') {
-                            docker.image("devgaoeng/artemis:develop").push()
-                        }
-                    }
-
-                    stage('Publish to Bintray') {
-                      withCredentials([
-                        usernamePassword(
-                          credentialsId: 'devgao-bintray',
-                          usernameVariable: 'BINTRAY_USER',
-                          passwordVariable: 'BINTRAY_KEY'
-                        )
-                      ]) {
-                        sh './gradlew --no-daemon --parallel bintrayUpload'
-                      }
-                    }
                 }
             } finally {
                 archiveArtifacts '**/build/reports/**'

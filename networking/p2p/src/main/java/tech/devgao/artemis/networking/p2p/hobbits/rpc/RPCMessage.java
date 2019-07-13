@@ -16,35 +16,33 @@ package tech.devgao.artemis.networking.p2p.hobbits.rpc;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
-import tech.devgao.artemis.util.alogger.ALogger;
 
 /** Representation of a RPC message that was received from a remote peer. */
 public final class RPCMessage {
-  private static final ALogger STDOUT = new ALogger("stdout");
-  private final int method;
-  private final BigInteger id;
+
+  private final long id;
+  private final RPCMethod method;
   private final JsonNode body;
   private final int length;
 
-  public RPCMessage(int method, BigInteger id, JsonNode body, int length) {
-    this.method = method;
+  public RPCMessage(long id, RPCMethod method, JsonNode body, int length) {
     this.id = id;
+    this.method = method;
     this.body = body;
     this.length = length;
   }
 
-  /** @return the method used by the RPC call. */
-  public int method() {
-    return method;
+  /** @return the request identifier */
+  public long id() {
+    return id;
   }
 
-  /** @return the request identifier */
-  public BigInteger id() {
-    return id;
+  /** @return the method used by the RPC call. */
+  public RPCMethod method() {
+    return method;
   }
 
   /**
@@ -63,53 +61,12 @@ public final class RPCMessage {
     }
   }
 
-  /**
-   * Reads the body of the message into a List
-   *
-   * @param T the type of the body to unmarshall
-   * @param <T> the type of the body to unmarshall
-   * @return the body, unmarshalled.
-   * @throws UncheckedIOException if the body cannot be successfully unmarshalled
-   */
-  @SuppressWarnings("unchecked")
-  public <T> List<T> bodyAsList(Class<T> T) {
-    try {
-      return (List<T>) RPCCodec.mapper.treeToValue(body, T);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  /**
-   * Reads the body of the message into Bytes
-   *
-   * @return the body, unmarshalled.
-   * @throws UncheckedIOException if the body cannot be successfully unmarshalled
-   */
-  public Bytes bodyAsBytes() {
-    try {
-      return Bytes.wrap(body.binaryValue());
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  /**
-   * Reads the body of the message into List<Bytes>
-   *
-   * @return the body, unmarshalled.
-   * @throws UncheckedIOException if the body cannot be successfully unmarshalled
-   */
-  public List<Bytes> bodyAsBytesList() {
+  public List<Bytes> bodyAsList() {
     List<Bytes> newList = new ArrayList<>();
-    try {
-      if (body.isArray()) {
-        for (final JsonNode objNode : body) {
-          newList.add(Bytes.wrap(objNode.binaryValue()));
-        }
+    if (body.isArray()) {
+      for (final JsonNode objNode : body) {
+        newList.add(Bytes.fromHexString(objNode.textValue()));
       }
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
     }
     return newList;
   }

@@ -30,7 +30,7 @@ import tech.devgao.artemis.data.provider.JSONProvider;
 import tech.devgao.artemis.data.provider.ProviderTypes;
 import tech.devgao.artemis.data.provider.RawRecordHandler;
 import tech.devgao.artemis.datastructures.Constants;
-import tech.devgao.artemis.metrics.MetricsEndpoint;
+import tech.devgao.artemis.metrics.PrometheusEndpoint;
 import tech.devgao.artemis.service.serviceutils.ServiceConfig;
 import tech.devgao.artemis.service.serviceutils.ServiceController;
 import tech.devgao.artemis.services.beaconchain.BeaconChainService;
@@ -57,7 +57,6 @@ public class BeaconNode {
   private EventBus eventBus;
   private FileProvider fileProvider;
   private EventHandler eventHandler;
-  private MetricsEndpoint metricsEndpoint;
 
   private CommandLineArguments cliArgs;
   private CommandLine commandLine;
@@ -72,12 +71,14 @@ public class BeaconNode {
 
     this.eventBus = new AsyncEventBus(threadPool);
 
-    metricsEndpoint = new MetricsEndpoint(config, vertx);
-    this.serviceConfig =
-        new ServiceConfig(eventBus, vertx, metricsEndpoint.getMetricsSystem(), config, cliArgs);
+    this.serviceConfig = new ServiceConfig(eventBus, vertx, config, cliArgs);
     Constants.init(config);
     this.cliArgs = cliArgs;
     this.commandLine = commandLine;
+    if (config.isMetricsEnabled()) {
+      PrometheusEndpoint.registerEndpoint(
+          vertx, config.getMetricsNetworkInterface(), config.getMetricsPort());
+    }
 
     // register a raw record handler that will transform objects to events
     new RawRecordHandler(this.eventBus);
@@ -109,7 +110,7 @@ public class BeaconNode {
   public void start() {
 
     try {
-      metricsEndpoint.start();
+
       // Initialize services
       serviceController.initAll(
           eventBus,
@@ -127,7 +128,6 @@ public class BeaconNode {
 
   public void stop() {
     serviceController.stopAll(cliArgs);
-    metricsEndpoint.stop();
     this.fileProvider.close();
   }
 }

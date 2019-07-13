@@ -15,29 +15,27 @@ package tech.devgao.artemis.networking.p2p.hobbits.rpc;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.math.BigInteger;
 
 /** Payload of status message */
 public final class GetStatusMessage {
 
-  private final byte[] userAgent;
-  private final BigInteger timestamp;
+  private final String userAgent;
+  private final long timestamp;
 
   @JsonCreator
   public GetStatusMessage(
-      @JsonProperty("user_agent") byte[] userAgent,
-      @JsonProperty("timestamp") BigInteger timestamp) {
+      @JsonProperty("user_agent") String userAgent, @JsonProperty("timestamp") long timestamp) {
     this.userAgent = userAgent;
     this.timestamp = timestamp;
   }
 
   @JsonProperty("user_agent")
-  public byte[] userAgent() {
+  public String userAgent() {
     return userAgent;
   }
 
   @JsonProperty("timestamp")
-  public BigInteger timestamp() {
+  public long timestamp() {
     return timestamp;
   }
 }

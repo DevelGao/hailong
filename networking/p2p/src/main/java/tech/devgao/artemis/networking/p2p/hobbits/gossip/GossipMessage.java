@@ -13,32 +13,33 @@
 
 package tech.devgao.artemis.networking.p2p.hobbits.gossip;
 
-import java.math.BigInteger;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 
 /** Representation of a Gossip message that was received from a remote peer. */
 public final class GossipMessage {
 
   private final int method;
   private final String topic;
-  private final BigInteger timestamp;
-  private final byte[] messageHash;
-  private final byte[] hash;
-  private final byte[] body;
+  private final long timestamp;
+  private final Bytes32 messageHash;
+  private final Bytes32 hashSignature;
+  private final Bytes body;
   private final int length;
 
   public GossipMessage(
       int method,
       String topic,
-      BigInteger timestamp,
-      byte[] messageHash,
-      byte[] hash,
-      byte[] body,
+      long timestamp,
+      Bytes32 messageHash,
+      Bytes32 hashSignature,
+      Bytes body,
       int length) {
     this.method = method;
     this.topic = topic;
     this.timestamp = timestamp;
     this.messageHash = messageHash;
-    this.hash = hash;
+    this.hashSignature = hashSignature;
     this.body = body;
     this.length = length;
   }
@@ -54,22 +55,22 @@ public final class GossipMessage {
   }
 
   /** @return the Gossip topic. */
-  public BigInteger getTimestamp() {
+  public long getTimestamp() {
     return timestamp;
   }
 
   /** @return the messageHash used by the Gossip call. */
-  public byte[] messageHash() {
+  public Bytes32 messageHash() {
     return messageHash;
   }
 
   /** @return the hashSignature used by the Gossip call. */
-  public byte[] hash() {
-    return hash;
+  public Bytes32 hashSignature() {
+    return hashSignature;
   }
 
   /** @return the body of the message if present */
-  public byte[] body() {
+  public Bytes body() {
     return body;
   }
 

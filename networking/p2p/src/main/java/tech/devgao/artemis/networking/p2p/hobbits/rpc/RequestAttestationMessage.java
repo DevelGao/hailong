@@ -15,18 +15,19 @@ package tech.devgao.artemis.networking.p2p.hobbits.rpc;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.tuweni.bytes.Bytes32;
 
 public final class RequestAttestationMessage {
 
-  private final byte[] hash;
+  private final Bytes32 attestationHash;
 
   @JsonCreator
-  public RequestAttestationMessage(@JsonProperty("hash") byte[] hash) {
-    this.hash = hash;
+  public RequestAttestationMessage(@JsonProperty("attestationHash") Bytes32 attestationHash) {
+    this.attestationHash = attestationHash;
   }
 
-  @JsonProperty("hash")
-  public byte[] hash() {
-    return hash;
+  @JsonProperty("attestationHash")
+  public Bytes32 attestationHash() {
+    return attestationHash;
   }
 }

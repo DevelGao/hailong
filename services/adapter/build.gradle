@@ -1,3 +1,11 @@
+jar {
+    baseName 'artemis-services-adapter'
+    manifest {
+        attributes('Implementation-Title': baseName,
+                'Implementation-Version': project.version)
+    }
+}
+
 dependencies {
 
     implementation project(':services:serviceutils')
