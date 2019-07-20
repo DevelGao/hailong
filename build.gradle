@@ -86,8 +86,8 @@ allprojects {
         include '**/*.java'
         exclude '**/.gradle/**'
         exclude 'web3j'
-        //Excluding tech.devgao.artemis.datastructures due to preferred formatting overwritten by plugin in getConstantsAsString.
-        exclude '**/src/main/java/tech/devgao/artemis/Constants.java'
+        //Excluding tech.devgao.hailong.datastructures due to preferred formatting overwritten by plugin in getConstantsAsString.
+        exclude '**/src/main/java/tech/devgao/hailong/Constants.java'
         exclude '**/proto'
       }
       
@@ -133,7 +133,7 @@ allprojects {
    * The properties passed are:
    * - 'test.ethereum.include': allows to run a single Ethereum reference tests. For instance,
    *   running a single general state test can be done with:
-   *    ./gradlew :ethereum:tech.devgao.artemis.ethereum.vm:test -Dtest.single=GeneralStateTest -Dtest.ethereum.include=callcodecallcallcode_101-Frontier
+   *    ./gradlew :ethereum:tech.devgao.hailong.ethereum.vm:test -Dtest.single=GeneralStateTest -Dtest.ethereum.include=callcodecallcallcode_101-Frontier
    *   The meaning being that will be run only the tests for which the value passed as "include"
    *   (which can be a java pattern) matches parts of the test name. Knowing that tests names for
    *   reference tests are of the form:
@@ -144,7 +144,7 @@ allprojects {
    *   multiple variant of that test are run. The variant is a simple number.
    * - 'test.ethereum.state.eip': for general state tests, allows to only run tests for the
    *   milestone specified by this value. So for instance,
-   *    ./gradlew :ethereum:tech.devgao.artemis.ethereum.vm:test -Dtest.single=GeneralStateTest -Dtest.ethereum.state.eip=Frontier
+   *    ./gradlew :ethereum:tech.devgao.hailong.ethereum.vm:test -Dtest.single=GeneralStateTest -Dtest.ethereum.state.eip=Frontier
    *   only run general state tests for Frontier. Note that this behavior could be achieved as well
    *   with the 'include' option above since it is a pattern, but this is a slightly more convenient
    *   option.
@@ -243,7 +243,7 @@ subprojects {
   def jarName = project.name
   def parent = project.parent
   while (parent != null) {
-    if (parent != rootProject || jarName != 'artemis') {
+    if (parent != rootProject || jarName != 'hailong') {
       jarName = parent.name + '-' + jarName
     }
     parent = parent.parent
@@ -275,7 +275,7 @@ subprojects {
 
   task integrationTest(type: Test, dependsOn:["compileTestJava"]){
     group = "verification"
-    description = "Runs the Artemis integration tests"
+    description = "Runs the Hailong integration tests"
 
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
@@ -286,10 +286,10 @@ subprojects {
 jar { enabled = false }
 
 apply plugin: 'application'
-mainClassName = "tech.devgao.artemis.Artemis"
+mainClassName = "tech.devgao.hailong.Hailong"
 applicationDefaultJvmArgs = [
   "-Dvertx.disableFileCPResolving=true",
-  "-Dartemis.home=ARTEMIS_HOME",
+  "-Dhailong.home=HAILONG_HOME",
   // We shutdown log4j ourselves, as otherwise his shutdown hook runs before our own and whatever
   // happens during shutdown is not logged.
   "-Dlog4j.shutdownHookEnabled=false"
@@ -299,28 +299,28 @@ run {
   if(project.hasProperty('generateFlow')){
     def flowJVMArgs = [
       "-javaagent:${userHome}/.flow/resources/javaagent.jar",
-      "-Dflow.agent.include=tech.devgao.artemis,tech.devgao.artemis.services.beaconchain,tech.devgao.artemis.statetransition,tech.devgao.artemis.statetransition.util",
-      "-Dflow.agent.exclude=tech.devgao.artemis.datastructures.state,tech.devgao.artemis.datastructures.blocks,tech.devgao.artemis.datastructures.operations,tech.devgao.artemis.datastructures.util.bitwise,tech.devgao.artemis.util.hashtree,tech.devgao.artemis.util.alogger,tech.devgao.artemis.storage,tech.devgao.artemis.util.bls,tech.devgao.artemis.util.mikuli,tech.devgao.artemis.networking.p2p,tech.devgao.artemis.validator.coordinator",
+      "-Dflow.agent.include=tech.devgao.hailong,tech.devgao.hailong.services.beaconchain,tech.devgao.hailong.statetransition,tech.devgao.hailong.statetransition.util",
+      "-Dflow.agent.exclude=tech.devgao.hailong.datastructures.state,tech.devgao.hailong.datastructures.blocks,tech.devgao.hailong.datastructures.operations,tech.devgao.hailong.datastructures.util.bitwise,tech.devgao.hailong.util.hashtree,tech.devgao.hailong.util.alogger,tech.devgao.hailong.storage,tech.devgao.hailong.util.bls,tech.devgao.hailong.util.mikuli,tech.devgao.hailong.networking.p2p,tech.devgao.hailong.validator.coordinator",
       "-Dflow.agent.autostart",
-      "-Dflow.agent.execution-name=artemis"
+      "-Dflow.agent.execution-name=hailong"
       ]
    applicationDefaultJvmArgs.addAll(flowJVMArgs)
   }
-  args project.hasProperty("artemis.run.args") ? project.property("artemis.run.args").toString().split("\\s+") : []
+  args project.hasProperty("hailong.run.args") ? project.property("hailong.run.args").toString().split("\\s+") : []
   doFirst {
-    applicationDefaultJvmArgs = applicationDefaultJvmArgs.collect{it.replace('ARTEMIS_HOME', "$buildDir/artemis")}
+    applicationDefaultJvmArgs = applicationDefaultJvmArgs.collect{it.replace('HAILONG_HOME', "$buildDir/hailong")}
   }
 }
 
 startScripts {
   doLast {
-    unixScript.text = unixScript.text.replace('ARTEMIS_HOME', '\$APP_HOME')
-    windowsScript.text = windowsScript.text.replace('ARTEMIS_HOME', '%~dp0..')
+    unixScript.text = unixScript.text.replace('HAILONG_HOME', '\$APP_HOME')
+    windowsScript.text = windowsScript.text.replace('HAILONG_HOME', '%~dp0..')
   }
 }
 
 dependencies {
-  compile project(':artemis')
+  compile project(':hailong')
   errorprone 'com.google.errorprone:error_prone_core'
 }
 
@@ -345,11 +345,11 @@ distZip {
   }
 }
 
-// rename the top level dir from artemis-<version> to artemis and this makes it really
+// rename the top level dir from hailong-<version> to hailong and this makes it really
 // simple for use in docker
 tasks.register("dockerDistUntar") {
   dependsOn distTar
-  def dockerBuildDir = "build/docker-artemis/"
+  def dockerBuildDir = "build/docker-hailong/"
   def distTarFile = distTar.outputs.files.singleFile
   def distTarFileName = distTar.outputs.files.singleFile.name.replace(".tar.gz", "")
 
@@ -359,7 +359,7 @@ tasks.register("dockerDistUntar") {
       from tarTree(distTarFile)
       into(dockerBuildDir)
     }
-    file("${dockerBuildDir}/${distTarFileName}").renameTo("${dockerBuildDir}/artemis")
+    file("${dockerBuildDir}/${distTarFileName}").renameTo("${dockerBuildDir}/hailong")
   }
 }
 
@@ -367,8 +367,8 @@ task distDocker(type: Exec) {
   dependsOn dockerDistUntar
 
   def dockerBuildVersion = project.hasProperty('release.releaseVersion') ? project.property('release.releaseVersion') : "${rootProject.version}"
-  def image = project.hasProperty('release.releaseVersion') ? "devgaoeng/artemis:" + project.property('release.releaseVersion') : "devgaoeng/artemis:develop"
-  def dockerBuildDir = "build/docker-artemis/"
+  def image = project.hasProperty('release.releaseVersion') ? "devgaoeng/hailong:" + project.property('release.releaseVersion') : "devgaoeng/hailong:develop"
+  def dockerBuildDir = "build/docker-hailong/"
   workingDir "${dockerBuildDir}"
 
   doFirst {
@@ -457,13 +457,13 @@ def bintrayKey = project.hasProperty('bintrayApiKey') ? project.property('bintra
 
 def bintrayPackage = bintray.pkg {
   repo = 'devgao-repo'
-  name = 'artemis'
+  name = 'hailong'
   userOrg = 'develgao'
   desc = 'Java Implementation of the Ethereum 2.0 Beacon Chain'
   licenses = ['Apache-2.0']
-  websiteUrl = 'https://github.com/devgaoEng/artemis'
-  issueTrackerUrl = 'https://github.com/devgaoEng/artemis/issues'
-  vcsUrl = 'https://github.com/devgaoEng/artemis.git'
+  websiteUrl = 'https://github.com/devgaoEng/hailong'
+  issueTrackerUrl = 'https://github.com/devgaoEng/hailong/issues'
+  vcsUrl = 'https://github.com/devgaoEng/hailong.git'
 
   version {
     name = project.version

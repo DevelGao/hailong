@@ -1,0 +1,39 @@
+dependencies {
+  implementation project(':networking:p2p')
+  implementation project(':services:powchain')
+  implementation project(':services:beaconchain')
+  implementation project(':services:chainstorage')
+  implementation project(':services:serviceutils')
+  implementation project(':util')
+  implementation project(':data')
+  implementation project(':data:adapter')
+  implementation project(':data:metrics')
+  implementation project(':data:provider')
+  implementation project(':ethereum:datastructures')
+  implementation project(':validator:coordinator')
+  implementation project(':validator:client')
+
+  
+  api 'com.google.guava:guava:27.0.1-jre'
+  implementation 'org.apache.tuweni:tuweni-crypto'
+  implementation 'org.apache.tuweni:tuweni-plumtree'
+  implementation 'org.apache.tuweni:tuweni-ssz'
+  implementation 'org.apache.tuweni:tuweni-toml'
+  implementation 'org.apache.tuweni:tuweni-units'
+  implementation 'info.picocli:picocli'
+  implementation 'com.google.guava:guava'
+  implementation 'io.vertx:vertx-core'
+  implementation 'io.vertx:vertx-web'
+  implementation 'org.apache.logging.log4j:log4j-api'
+  implementation 'org.slf4j:slf4j-nop:1.7.25'
+  implementation 'tech.devgao.pantheon.internal:metrics-core'
+
+  runtimeOnly 'org.apache.logging.log4j:log4j-core'
+
+  testImplementation 'com.squareup.okhttp3:okhttp'
+  testImplementation 'org.awaitility:awaitility'
+
+  test {
+    testLogging.showStandardStreams = true
+  }
+}

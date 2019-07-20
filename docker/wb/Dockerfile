@@ -11,17 +11,17 @@ RUN add-apt-repository ppa:openjdk-r/ppa && \
     apt-get install -y openjdk-11-jdk && \
     rm -rf /var/lib/apt/lists/* 
 
-# get artemis
-RUN git clone --recursive https://github.com/devgaoEng/artemis.git
-WORKDIR artemis/
+# get hailong
+RUN git clone --recursive https://github.com/devgaoEng/hailong.git
+WORKDIR hailong/
 RUN ./gradlew build -x test
-WORKDIR /artemis/build/distributions
-RUN tar -xzf artemis-1.0.0-SNAPSHOT.tar.gz
-RUN ln -s /artemis/build/distributions/artemis-*-SNAPSHOT/bin/artemis /usr/bin/artemis
+WORKDIR /hailong/build/distributions
+RUN tar -xzf hailong-1.0.0-SNAPSHOT.tar.gz
+RUN ln -s /hailong/build/distributions/hailong-*-SNAPSHOT/bin/hailong /usr/bin/hailong
 WORKDIR /usr/local/bin
-RUN wget https://github.com/Whiteblock/artemis_log_EATER/releases/download/v1.5.10/artemis-log-parser && chmod +x /usr/local/bin/artemis-log-parser
+RUN wget https://github.com/Whiteblock/hailong_log_EATER/releases/download/v1.5.10/hailong-log-parser && chmod +x /usr/local/bin/hailong-log-parser
 
 WORKDIR /
-#ENV PATH="/artemis/build/distributions/artemis-1.0.0-SNAPSHOT/bin:${PATH}"
+#ENV PATH="/hailong/build/distributions/hailong-1.0.0-SNAPSHOT/bin:${PATH}"
 
 ENTRYPOINT ["/bin/bash"]

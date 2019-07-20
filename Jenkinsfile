@@ -52,8 +52,8 @@ try {
                 }
                 stage('Test') {
                     sh './gradlew --no-daemon --parallel test'
-                    // Disable Artemis Runtime Tests During Upgrade
-                    // sh './artemis/src/main/resources/artemisTestScript.sh'
+                    // Disable Hailong Runtime Tests During Upgrade
+                    // sh './hailong/src/main/resources/hailongTestScript.sh'
                 }
                 stage('Build Docker Image') {
                     sh './gradlew --no-daemon --parallel distDocker'
@@ -61,7 +61,7 @@ try {
                 if (env.BRANCH_NAME == "master") {
                     stage('Push Docker Image') {
                         docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-devgaoengci') {
-                            docker.image("devgaoeng/artemis:develop").push()
+                            docker.image("devgaoeng/hailong:develop").push()
                         }
                     }
 

@@ -1,17 +1,17 @@
-# Running Artemis
+# Running Hailong
 
-You can build and run Artemis with default options via:
+You can build and run Hailong with default options via:
 
 ```
 ./gradlew run
 ```
 
-By default this stores all persistent data in `build/artemis`.
+By default this stores all persistent data in `build/hailong`.
 
-If you want to set custom CLI arguments for the Artemis execution, you can use the property `artemis.run.args` like e.g.:
+If you want to set custom CLI arguments for the Hailong execution, you can use the property `hailong.run.args` like e.g.:
 
 ```sh
-./gradlew run -Partemis.run.args="--discovery=false --home=/tmp/artemistmp"
+./gradlew run -Phailong.run.args="--discovery=false --home=/tmp/hailongtmp"
 ```
 
-which will pass `--discovery=false` and `--home=/tmp/artemistmp` to the invocation.
+which will pass `--discovery=false` and `--home=/tmp/hailongtmp` to the invocation.

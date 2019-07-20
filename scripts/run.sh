@@ -3,7 +3,7 @@
 # **** Usage **** #
 
 usage() {
-  echo "Runs a simulation of artemis with NODES nodes, where NODES > 0 and NODES < 256"
+  echo "Runs a simulation of hailong with NODES nodes, where NODES > 0 and NODES < 256"
   echo "Usage: sh run.sh {--numNodes=NODES|-n=NODES} [--networkMode=hobbits|mothra|-m=hobbits|mothra] [--inputFile=INPUT|-i=INPUT]"
   echo "                 [--help|-h]"
   echo "If input files are specifed for specific nodes, those input files will be used to"

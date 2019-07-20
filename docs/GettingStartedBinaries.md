@@ -1,15 +1,15 @@
-# Getting Started with Artemis
+# Getting Started with Hailong
 
-After you download and unpackage Artemis:
-1. At the command line, change into the `artemis-<release>` directory. 
+After you download and unpackage Hailong:
+1. At the command line, change into the `hailong-<release>` directory. 
 
 2. To display the command line help:
     ```json
-    ./bin/artemis --help
+    ./bin/hailong --help
    ```
 
-A [basic quickstart](https://github.com/devgaoEng/artemis/wiki/Quickstart) and other options for [starting Artemis](https://github.com/devgaoEng/artemis/wiki/Starting-Artemis) are included in the documentation. 
+A [basic quickstart](https://github.com/devgaoEng/hailong/wiki/Quickstart) and other options for [starting Hailong](https://github.com/devgaoEng/hailong/wiki/Starting-Hailong) are included in the documentation. 
 
-The documentation is included in this release package and on the [Artemis Wiki](https://github.com/devgaoEng/artemis/wiki). 
+The documentation is included in this release package and on the [Hailong Wiki](https://github.com/devgaoEng/hailong/wiki). 
 
->**Note** Starting Artemis by double-clicking the `artemis` or `artemis.bat` executables starts a node synchronizing with the Ethereum mainnet. 
+>**Note** Starting Hailong by double-clicking the `hailong` or `hailong.bat` executables starts a node synchronizing with the Ethereum mainnet. 

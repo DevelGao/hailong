@@ -6,6 +6,6 @@ else
     TAGNAME=$1
 fi
 
-docker build docker/wb --no-cache --rm -t devgaoeng/artemis:$TAGNAME
-docker push devgaoeng/artemis:$TAGNAME
+docker build docker/wb --no-cache --rm -t devgaoeng/hailong:$TAGNAME
+docker push devgaoeng/hailong:$TAGNAME
 

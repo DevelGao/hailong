@@ -33,8 +33,8 @@ nodeUrl = "http://localhost:7545"
 
 [output]
 logPath = "."
-logFile = "artemis.log"
-outputFile = "artemis.json"
+logFile = "hailong.log"
+outputFile = "hailong.json"
 providerType = "JSON"
 events = [ "TimeSeriesRecord", "Eth2Genesis", "Deposit" ]
 formatted = false

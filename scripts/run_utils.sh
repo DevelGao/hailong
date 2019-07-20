@@ -18,7 +18,7 @@ create_config() {
 
   # Create the configuration file for the node
   cat $TEMPLATE | \
-    sed "s/logFile\ =.*/logFile = \"artemis-$NODE.log\"/"             |# Use a unique log file
+    sed "s/logFile\ =.*/logFile = \"hailong-$NODE.log\"/"             |# Use a unique log file
     sed "s/advertisedPort\ =.*//"                                     |# Remove the advertised port field
     sed "s/identity\ =.*/identity\ =\ \"$IDENTITY\"/"                 |# Update the identity field to the value set above
     sed "s/bootnodes\ =.*/bootnodes\ =\ \"$BOOTNODES\"/"              |# Update the bootnodes
@@ -38,12 +38,12 @@ configure_node() {
 
   # Unpack the build tar files and move them to the appropriate directory
   # for the node.
-  tar -zxf ../build/distributions/artemis-*.tar.gz -C ./demo/
-  mv ./demo/artemis-* ./demo/node_$NODE
+  tar -zxf ../build/distributions/hailong-*.tar.gz -C ./demo/
+  mv ./demo/hailong-* ./demo/node_$NODE
 
   # Create symbolic links for the demo
   ln -sf ../../../config ./demo/node_$NODE/
-  cd demo/node_$NODE && ln -sf ./bin/artemis . && cd ../../
+  cd demo/node_$NODE && ln -sf ./bin/hailong . && cd ../../
 
   # Create the configuration file for the node
   if [ "$4" == "" ]
@@ -75,7 +75,7 @@ create_tmux_panes() {
   while [[ $idx -lt $NODES && $idx -lt $end ]]
   do
     # Split the window vertically and start the next node in the new vertical split
-    tmux split-window -v "cd node_$idx && ./artemis --config=./config/runConfig.$idx.toml --logging=INFO"
+    tmux split-window -v "cd node_$idx && ./hailong --config=./config/runConfig.$idx.toml --logging=INFO"
     idx=$(($idx + 1))
   done
 }
@@ -88,8 +88,8 @@ create_tmux_windows() {
 
   cd demo/
 
-  # Create a new tmux session and start it with the first artemis node
-  tmux new-session -d -s foo 'cd node_0 && ./artemis --config=./config/runConfig.0.toml --logging=INFO'
+  # Create a new tmux session and start it with the first hailong node
+  tmux new-session -d -s foo 'cd node_0 && ./hailong --config=./config/runConfig.0.toml --logging=INFO'
 
   # Start the index at 1 because the first node has already been created
   idx=1
@@ -112,7 +112,7 @@ create_tmux_windows() {
   while [[ $idx -lt $NODES ]]
   do
     # Start a new tmux window with the next node. Give it a name to add some more spice
-    tmux new-window -n 'the dude abides again...' "cd node_$idx && ./artemis --config=./config/runConfig.$idx.toml --logging=INFO"
+    tmux new-window -n 'the dude abides again...' "cd node_$idx && ./hailong --config=./config/runConfig.$idx.toml --logging=INFO"
     idx=$(($idx + 1))
     # Create new tmux panes for the new 4 nodes, or as many as possible if there are less than 4
     create_tmux_panes $idx

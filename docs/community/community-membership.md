@@ -8,7 +8,7 @@ this project.
 | Role | Responsibilities | Defined by |
 | -----| ---------------- | ---------- |
 | Everyone | none | anybody with a belly button
-| Member | everyone who contributes - code or otherwise | Artemis GitHub org member
+| Member | everyone who contributes - code or otherwise | Hailong GitHub org member
 | Approver | approve accepting contributions | write permissions on master
 | Project Manager | management of the project | devgao
 | Project Sponsor | contribute developer resources | devgao
@@ -45,9 +45,9 @@ issues and PRs assigned to them.
     - Authoring or reviewing PRs on GitHub
     - Filing or commenting on issues on GitHub
     - Contributing to community discussions (e.g. meetings, Slack, email discussion forums, Stack Overflow)
-- Subscribed to [artemis-dev@devgao.tech]
-- Joined [Artemis Gitter]
-- Browsed [Artemis Wiki]
+- Subscribed to [hailong-dev@devgao.tech]
+- Joined [Hailong Gitter]
+- Browsed [Hailong Wiki]
 - Have read the [contributor guide]
 - Signed ICLA, as described in [CLA.md]
 
@@ -168,6 +168,6 @@ This document is adapted from the following sources:
 [contributor guide]: /CONTRIBUTING.md
 [New contributors]: /CONTRIBUTING.md
 [two-factor authentication]: https://help.github.com/articles/about-two-factor-authentication
-[artemis-dev@devgao.tech]: mailto:artemis-dev@devgao.tech
-[Artemis Gitter]: https://gitter.im/devgaoEng/artemis
-[Artemis Wiki]: https://github.com/devgaoEng/artemis/wiki
+[hailong-dev@devgao.tech]: mailto:hailong-dev@devgao.tech
+[Hailong Gitter]: https://gitter.im/devgaoEng/hailong
+[Hailong Wiki]: https://github.com/devgaoEng/hailong/wiki

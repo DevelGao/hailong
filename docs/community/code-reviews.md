@@ -15,7 +15,7 @@ and say so in a reply to the PR. Only the primary approver of a change should
 actually do the merge, except in rare cases (e.g. they are unavailable in a
 reasonable timeframe).
 
-If a PR has gone 2 work days without an approver emerging, please ask on [Artemis Gitter]
+If a PR has gone 2 work days without an approver emerging, please ask on [Hailong Gitter]
 
 ## Attribution
 
@@ -23,4 +23,4 @@ This Document was adapted by the following:
 - Kubernetes collab.md, available at [kub collab]  
 
 [kub collab]: https://raw.githubusercontent.com/kubernetes/community/master/contributors/devel/collab.md
-[Artemis Gitter]: https://gitter.im/devgaoEng/artemis
+[Hailong Gitter]: https://gitter.im/devgaoEng/hailong

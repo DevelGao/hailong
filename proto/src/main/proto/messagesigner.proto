@@ -14,7 +14,7 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "tech.devgao.artemis.proto.messagesigner";
+option java_package = "tech.devgao.hailong.proto.messagesigner";
 option java_outer_classname = "MessageSignerProto";
 option objc_class_prefix = "HLW";
 

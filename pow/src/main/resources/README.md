@@ -1,5 +1,5 @@
 ##Proof of Work Chain Environmental Setup
-1. `cd` to the artemis root directory
+1. `cd` to the hailong root directory
 2. `git submodule update --init --recursive`
 3. `cd ganache-cli`
 4. `npm install`
@@ -33,4 +33,4 @@ Generate the binary
 
 Auto-generate the DepositContract class
 
-`web3j solidity generate -b DepositContract.bin -a DepositContract.abi -o [PATH_TO_ARTEMIS_ROOT]/pow/src/main/java -p tech.devgao.artemis.pow.contract`
+`web3j solidity generate -b DepositContract.bin -a DepositContract.abi -o [PATH_TO_HAILONG_ROOT]/pow/src/main/java -p tech.devgao.hailong.pow.contract`

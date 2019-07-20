@@ -1,8 +1,8 @@
-# artemis
+# hailong
 
- [![Build Status](https://jenkins.devgao.tech/job/Artemis/job/master/badge/icon)](https://jenkins.devgao.tech/job/Artemis/job/master/)
- [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/DevgaoEng/artemis/blob/master/LICENSE)
- [![Gitter chat](https://badges.gitter.im/devgaoEng/artemis.png)](https://gitter.im/devgaoEng/artemis)
+ [![Build Status](https://jenkins.devgao.tech/job/Hailong/job/master/badge/icon)](https://jenkins.devgao.tech/job/Hailong/job/master/)
+ [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/DevgaoEng/hailong/blob/master/LICENSE)
+ [![Gitter chat](https://badges.gitter.im/devgaoEng/hailong.png)](https://gitter.im/devgaoEng/hailong)
 
 Implementation of the Ethereum 2.0 Beacon Chain.
 
@@ -13,8 +13,8 @@ Based on the (evolving) [specification](https://github.com/ethereum/eth2.0-specs
 To build, clone this repo and run with `gradle` like so:
 
 ```
-$ git clone --recursive https://github.com/devgaoEng/artemis.git
-$ cd artemis
+$ git clone --recursive https://github.com/devgaoEng/hailong.git
+$ cd hailong
 $ ./gradlew
 ```
 
@@ -64,7 +64,7 @@ To view the run menu:
 ```
 $ ./gradlew run --args='-h'
 
-Usage: Artemis [-hV] [-c=<FILENAME>] [-l=<LOG VERBOSITY LEVEL>]
+Usage: Hailong [-hV] [-c=<FILENAME>] [-l=<LOG VERBOSITY LEVEL>]
 -c, --config=<FILENAME>   Path/filename of the config file
 -h, --help                Show this help message and exit.
 -l, --logging=<LOG VERBOSITY LEVEL>
@@ -84,7 +84,7 @@ Refer to `config/config.toml` for a set of default configuration settings.
 To run and send formatted output to a json file:
 ```
 [output]
-outputFile = "artemis.json"
+outputFile = "hailong.json"
 providerType = "JSON"
 ```
 
@@ -96,7 +96,7 @@ $ ./gradlew run
 To run and send formatted output to a csv file:
 ```
 [output]
-outputFile = "artemis.csv"
+outputFile = "hailong.csv"
 providerType = "CSV"
 ```
 
@@ -111,12 +111,12 @@ To run with loggin level set to DEBUG
 $ ./gradlew run --args='-l=DEBUG'
 ```
 
-To profile and/or generate flow diagrams for Artemis: 
+To profile and/or generate flow diagrams for Hailong: 
 
 Setup:
 
 ```bash
-$ source artemis.env 
+$ source hailong.env 
 ```
 
 Run:

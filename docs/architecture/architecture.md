@@ -27,7 +27,7 @@ The beacon chain’s proposed architecture can be described using terminology si
 
 Our Beacon Chain repo:
 
-https://github.com/devgaoEng/artemis
+https://github.com/devgaoEng/hailong
 
 Ethereum 2.0 spec repo: 
 

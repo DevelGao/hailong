@@ -2,17 +2,17 @@
 ## Checkout source code
 
 ```
-git clone --recursive git@github.com:DevgaoEng/Artemis.git
+git clone --recursive git@github.com:DevgaoEng/Hailong.git
 ```
 OR
 ```
-git clone --recursive https://github.com/DevgaoEng/artemis
+git clone --recursive https://github.com/DevgaoEng/hailong
 ```
 
 ## See what tasks are available
 To see all of the gradle tasks that are available:
 ```
-cd artemis
+cd hailong
 ./gradlew tasks  
 ```
 
@@ -20,7 +20,7 @@ cd artemis
 ## Build from source
 After you have checked out the code, this will build the distribution binaries.
 ```
-cd artemis
+cd hailong
 ./gradlew build  
 ```
 

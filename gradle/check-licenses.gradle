@@ -132,10 +132,10 @@ downloadLicenses {
   ]
 
   licenses = [
-      (group('artemis'))            : apache,
-      (group('artemis.ethereum'))   : apache,
-      (group('artemis.services'))   : apache,
-      (group('artemis.consensus'))  : apache,
+      (group('hailong'))            : apache,
+      (group('hailong.ethereum'))   : apache,
+      (group('hailong.services'))   : apache,
+      (group('hailong.consensus'))  : apache,
 
       // https://checkerframework.org/manual/#license
       // The more permissive MIT License applies to code that you might want
