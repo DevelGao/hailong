@@ -14,6 +14,7 @@
 package tech.devgao.hailong.metrics;
 
 import static java.util.stream.Collectors.toSet;
+import static tech.devgao.hailong.util.async.SafeFuture.reportExceptions;
 
 import com.google.common.collect.ImmutableMap;
 import io.vertx.core.Vertx;
@@ -22,13 +23,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import org.hyperledger.besu.metrics.StandardMetricCategory;
+import org.hyperledger.besu.metrics.prometheus.MetricsConfiguration;
+import org.hyperledger.besu.metrics.prometheus.MetricsService;
+import org.hyperledger.besu.metrics.prometheus.PrometheusMetricsSystem;
+import org.hyperledger.besu.plugin.services.MetricsSystem;
+import org.hyperledger.besu.plugin.services.metrics.MetricCategory;
 import tech.devgao.hailong.util.config.HailongConfiguration;
-import tech.devgao.pantheon.metrics.MetricCategory;
-import tech.devgao.pantheon.metrics.MetricsSystem;
-import tech.devgao.pantheon.metrics.StandardMetricCategory;
-import tech.devgao.pantheon.metrics.prometheus.MetricsConfiguration;
-import tech.devgao.pantheon.metrics.prometheus.MetricsService;
-import tech.devgao.pantheon.metrics.prometheus.PrometheusMetricsSystem;
 
 public class MetricsEndpoint {
 
@@ -54,11 +55,11 @@ public class MetricsEndpoint {
   }
 
   public void start() {
-    metricsService.ifPresent(MetricsService::start);
+    metricsService.ifPresent(reportExceptions(MetricsService::start));
   }
 
   public void stop() {
-    metricsService.ifPresent(MetricsService::stop);
+    metricsService.ifPresent(reportExceptions(MetricsService::stop));
   }
 
   public MetricsSystem getMetricsSystem() {

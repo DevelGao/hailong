@@ -14,41 +14,57 @@
 package tech.devgao.hailong.statetransition;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static tech.devgao.hailong.datastructures.Constants.SLOTS_PER_EPOCH;
-import static tech.devgao.hailong.datastructures.Constants.SLOTS_PER_HISTORICAL_ROOT;
-import static tech.devgao.hailong.datastructures.Constants.ZERO_HASH;
+import static tech.devgao.hailong.datastructures.util.BeaconStateUtil.get_beacon_proposer_index;
+import static tech.devgao.hailong.datastructures.util.BeaconStateUtil.get_current_epoch;
+import static tech.devgao.hailong.datastructures.util.BeaconStateUtil.get_domain;
 import static tech.devgao.hailong.statetransition.util.BlockProcessorUtil.process_block_header;
 import static tech.devgao.hailong.statetransition.util.BlockProcessorUtil.process_eth1_data;
 import static tech.devgao.hailong.statetransition.util.BlockProcessorUtil.process_operations;
 import static tech.devgao.hailong.statetransition.util.BlockProcessorUtil.process_randao;
-import static tech.devgao.hailong.statetransition.util.EpochProcessorUtil.process_crosslinks;
 import static tech.devgao.hailong.statetransition.util.EpochProcessorUtil.process_final_updates;
 import static tech.devgao.hailong.statetransition.util.EpochProcessorUtil.process_justification_and_finalization;
 import static tech.devgao.hailong.statetransition.util.EpochProcessorUtil.process_registry_updates;
 import static tech.devgao.hailong.statetransition.util.EpochProcessorUtil.process_rewards_and_penalties;
 import static tech.devgao.hailong.statetransition.util.EpochProcessorUtil.process_slashings;
+import static tech.devgao.hailong.util.alogger.ALogger.STDOUT;
+import static tech.devgao.hailong.util.async.SafeFuture.reportExceptions;
+import static tech.devgao.hailong.util.config.Constants.DOMAIN_BEACON_PROPOSER;
+import static tech.devgao.hailong.util.config.Constants.FAR_FUTURE_EPOCH;
+import static tech.devgao.hailong.util.config.Constants.SLOTS_PER_EPOCH;
+import static tech.devgao.hailong.util.config.Constants.SLOTS_PER_HISTORICAL_ROOT;
+import static tech.devgao.hailong.util.config.Constants.ZERO_HASH;
 
 import com.google.common.primitives.UnsignedLong;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.Level;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.hailong.datastructures.blocks.BeaconBlock;
+import tech.devgao.hailong.datastructures.blocks.SignedBeaconBlock;
 import tech.devgao.hailong.datastructures.state.BeaconState;
 import tech.devgao.hailong.datastructures.state.BeaconStateWithCache;
+import tech.devgao.hailong.datastructures.state.Validator;
+import tech.devgao.hailong.metrics.EpochMetrics;
 import tech.devgao.hailong.statetransition.util.BlockProcessingException;
 import tech.devgao.hailong.statetransition.util.EpochProcessingException;
 import tech.devgao.hailong.statetransition.util.SlotProcessingException;
 import tech.devgao.hailong.util.alogger.ALogger;
+import tech.devgao.hailong.util.bls.BLSVerify;
 
 public class StateTransition {
 
-  private static final ALogger STDOUT = new ALogger("stdout");
-
-  private boolean printEnabled = false;
-
-  public StateTransition() {}
+  private boolean printEnabled;
+  private final Optional<EpochMetrics> epochMetrics;
 
   public StateTransition(boolean printEnabled) {
     this.printEnabled = printEnabled;
+    this.epochMetrics = Optional.empty();
+  }
+
+  public StateTransition(boolean printEnabled, EpochMetrics epochMetrics) {
+    this.printEnabled = printEnabled;
+    this.epochMetrics = Optional.of(epochMetrics);
   }
 
   /**
@@ -57,41 +73,64 @@ public class StateTransition {
    * Runs state transition up to and with the given block
    *
    * @param state
-   * @param block
-   * @param validate_state_root
+   * @param signed_block
+   * @param validateStateRootAndSignatures
    * @return
    * @throws StateTransitionException
    */
-  public Bytes32 initiate(
-      BeaconStateWithCache state, BeaconBlock block, boolean validate_state_root)
+  public BeaconStateWithCache initiate(
+      BeaconStateWithCache state,
+      SignedBeaconBlock signed_block,
+      boolean validateStateRootAndSignatures)
       throws StateTransitionException {
     try {
       // Process slots (including those with no blocks) since block
-      process_slots(state, block.getSlot(), printEnabled);
+      process_slots(state, signed_block.getMessage().getSlot(), printEnabled);
 
+      // Verify signature
+      if (validateStateRootAndSignatures) {
+        checkArgument(
+            verify_block_signature(state, signed_block), "state_transition: Verify signature");
+      }
       // Process_block
-      process_block(state, block);
+      process_block(state, signed_block.getMessage(), validateStateRootAndSignatures);
 
       Bytes32 stateRoot = state.hash_tree_root();
       // Validate state root (`validate_state_root == True` in production)
-      if (validate_state_root) {
+      if (validateStateRootAndSignatures) {
         checkArgument(
-            block.getState_root().equals(stateRoot),
+            signed_block.getMessage().getState_root().equals(stateRoot),
             "Block state root does NOT match the calculated state root!\n"
                 + "Block state root: "
-                + block.getState_root().toHexString()
+                + signed_block.getMessage().getState_root().toHexString()
                 + "New state root: "
                 + stateRoot.toHexString());
       }
 
-      return stateRoot;
+      return state;
     } catch (SlotProcessingException
         | BlockProcessingException
         | EpochProcessingException
         | IllegalArgumentException e) {
       STDOUT.log(Level.WARN, "  State Transition error: " + e, printEnabled, ALogger.Color.RED);
-      throw new StateTransitionException(e.toString());
+      throw new StateTransitionException(e);
     }
+  }
+
+  private static boolean verify_block_signature(
+      final BeaconState state, SignedBeaconBlock signed_block) {
+    final Validator proposer = state.getValidators().get(get_beacon_proposer_index(state));
+    final Bytes domain = get_domain(state, DOMAIN_BEACON_PROPOSER);
+    return BLSVerify.bls_verify(
+        proposer.getPubkey(),
+        signed_block.getMessage().hash_tree_root(),
+        signed_block.getSignature(),
+        domain);
+  }
+
+  public BeaconStateWithCache initiate(BeaconStateWithCache state, SignedBeaconBlock block)
+      throws StateTransitionException {
+    return initiate(state, block, true);
   }
 
   /**
@@ -103,10 +142,11 @@ public class StateTransition {
    * @param block
    * @throws BlockProcessingException
    */
-  private void process_block(BeaconStateWithCache state, BeaconBlock block)
+  private void process_block(
+      BeaconStateWithCache state, BeaconBlock block, boolean validateStateRootAndSignatures)
       throws BlockProcessingException {
     process_block_header(state, block);
-    process_randao(state, block.getBody());
+    process_randao(state, block.getBody(), validateStateRootAndSignatures);
     process_eth1_data(state, block.getBody());
     process_operations(state, block.getBody());
   }
@@ -122,12 +162,12 @@ public class StateTransition {
   private static void process_epoch(BeaconStateWithCache state) throws EpochProcessingException {
     // Note: the lines with @ label here will be inserted here in a future phase
     process_justification_and_finalization(state);
-    process_crosslinks(state);
     process_rewards_and_penalties(state);
     process_registry_updates(state);
     // @process_reveal_deadlines
     // @process_challenge_deadlines
     process_slashings(state);
+    // @update_period_committee
     process_final_updates(state);
     // @after_process_final_updates
   }
@@ -151,7 +191,7 @@ public class StateTransition {
     }
 
     // Cache block root
-    Bytes32 previous_block_root = state.getLatest_block_header().signing_root("signature");
+    Bytes32 previous_block_root = state.getLatest_block_header().hash_tree_root();
     state.getBlock_roots().set(index, previous_block_root);
   }
 
@@ -165,8 +205,7 @@ public class StateTransition {
    * @throws EpochProcessingException
    * @throws SlotProcessingException
    */
-  public static void process_slots(
-      BeaconStateWithCache state, UnsignedLong slot, boolean printEnabled)
+  public void process_slots(BeaconStateWithCache state, UnsignedLong slot, boolean printEnabled)
       throws SlotProcessingException, EpochProcessingException {
     try {
       checkArgument(
@@ -181,6 +220,9 @@ public class StateTransition {
             .equals(UnsignedLong.ZERO)) {
           STDOUT.log(Level.INFO, "******* Epoch Event *******", printEnabled, ALogger.Color.BLUE);
           process_epoch(state);
+          reportExceptions(
+              CompletableFuture.runAsync(
+                  () -> recordMetrics(BeaconStateWithCache.deepCopy(state))));
         }
         state.setSlot(state.getSlot().plus(UnsignedLong.ONE));
       }
@@ -188,5 +230,27 @@ public class StateTransition {
       STDOUT.log(Level.WARN, e.getMessage());
       throw new SlotProcessingException(e);
     }
+  }
+
+  private synchronized void recordMetrics(BeaconStateWithCache state) {
+    epochMetrics.ifPresent(
+        metrics -> {
+          final UnsignedLong currentEpoch = get_current_epoch(state);
+          long pendingExits =
+              state.getValidators().stream()
+                  .filter(
+                      v ->
+                          !v.getExit_epoch().equals(FAR_FUTURE_EPOCH)
+                              && currentEpoch.compareTo(v.getExit_epoch()) < 0)
+                  .count();
+
+          metrics.onEpoch(
+              state.getPrevious_justified_checkpoint().getEpoch(),
+              state.getCurrent_justified_checkpoint().getEpoch(),
+              state.getFinalized_checkpoint().getEpoch(),
+              state.getPrevious_epoch_attestations().size(),
+              state.getCurrent_epoch_attestations().size(),
+              pendingExits);
+        });
   }
 }

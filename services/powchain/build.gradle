@@ -1,4 +1,5 @@
 dependencies {
+  implementation project(':events')
   implementation project(':services:serviceutils')
   implementation project(':pow')
   implementation project(':validator:client')
@@ -14,26 +15,4 @@ dependencies {
   implementation 'org.apache.tuweni:tuweni-crypto'
   implementation 'org.apache.tuweni:tuweni-units'
   implementation 'org.apache.tuweni:tuweni-config'
-
-  testImplementation 'org.mockito:mockito-core'
-
-  integrationTestImplementation 'org.assertj:assertj-core'
-  integrationTestImplementation 'org.mockito:mockito-core'
-  integrationTestImplementation 'junit:junit'
-
-  testSupportImplementation 'org.assertj:assertj-core'
-  testSupportImplementation 'org.mockito:mockito-core'
-  testSupportImplementation 'junit:junit'
-}
-
-configurations { testArtifacts }
-task testJar (type: Jar) {
-  baseName = "${project.name}-test"
-  from sourceSets.test.output
-}
-
-
-artifacts {
-  testArtifacts testJar
-  testSupportArtifacts testSupportJar
 }

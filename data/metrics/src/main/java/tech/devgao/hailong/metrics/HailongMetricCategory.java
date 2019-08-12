@@ -14,10 +14,11 @@
 package tech.devgao.hailong.metrics;
 
 import java.util.Optional;
-import tech.devgao.pantheon.metrics.MetricCategory;
+import org.hyperledger.besu.plugin.services.metrics.MetricCategory;
 
 public enum HailongMetricCategory implements MetricCategory {
-  BEACONCHAIN("beaconchain");
+  BEACONCHAIN("beaconchain"),
+  NETWORK("network");
 
   private final String name;
 

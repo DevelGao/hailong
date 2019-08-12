@@ -1,4 +1,5 @@
 dependencies {
+  implementation project(':events')
   implementation project(':storage')
   implementation project(':util')
 
@@ -9,16 +10,5 @@ dependencies {
   implementation 'org.apache.tuweni:tuweni-config'
   implementation 'io.vertx:vertx-core'
   implementation 'io.vertx:vertx-web'
-  implementation 'tech.devgao.pantheon.internal:metrics-core'
-}
-
-configurations { testArtifacts }
-task testJar (type: Jar) {
-  baseName = "${project.name}-test"
-  from sourceSets.test.output
-}
-
-artifacts {
-  testArtifacts testJar
-  testSupportArtifacts testSupportJar
+  implementation 'org.hyperledger.besu:plugin-api'
 }

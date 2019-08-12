@@ -15,27 +15,30 @@ package tech.devgao.hailong.datastructures.operations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static tech.devgao.hailong.datastructures.util.DataStructureUtil.randomCrosslink;
+import static tech.devgao.hailong.datastructures.util.DataStructureUtil.randomBytes32;
 import static tech.devgao.hailong.datastructures.util.DataStructureUtil.randomUnsignedLong;
 
 import com.google.common.primitives.UnsignedLong;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
-import tech.devgao.hailong.datastructures.state.Crosslink;
+import tech.devgao.hailong.datastructures.state.Checkpoint;
+import tech.devgao.hailong.datastructures.util.SimpleOffsetSerializer;
 
 class AttestationDataTest {
-
-  private Bytes32 beaconBlockRoot = Bytes32.random();
-  private UnsignedLong source_epoch = randomUnsignedLong();
-  private Bytes32 source_root = Bytes32.random();
-  private UnsignedLong target_epoch = randomUnsignedLong();
-  private Bytes32 target_root = Bytes32.random();
-  private Crosslink crosslink = randomCrosslink();
+  private int seed = 100;
+  private UnsignedLong slot = randomUnsignedLong(seed++);
+  private UnsignedLong index = randomUnsignedLong(seed++);
+  private Bytes32 beaconBlockRoot = randomBytes32(seed++);
+  private UnsignedLong source_epoch = randomUnsignedLong(seed++);
+  private Bytes32 source_root = randomBytes32(seed++);
+  private UnsignedLong target_epoch = randomUnsignedLong(seed++);
+  private Bytes32 target_root = randomBytes32(seed++);
+  private Checkpoint source = new Checkpoint(source_epoch, source_root);
+  private Checkpoint target = new Checkpoint(target_epoch, target_root);
 
   private AttestationData attestationData =
-      new AttestationData(
-          beaconBlockRoot, source_epoch, source_root, target_epoch, target_root, crosslink);
+      new AttestationData(slot, index, beaconBlockRoot, source, target);
 
   @Test
   void equalsReturnsTrueWhenObjectAreSame() {
@@ -47,8 +50,7 @@ class AttestationDataTest {
   @Test
   void equalsReturnsTrueWhenObjectFieldsAreEqual() {
     AttestationData testAttestationData =
-        new AttestationData(
-            beaconBlockRoot, source_epoch, source_root, target_epoch, target_root, crosslink);
+        new AttestationData(slot, index, beaconBlockRoot, source, target);
 
     assertEquals(attestationData, testAttestationData);
   }
@@ -56,76 +58,68 @@ class AttestationDataTest {
   @Test
   void equalsReturnsFalseWhenBlockRootsAreDifferent() {
     AttestationData testAttestationData =
-        new AttestationData(
-            Bytes32.random(), source_epoch, source_root, target_epoch, target_root, crosslink);
+        new AttestationData(slot, index, Bytes32.random(), source, target);
 
     assertNotEquals(attestationData, testAttestationData);
   }
 
   @Test
   void equalsReturnsFalseWhenSourceEpochsAreDifferent() {
+    Checkpoint newSource = new Checkpoint(randomUnsignedLong(seed++), source.getRoot());
     AttestationData testAttestationData =
-        new AttestationData(
-            beaconBlockRoot,
-            randomUnsignedLong(),
-            source_root,
-            target_epoch,
-            target_root,
-            crosslink);
+        new AttestationData(slot, index, beaconBlockRoot, newSource, target);
 
     assertNotEquals(attestationData, testAttestationData);
   }
 
   @Test
   void equalsReturnsFalseWhenSourceRootsAreDifferent() {
+    Checkpoint newSource = new Checkpoint(source.getEpoch(), Bytes32.random());
     AttestationData testAttestationData =
-        new AttestationData(
-            beaconBlockRoot, source_epoch, Bytes32.random(), target_epoch, target_root, crosslink);
+        new AttestationData(slot, index, beaconBlockRoot, newSource, target);
 
     assertNotEquals(attestationData, testAttestationData);
   }
 
   @Test
   void equalsReturnsFalseWhenTargetEpochsAreDifferent() {
+    Checkpoint newTarget = new Checkpoint(randomUnsignedLong(seed++), target.getRoot());
     AttestationData testAttestationData =
-        new AttestationData(
-            beaconBlockRoot,
-            source_epoch,
-            source_root,
-            randomUnsignedLong(),
-            target_root,
-            crosslink);
+        new AttestationData(slot, index, beaconBlockRoot, source, newTarget);
 
     assertNotEquals(attestationData, testAttestationData);
   }
 
   @Test
   void equalsReturnsFalseWhenTargetRootsAreDifferent() {
+    Checkpoint newTarget = new Checkpoint(target.getEpoch(), Bytes32.random());
     AttestationData testAttestationData =
-        new AttestationData(
-            beaconBlockRoot, source_epoch, source_root, target_epoch, Bytes32.random(), crosslink);
+        new AttestationData(slot, index, beaconBlockRoot, source, newTarget);
 
     assertNotEquals(attestationData, testAttestationData);
   }
 
   @Test
-  void equalsReturnsFalseWhenLatestCrosslinkRootsAreDifferent() {
-
+  void equalsReturnsFalseWhenSlotIsDifferent() {
     AttestationData testAttestationData =
-        new AttestationData(
-            beaconBlockRoot,
-            source_epoch,
-            source_root,
-            target_epoch,
-            target_root,
-            randomCrosslink());
+        new AttestationData(UnsignedLong.valueOf(1234), index, beaconBlockRoot, source, target);
+
+    assertNotEquals(attestationData, testAttestationData);
+  }
+
+  @Test
+  void equalsReturnsFalseWhenIndexIsDifferent() {
+    AttestationData testAttestationData =
+        new AttestationData(slot, UnsignedLong.valueOf(1234), beaconBlockRoot, source, target);
 
     assertNotEquals(attestationData, testAttestationData);
   }
 
   @Test
   void roundtripSSZ() {
-    Bytes sszAttestationDataBytes = attestationData.toBytes();
-    assertEquals(attestationData, AttestationData.fromBytes(sszAttestationDataBytes));
+    Bytes sszAttestationDataBytes = SimpleOffsetSerializer.serialize(attestationData);
+    assertEquals(
+        attestationData,
+        SimpleOffsetSerializer.deserialize(sszAttestationDataBytes, AttestationData.class));
   }
 }

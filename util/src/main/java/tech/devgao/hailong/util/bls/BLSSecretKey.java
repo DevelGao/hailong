@@ -13,9 +13,14 @@
 
 package tech.devgao.hailong.util.bls;
 
+import org.apache.tuweni.bytes.Bytes;
 import tech.devgao.hailong.util.mikuli.SecretKey;
 
 public class BLSSecretKey {
+
+  public static BLSSecretKey fromBytes(Bytes bytes48) {
+    return new BLSSecretKey(SecretKey.fromBytes(bytes48));
+  }
 
   private SecretKey secretKey;
 

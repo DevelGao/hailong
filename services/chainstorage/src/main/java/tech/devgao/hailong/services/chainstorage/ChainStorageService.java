@@ -13,34 +13,25 @@
 
 package tech.devgao.hailong.services.chainstorage;
 
-import com.google.common.eventbus.EventBus;
+import static tech.devgao.hailong.util.alogger.ALogger.STDOUT;
+
+import org.apache.logging.log4j.Level;
 import tech.devgao.hailong.service.serviceutils.ServiceConfig;
 import tech.devgao.hailong.service.serviceutils.ServiceInterface;
-import tech.devgao.hailong.storage.ChainStorage;
 import tech.devgao.hailong.storage.ChainStorageServer;
-import tech.devgao.hailong.util.alogger.ALogger;
 
 public class ChainStorageService implements ServiceInterface {
-  private EventBus eventBus;
-  private ChainStorageServer chainStore;
-  private static final ALogger LOG = new ALogger(ChainStorageService.class.getName());
-
-  public ChainStorageService() {}
 
   @Override
   public void init(ServiceConfig config) {
-    this.eventBus = config.getEventBus();
-    this.chainStore = ChainStorage.Create(ChainStorageServer.class, eventBus);
-    this.eventBus.register(this);
+    new ChainStorageServer(config.getEventBus(), config.getConfig());
   }
 
   @Override
-  public void run() {
-    // TODO Still do something...maybe
-  }
+  public void run() {}
 
   @Override
   public void stop() {
-    this.eventBus.unregister(this);
+    STDOUT.log(Level.DEBUG, "ChainStorageService.stop()");
   }
 }

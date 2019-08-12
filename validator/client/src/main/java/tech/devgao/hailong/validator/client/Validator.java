@@ -16,28 +16,28 @@ package tech.devgao.hailong.validator.client;
 import com.google.common.primitives.UnsignedLong;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.crypto.SECP256K1;
+import tech.devgao.hailong.util.bls.BLSKeyPair;
 import tech.devgao.hailong.util.bls.BLSPublicKey;
-import tech.devgao.hailong.util.mikuli.KeyPair;
 
 public final class Validator extends tech.devgao.hailong.datastructures.state.Validator {
-  KeyPair blsKeys;
+  BLSKeyPair blsKeys;
   SECP256K1.KeyPair secpKeys;
 
-  public Validator(Bytes32 withdrawal_credentials, KeyPair blsKeys, SECP256K1.KeyPair secpKeys) {
+  public Validator(Bytes32 withdrawal_credentials, BLSKeyPair blsKeys, SECP256K1.KeyPair secpKeys) {
     super(
         null,
         withdrawal_credentials,
         UnsignedLong.ZERO,
-        UnsignedLong.ZERO,
-        UnsignedLong.ZERO,
-        UnsignedLong.ZERO,
         false,
+        UnsignedLong.ZERO,
+        UnsignedLong.ZERO,
+        UnsignedLong.ZERO,
         UnsignedLong.ZERO);
     this.blsKeys = blsKeys;
     this.secpKeys = secpKeys;
   }
 
-  public KeyPair getBlsKeys() {
+  public BLSKeyPair getBlsKeys() {
     return blsKeys;
   }
 
@@ -47,6 +47,6 @@ public final class Validator extends tech.devgao.hailong.datastructures.state.Va
 
   @Override
   public BLSPublicKey getPubkey() {
-    return BLSPublicKey.fromBytesCompressed(this.blsKeys.publicKey().toBytesCompressed());
+    return this.blsKeys.getPublicKey();
   }
 }

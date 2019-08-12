@@ -13,32 +13,15 @@
 
 package tech.devgao.hailong.storage;
 
-import com.google.common.eventbus.EventBus;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.logging.log4j.Level;
-import tech.devgao.hailong.util.alogger.ALogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /** ChainStorage Interface class */
 public interface ChainStorage {
-
-  ALogger LOG = new ALogger(ChainStorage.class.getName());
-
-  /**
-   * Instantiate the ChainStorage
-   *
-   * @param type
-   * @param eventBus
-   * @return
-   */
-  static <T> T Create(Class<T> type, EventBus eventBus) {
-    try {
-      return type.getDeclaredConstructor(EventBus.class).newInstance(eventBus);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
+  Logger LOG = LogManager.getLogger();
 
   /**
    * Add item to Queue
@@ -50,7 +33,7 @@ public interface ChainStorage {
     try {
       items.add(item);
     } catch (IllegalStateException e) {
-      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + e.getMessage());
+      LOG.debug("{}: {}", items.getClass().toString(), e.getMessage());
     }
   }
 
@@ -65,7 +48,7 @@ public interface ChainStorage {
     try {
       items.put(key, value);
     } catch (IllegalStateException e) {
-      LOG.log(Level.DEBUG, items.getClass().toString() + ": " + e.getMessage(), true);
+      LOG.debug("{}: {}", items.getClass().toString(), e.getMessage());
     }
   }
 
@@ -85,7 +68,7 @@ public interface ChainStorage {
     } catch (NullPointerException e) {
       if (!key.toString()
           .equalsIgnoreCase("0x0000000000000000000000000000000000000000000000000000000000000000")) {
-        LOG.log(Level.DEBUG, items.getClass().toString() + ": " + key.toString() + " not found.");
+        LOG.debug("{}: {} not found", items.getClass().toString(), key.toString());
       }
     }
     return result;
@@ -104,7 +87,7 @@ public interface ChainStorage {
     } catch (NullPointerException e) {
       if (!key.toString()
           .equalsIgnoreCase("0x0000000000000000000000000000000000000000000000000000000000000000")) {
-        LOG.log(Level.DEBUG, items.getClass().toString() + ": " + key.toString() + " not found.");
+        LOG.debug("{}: {} not found", items.getClass().toString(), key.toString());
         return false;
       }
     }

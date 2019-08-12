@@ -13,38 +13,64 @@
 
 package tech.devgao.hailong.datastructures.operations;
 
+import com.google.common.collect.Sets;
+import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.ssz.SSZ;
+import tech.devgao.hailong.datastructures.util.SimpleOffsetSerializer;
+import tech.devgao.hailong.util.SSZTypes.Bitlist;
+import tech.devgao.hailong.util.SSZTypes.SSZContainer;
 import tech.devgao.hailong.util.bls.BLSSignature;
+import tech.devgao.hailong.util.config.Constants;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil.SSZTypes;
 import tech.devgao.hailong.util.hashtree.Merkleizable;
 import tech.devgao.hailong.util.sos.SimpleOffsetSerializable;
 
-public class Attestation implements Merkleizable, SimpleOffsetSerializable {
+public class Attestation implements Merkleizable, SimpleOffsetSerializable, SSZContainer {
 
   // The number of SimpleSerialize basic types in this SSZ Container/POJO.
   public static final int SSZ_FIELD_COUNT = 2;
 
-  private Bytes aggregation_bits; // Bitlist bounded by MAX_VALIDATORS_PER_COMMITTEE
+  private Bitlist aggregation_bits; // Bitlist bounded by MAX_VALIDATORS_PER_COMMITTEE
   private AttestationData data;
-  private Bytes custody_bitfield; // Bitlist bounded by MAX_VALIDATORS_PER_COMMITTEE
   private BLSSignature signature;
 
-  public Attestation(
-      Bytes aggregation_bits,
-      AttestationData data,
-      Bytes custody_bitfield,
-      BLSSignature signature) {
+  public Attestation(Bitlist aggregation_bits, AttestationData data, BLSSignature signature) {
     this.aggregation_bits = aggregation_bits;
     this.data = data;
-    this.custody_bitfield = custody_bitfield;
     this.signature = signature;
+  }
+
+  public Attestation(Attestation attestation) {
+    this.aggregation_bits = attestation.getAggregation_bits().copy();
+    this.data = attestation.getData();
+    this.signature = BLSSignature.fromBytes(attestation.getAggregate_signature().toBytes());
+  }
+
+  public Attestation() {
+    this.aggregation_bits =
+        new Bitlist(Constants.MAX_VALIDATORS_PER_COMMITTEE, Constants.MAX_VALIDATORS_PER_COMMITTEE);
+  }
+
+  public UnsignedLong getEarliestSlotForProcessing() {
+    // Attestations can't be processed until their slot is in the past and until we are in the same
+    // epoch as their target.
+    return max(data.getSlot().plus(UnsignedLong.ONE), data.getTarget().getEpochSlot());
+  }
+
+  public Collection<Bytes32> getDependentBlockRoots() {
+    return Sets.newHashSet(data.getTarget().getRoot(), data.getBeacon_block_root());
+  }
+
+  private static UnsignedLong max(final UnsignedLong a, final UnsignedLong b) {
+    return a.compareTo(b) > 0 ? a : b;
   }
 
   @Override
@@ -55,11 +81,8 @@ public class Attestation implements Merkleizable, SimpleOffsetSerializable {
   @Override
   public List<Bytes> get_fixed_parts() {
     List<Bytes> fixedPartsList = new ArrayList<>();
-    fixedPartsList.addAll(
-        List.of(Bytes.EMPTY));
+    fixedPartsList.addAll(List.of(Bytes.EMPTY));
     fixedPartsList.addAll(data.get_fixed_parts());
-    fixedPartsList.addAll(
-      List.of(Bytes.EMPTY));
     fixedPartsList.addAll(signature.get_fixed_parts());
     return fixedPartsList;
   }
@@ -67,39 +90,25 @@ public class Attestation implements Merkleizable, SimpleOffsetSerializable {
   @Override
   public List<Bytes> get_variable_parts() {
     List<Bytes> variablePartsList = new ArrayList<>();
-    // variablePartsList.addAll( /* TODO Serialize Bitlist */ );
-    variablePartsList.addAll(
-        List.of(Bytes.EMPTY));
-    // variablePartsList.addAll( /* TODO Serialize Bitlist */ );
-    variablePartsList.addAll(
-        List.of(Bytes.EMPTY));
+    // TODO The below lines are a hack while Tuweni SSZ/SOS is being upgraded. To be uncommented
+    // once we shift from Bitlist to a real bitlist type.
+    // Bitlist serialized_aggregation_bits =
+    // Bitlist.fromHexString("0x01").shiftLeft(aggregation_bits.bitLength()).or(aggregation_bits);
+    // variablePartsList.addAll(List.of(serialized_aggregation_bits));
+    variablePartsList.addAll(List.of(aggregation_bits.serialize()));
+    variablePartsList.addAll(Collections.nCopies(data.getSSZFieldCount(), Bytes.EMPTY));
+    // TODO The below lines are a hack while Tuweni SSZ/SOS is being upgraded. To be uncommented
+    // once we shift from Bitlist to a real bitlist type.
+    // Bitlist serialized_custody_bitfield =
+    // Bitlist.fromHexString("0x01").shiftLeft(aggregation_bits.bitLength()).or(custody_bitfield);
+    // variablePartsList.addAll(List.of(serialized_custody_bitfield));
+    variablePartsList.addAll(Collections.nCopies(signature.getSSZFieldCount(), Bytes.EMPTY));
     return variablePartsList;
-  }
-
-  public static Attestation fromBytes(Bytes bytes) {
-    return SSZ.decode(
-        bytes,
-        reader ->
-            new Attestation(
-                Bytes.wrap(reader.readBytes()),// TODO readBitlist logic required
-                AttestationData.fromBytes(reader.readBytes()),
-                Bytes.wrap(reader.readBytes()),// TODO readBitlist logic required
-                BLSSignature.fromBytes(reader.readBytes())));
-  }
-
-  public Bytes toBytes() {
-    return SSZ.encode(
-        writer -> {
-          writer.writeBytes(aggregation_bits);// TODO writeBitlist logic required
-          writer.writeBytes(data.toBytes());
-          writer.writeBytes(custody_bitfield);// TODO writeBitlist logic required
-          writer.writeBytes(signature.toBytes());
-        });
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(aggregation_bits, data, custody_bitfield, signature);
+    return Objects.hash(aggregation_bits, data, signature);
   }
 
   @Override
@@ -119,16 +128,15 @@ public class Attestation implements Merkleizable, SimpleOffsetSerializable {
     Attestation other = (Attestation) obj;
     return Objects.equals(this.getAggregation_bits(), other.getAggregation_bits())
         && Objects.equals(this.getData(), other.getData())
-        && Objects.equals(this.getCustody_bitfield(), other.getCustody_bitfield())
         && Objects.equals(this.getAggregate_signature(), other.getAggregate_signature());
   }
 
   /** ******************* * GETTERS & SETTERS * * ******************* */
-  public Bytes getAggregation_bits() {
+  public Bitlist getAggregation_bits() {
     return aggregation_bits;
   }
 
-  public void setAggregation_bits(Bytes aggregation_bits) {
+  public void setAggregation_bits(Bitlist aggregation_bits) {
     this.aggregation_bits = aggregation_bits;
   }
 
@@ -138,14 +146,6 @@ public class Attestation implements Merkleizable, SimpleOffsetSerializable {
 
   public void setData(AttestationData data) {
     this.data = data;
-  }
-
-  public Bytes getCustody_bitfield() {
-    return custody_bitfield;
-  }
-
-  public void setCustody_bitfield(Bytes custody_bitfield) {
-    this.custody_bitfield = custody_bitfield;
   }
 
   public BLSSignature getAggregate_signature() {
@@ -160,9 +160,9 @@ public class Attestation implements Merkleizable, SimpleOffsetSerializable {
   public Bytes32 hash_tree_root() {
     return HashTreeUtil.merkleize(
         Arrays.asList(
-            HashTreeUtil.hash_tree_root(SSZTypes.LIST_OF_BASIC, aggregation_bits),// TODO writeBitlist logic required
+            HashTreeUtil.hash_tree_root_bitlist(aggregation_bits),
             data.hash_tree_root(),
-            HashTreeUtil.hash_tree_root(SSZTypes.LIST_OF_BASIC, custody_bitfield),// TODO writeBitlist logic required
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, signature.toBytes())));
+            HashTreeUtil.hash_tree_root(
+                SSZTypes.VECTOR_OF_BASIC, SimpleOffsetSerializer.serialize(signature))));
   }
 }

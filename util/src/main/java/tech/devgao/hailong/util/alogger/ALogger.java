@@ -19,29 +19,21 @@ import org.apache.logging.log4j.Logger;
 
 public class ALogger {
 
+  public static final ALogger STDOUT = new ALogger("stdout");
+
   public enum Color {
-    RED(0),
-    BLUE(1),
-    PURPLE(2),
-    WHITE(3),
-    GREEN(4);
-
-    private int identifier;
-
-    Color(int identifier) {
-      this.identifier = identifier;
-    }
+    RED,
+    BLUE,
+    PURPLE,
+    WHITE,
+    GREEN
   }
 
   private static final String resetCode = "\u001B[0m";
 
   private final Logger logger;
 
-  public ALogger() {
-    this.logger = LogManager.getLogger();
-  }
-
-  public ALogger(String className) {
+  protected ALogger(String className) {
     this.logger = LogManager.getLogger(className);
   }
 
@@ -61,6 +53,14 @@ public class ALogger {
 
   public void log(Level level, String message, Color color) {
     this.logger.log(level, addColor(message, color));
+  }
+
+  public void log(Level level, String message, Throwable throwable) {
+    this.logger.log(level, message, throwable);
+  }
+
+  public void log(Level level, String message, Throwable throwable, Color color) {
+    this.logger.log(level, addColor(message, color), throwable);
   }
 
   private String findColor(Color color) {

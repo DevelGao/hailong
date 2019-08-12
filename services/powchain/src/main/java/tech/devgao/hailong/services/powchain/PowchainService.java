@@ -14,82 +14,67 @@
 package tech.devgao.hailong.services.powchain;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static tech.devgao.hailong.datastructures.Constants.DEPOSIT_NORMAL;
-import static tech.devgao.hailong.datastructures.Constants.DEPOSIT_SIM;
-import static tech.devgao.hailong.datastructures.Constants.DEPOSIT_TEST;
+import static tech.devgao.hailong.util.alogger.ALogger.STDOUT;
+import static tech.devgao.hailong.util.config.Constants.DEPOSIT_NORMAL;
+import static tech.devgao.hailong.util.config.Constants.DEPOSIT_SIM;
+import static tech.devgao.hailong.util.config.Constants.MAX_EFFECTIVE_BALANCE;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.primitives.UnsignedLong;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.Level;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.crypto.SECP256K1;
 import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.methods.response.Log;
 import org.web3j.protocol.http.HttpService;
-import org.web3j.tx.gas.DefaultGasProvider;
-import tech.devgao.hailong.datastructures.operations.DepositData;
 import tech.devgao.hailong.datastructures.util.DepositUtil;
+import tech.devgao.hailong.datastructures.util.MockStartValidatorKeyPairFactory;
 import tech.devgao.hailong.ganache.GanacheController;
 import tech.devgao.hailong.pow.DepositContractListener;
 import tech.devgao.hailong.pow.DepositContractListenerFactory;
-import tech.devgao.hailong.pow.contract.DepositContract.Eth2GenesisEventResponse;
+import tech.devgao.hailong.pow.Eth1DataManager;
+import tech.devgao.hailong.pow.api.DepositEventChannel;
 import tech.devgao.hailong.pow.event.Deposit;
-import tech.devgao.hailong.pow.event.Eth2Genesis;
 import tech.devgao.hailong.service.serviceutils.ServiceConfig;
 import tech.devgao.hailong.service.serviceutils.ServiceInterface;
-import tech.devgao.hailong.util.alogger.ALogger;
-import tech.devgao.hailong.util.bls.BLSSignature;
-import tech.devgao.hailong.util.mikuli.KeyPair;
-import tech.devgao.hailong.validator.client.DepositSimulation;
-import tech.devgao.hailong.validator.client.Validator;
-import tech.devgao.hailong.validator.client.ValidatorClientUtil;
+import tech.devgao.hailong.util.async.DelayedExecutorAsyncRunner;
+import tech.devgao.hailong.util.bls.BLSKeyPair;
+import tech.devgao.hailong.util.config.Constants;
+import tech.devgao.hailong.util.time.TimeProvider;
 
 public class PowchainService implements ServiceInterface {
-
-  public static final String SIM_DEPOSIT_VALUE_GWEI = "32000000000";
+  private static final Logger LOG = LogManager.getLogger();
   public static final String EVENTS = "events";
-  public static final String ROOT = "root";
   public static final String USER_DIR = "user.dir";
   private EventBus eventBus;
-  private static final ALogger LOG = new ALogger();
 
-  private GanacheController controller;
-  private DepositContractListener listener;
+  private DepositContractListener depositContractListener;
 
   private String depositMode;
   private String contractAddr;
   private String provider;
 
   private String depositSimFile;
-  private int validatorCount;
-  private int nodeCount;
-
-  List<DepositSimulation> simulations;
+  private TimeProvider timeProvider;
+  private DepositEventChannel depositEventChannel;
 
   public PowchainService() {}
 
   @Override
   public void init(ServiceConfig config) {
+    this.timeProvider = config.getTimeProvider();
     this.eventBus = config.getEventBus();
-    this.eventBus.register(this);
+    this.depositEventChannel = config.getEventChannels().getPublisher(DepositEventChannel.class);
     this.depositMode = config.getConfig().getDepositMode();
     if (config.getConfig().getInputFile() != null)
       this.depositSimFile = System.getProperty(USER_DIR) + "/" + config.getConfig().getInputFile();
-    validatorCount = config.getConfig().getNumValidators();
-    nodeCount = config.getConfig().getNumNodes();
     contractAddr = config.getConfig().getContractAddr();
     provider = config.getConfig().getNodeUrl();
   }
@@ -97,48 +82,51 @@ public class PowchainService implements ServiceInterface {
   @Override
   public void run() {
     if (depositMode.equals(DEPOSIT_SIM) && depositSimFile == null) {
-      controller = new GanacheController(10, 6000);
-      listener =
-          DepositContractListenerFactory.simulationDeployDepositContract(eventBus, controller);
+      final GanacheController controller =
+          new GanacheController(Constants.MIN_GENESIS_ACTIVE_VALIDATOR_COUNT, 6000);
+      depositContractListener =
+          DepositContractListenerFactory.simulationDeployDepositContract(
+              eventBus, depositEventChannel, controller, timeProvider);
       Web3j web3j = Web3j.build(new HttpService(controller.getProvider()));
-      DefaultGasProvider gasProvider = new DefaultGasProvider();
-      simulations = new ArrayList<DepositSimulation>();
+      MockStartValidatorKeyPairFactory mockStartValidatorKeyPairFactory =
+          new MockStartValidatorKeyPairFactory();
+      List<BLSKeyPair> blsKeyPairList =
+          mockStartValidatorKeyPairFactory.generateKeyPairs(0, controller.getAccounts().size());
+      int i = 0;
       for (SECP256K1.KeyPair keyPair : controller.getAccounts()) {
-        Validator validator = new Validator(Bytes32.random(), KeyPair.random(), keyPair);
+        final DepositTransactionSender transactionSender =
+            new DepositTransactionSender(
+                web3j,
+                depositContractListener.getContract().getContractAddress(),
+                keyPair.secretKey().bytes().toHexString());
 
-        simulations.add(
-            new DepositSimulation(
-                validator,
-                new DepositData(
-                    validator.getPubkey(),
-                    validator.getWithdrawal_credentials(),
-                    UnsignedLong.valueOf(SIM_DEPOSIT_VALUE_GWEI),
-                    BLSSignature.fromBytes(
-                        ValidatorClientUtil.blsSignatureHelper(
-                            validator.getBlsKeys(),
-                            validator.getWithdrawal_credentials(),
-                            Long.parseLong(SIM_DEPOSIT_VALUE_GWEI))))));
+        BLSKeyPair blsKeyPair = blsKeyPairList.get(i);
+
         try {
-          ValidatorClientUtil.registerValidatorEth1(
-              validator,
-              Long.parseLong(SIM_DEPOSIT_VALUE_GWEI),
-              listener.getContract().getContractAddress(),
-              web3j,
-              gasProvider);
+          transactionSender
+              .sendDepositTransaction(
+                  blsKeyPair,
+                  blsKeyPair.getPublicKey(),
+                  UnsignedLong.valueOf(MAX_EFFECTIVE_BALANCE))
+              .get();
         } catch (Exception e) {
-          LOG.log(
-              Level.WARN,
-              "Failed to register Validator with SECP256k1 public key: "
-                  + keyPair.publicKey()
-                  + " : "
-                  + e);
+          LOG.warn(
+              "Failed to register Validator with SECP256k1 public key: " + keyPair.publicKey(), e);
         }
+        i++;
       }
-    } else if (depositMode.equals(DEPOSIT_SIM) && depositSimFile != null) {
-      JsonParser parser = new JsonParser();
+      Eth1DataManager eth1DataManager =
+          new Eth1DataManager(
+              web3j,
+              eventBus,
+              depositContractListener,
+              new DelayedExecutorAsyncRunner(),
+              timeProvider);
+      eth1DataManager.start();
+    } else if (depositMode.equals(DEPOSIT_SIM)) {
       try {
         Reader reader = Files.newBufferedReader(Paths.get(depositSimFile), UTF_8);
-        JsonArray validatorsJSON = ((JsonArray) parser.parse(reader));
+        JsonArray validatorsJSON = ((JsonArray) JsonParser.parseReader(reader));
         validatorsJSON.forEach(
             object -> {
               if (object.getAsJsonObject().get(EVENTS) != null) {
@@ -148,34 +136,33 @@ public class PowchainService implements ServiceInterface {
                       Deposit deposit = DepositUtil.convertJsonDataToEventDeposit(event);
                       eventBus.post(deposit);
                     });
-              } else {
-                JsonObject event = object.getAsJsonObject();
-                Eth2Genesis eth2Genesis = DepositUtil.convertJsonDataToEth2Genesis(event);
-                eventBus.post(eth2Genesis);
               }
             });
-      } catch (FileNotFoundException e) {
-        LOG.log(Level.ERROR, e.getMessage());
       } catch (IOException e) {
-        LOG.log(Level.ERROR, e.getMessage());
+        LOG.error("Failed to process deposit events", e);
       }
-    } else if (depositMode.equals(DEPOSIT_TEST)) {
-      Eth2GenesisEventResponse response = new Eth2GenesisEventResponse();
-      response.log =
-          new Log(true, "1", "2", "3", "4", "5", "6", "7", "8", Collections.singletonList("9"));
-      response.time = Bytes.ofUnsignedLong(UnsignedLong.ONE.longValue()).toArray();
-      response.deposit_count = Bytes.ofUnsignedLong(UnsignedLong.ONE.longValue()).toArray();
-      response.deposit_root = ROOT.getBytes(Charset.defaultCharset());
-      Eth2Genesis eth2Genesis = new Eth2Genesis(response);
-      this.eventBus.post(eth2Genesis);
     } else if (depositMode.equals(DEPOSIT_NORMAL)) {
-      listener =
-          DepositContractListenerFactory.eth1DepositContract(eventBus, provider, contractAddr);
+      Web3j web3j = Web3j.build(new HttpService(provider));
+      depositContractListener =
+          DepositContractListenerFactory.eth1DepositContract(
+              web3j, eventBus, depositEventChannel, contractAddr, timeProvider);
+      Eth1DataManager eth1DataManager =
+          new Eth1DataManager(
+              web3j,
+              eventBus,
+              depositContractListener,
+              new DelayedExecutorAsyncRunner(),
+              timeProvider);
+      eth1DataManager.start();
     }
   }
 
   @Override
   public void stop() {
+    STDOUT.log(Level.DEBUG, "PowChainService.stop()");
     this.eventBus.unregister(this);
+    if (depositContractListener != null) {
+      depositContractListener.stop();
+    }
   }
 }

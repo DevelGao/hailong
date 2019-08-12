@@ -15,29 +15,23 @@ package tech.devgao.hailong.util.config;
 
 import static java.util.Arrays.asList;
 
+import com.google.common.base.Strings;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.config.Configuration;
-import org.apache.tuweni.config.ConfigurationError;
 import org.apache.tuweni.config.PropertyValidator;
 import org.apache.tuweni.config.Schema;
 import org.apache.tuweni.config.SchemaBuilder;
-import org.apache.tuweni.crypto.SECP256K1;
-import tech.devgao.hailong.util.bls.BLSSignature;
 
 /** Configuration of an instance of Hailong. */
-public final class HailongConfiguration {
+public class HailongConfiguration {
+
+  private static final int NO_VALUE = -1;
 
   @SuppressWarnings({"DoubleBraceInitialization"})
   static final Schema createSchema() {
@@ -47,31 +41,27 @@ public final class HailongConfiguration {
                 "node.networkMode",
                 "mock",
                 "represents what network to use",
-                PropertyValidator.anyOf("mock", "hobbits", "mothra"));
-    builder.addString(
-        "node.gossipProtocol",
-        "plumtree",
-        "The gossip protocol to use",
-        PropertyValidator.anyOf("floodsub", "gossipsub", "plumtree", "none"));
-    builder.addString("node.identity", null, "Identity of the peer", null);
-    builder.addString("node.timer", "QuartzTimer", "Timer used for slots", null);
+                PropertyValidator.anyOf("mock", "jvmlibp2p"));
+
     builder.addString("node.networkInterface", "0.0.0.0", "Peer to peer network interface", null);
     builder.addInteger("node.port", 9000, "Peer to peer port", PropertyValidator.inRange(0, 65535));
     builder.addInteger(
         "node.advertisedPort",
-        9000,
+        NO_VALUE,
         "Peer to peer advertised port",
         PropertyValidator.inRange(0, 65535));
+    builder.addString("node.discovery", "", "static or discv5", null);
     builder.addString("node.bootnodes", "", "ENR of the bootnode", null);
-    builder.addBoolean("node.bootnode", true, "Makes this node a bootnode", null);
     builder.addInteger(
         "node.naughtinessPercentage",
         0,
         "Percentage of Validator Clients that are naughty",
         PropertyValidator.inRange(0, 101));
+    builder.addString(
+        "validator.validatorsKeyFile", "", "The file to load validator keys from", null);
     builder.addInteger(
         "deposit.numValidators",
-        128,
+        64,
         "represents the total number of validators in the network",
         PropertyValidator.inRange(1, 65535));
     builder.addInteger(
@@ -84,36 +74,23 @@ public final class HailongConfiguration {
     builder.addString("deposit.nodeUrl", null, "URL for Eth 1.0 node", null);
     builder.addString(
         "deposit.contractAddr", null, "Contract address for the deposit contract", null);
-    builder.addListOfString(
-        "node.peers",
-        Collections.emptyList(),
-        "Static peers",
-        (key, position, peers) ->
-            peers != null
-                ? peers.stream()
-                    .map(
-                        peer -> {
-                          try {
-                            URI uri = new URI(peer);
-                            String userInfo = uri.getUserInfo();
-                            if (userInfo == null || userInfo.isEmpty()) {
-                              return new ConfigurationError("Missing public key");
-                            }
-                          } catch (URISyntaxException e) {
-                            return new ConfigurationError("Invalid uri " + peer);
-                          }
-                          return null;
-                        })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList())
-                : null);
+    builder.addListOfString("node.peers", Collections.emptyList(), "Static peers", null);
     builder.addLong(
         "node.networkID", 1L, "The identifier of the network (mainnet, testnet, sidechain)", null);
+    builder.addString(
+        "node.constants",
+        "minimal",
+        "Determines whether to use minimal or mainnet constants",
+        null);
 
     // Interop
-    builder.addBoolean("interop.active", false, "Enable interop mode", null);
-    builder.addString(
-        "interop.inputFile", "interopDepositsAndKeys.json", "Interop deposits and keys file", null);
+    builder.addLong("interop.genesisTime", null, "Time of mocked genesis", null);
+    builder.addInteger(
+        "interop.ownedValidatorStartIndex", 0, "Index of first validator owned by this node", null);
+    builder.addInteger(
+        "interop.ownedValidatorCount", 0, "Number of validators owned by this node", null);
+    builder.addString("interop.startState", "", "Initial BeaconState to load", null);
+    builder.addString("interop.privateKey", "", "This node's private key", null);
 
     // Metrics
     builder.addBoolean("metrics.enabled", false, "Enables metrics collection via Prometheus", null);
@@ -129,7 +106,7 @@ public final class HailongConfiguration {
         PropertyValidator.inRange(0, 65535));
     builder.addListOfString(
         "metrics.metricsCategories",
-        asList("JVM", "PROCESS", "BEACONCHAIN"),
+        asList("JVM", "PROCESS", "BEACONCHAIN", "NETWORK"),
         "Metric categories to enable",
         null);
     // Outputs
@@ -138,94 +115,16 @@ public final class HailongConfiguration {
     builder.addString(
         "output.logFile", "hailong.log", "Log file name", PropertyValidator.isPresent());
     builder.addString(
-        "output.providerType",
-        "JSON",
-        "Output provider types: CSV, JSON",
-        PropertyValidator.anyOf("CSV", "JSON"));
-    builder.addString("output.outputFile", "", "Path/filename of the output file", null);
-    builder.addBoolean(
-        "output.formatted", false, "Output of JSON file is serial or formatted", null);
-    builder.addListOfString(
-        "output.events",
-        new ArrayList<String>() {
-          {
-            add("TimeSeriesRecord");
-          }
-        },
-        "Output selector for specific events",
+        "output.transitionRecordDir",
+        "",
+        "Directory to record transition pre and post states",
         null);
 
-    // Constants
-    // Misc
-    builder.addInteger("constants.SHARD_COUNT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.TARGET_COMMITTEE_SIZE", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MAX_VALIDATORS_PER_COMMITTEE", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MIN_PER_EPOCH_CHURN_LIMIT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.CHURN_LIMIT_QUOTIENT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.SHUFFLE_ROUND_COUNT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MIN_GENESIS_ACTIVE_VALIDATOR_COUNT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MIN_GENESIS_TIME", Integer.MIN_VALUE, null, null);
+    // Database
+    builder.addBoolean("database.startFromDisk", false, "Start from the disk if set to true", null);
 
-    // Gwei values
-    builder.addLong("constants.MIN_DEPOSIT_AMOUNT", Long.MIN_VALUE, null, null);
-    builder.addLong("constants.MAX_EFFECTIVE_BALANCE", Long.MIN_VALUE, null, null);
-    builder.addLong("constants.EJECTION_BALANCE", Long.MIN_VALUE, null, null);
-    builder.addLong("constants.EFFECTIVE_BALANCE_INCREMENT", Long.MIN_VALUE, null, null);
-
-    // Deposit Contract
-    builder.addString("constants.DEPOSIT_CONTRACT_ADDRESS", "", null, null);
-
-    // Initial Values
-    builder.addLong("constants.GENESIS_SLOT", Long.MIN_VALUE, null, null);
-    builder.addLong("constants.GENESIS_EPOCH", Long.MIN_VALUE, null, null);
-    builder.addString("constants.BLS_WITHDRAWAL_PREFIX", "", null, null);
-
-    // Time parameters
-    builder.addInteger("constants.SECONDS_PER_SLOT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MIN_ATTESTATION_INCLUSION_DELAY", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.SLOTS_PER_EPOCH", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MIN_SEED_LOOKAHEAD", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.ACTIVATION_EXIT_DELAY", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.SLOTS_PER_ETH1_VOTING_PERIOD", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.SLOTS_PER_HISTORICAL_ROOT", Integer.MIN_VALUE, null, null);
-    builder.addInteger(
-        "constants.MIN_VALIDATOR_WITHDRAWABILITY_DELAY", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.PERSISTENT_COMMITTEE_PERIOD", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MAX_EPOCHS_PER_CROSSLINK", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MIN_EPOCHS_TO_INACTIVITY_PENALTY", Integer.MIN_VALUE, null, null);
-
-    // State list lengths
-    builder.addInteger("constants.EPOCHS_PER_HISTORICAL_VECTOR", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.EPOCHS_PER_SLASHINGS_VECTOR", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.HISTORICAL_ROOTS_LIMIT", Integer.MIN_VALUE, null, null);
-    builder.addLong("constants.VALIDATOR_REGISTRY_LIMIT", Long.MIN_VALUE, null, null);
-
-    // Reward and penalty quotients
-    builder.addInteger("constants.BASE_REWARD_FACTOR", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.WHISTLEBLOWER_REWARD_QUOTIENT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.PROPOSER_REWARD_QUOTIENT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.INACTIVITY_PENALTY_QUOTIENT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MIN_SLASHING_PENALTY_QUOTIENT", Integer.MIN_VALUE, null, null);
-
-    // Max transactions per block
-    builder.addInteger("constants.MAX_PROPOSER_SLASHINGS", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MAX_ATTESTER_SLASHINGS", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MAX_ATTESTATIONS", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MAX_DEPOSITS", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MAX_VOLUNTARY_EXITS", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.MAX_TRANSFERS", Integer.MIN_VALUE, null, null);
-
-    // Signature domains
-    builder.addInteger("constants.DOMAIN_BEACON_PROPOSER", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_RANDAO", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_ATTESTATION", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_DEPOSIT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_VOLUNTARY_EXIT", Integer.MIN_VALUE, null, null);
-    builder.addInteger("constants.DOMAIN_TRANSFER", Integer.MIN_VALUE, null, null);
-
-    // Hailong specific
-    builder.addString("constants.SIM_DEPOSIT_VALUE", "", null, null);
-    builder.addInteger("constants.DEPOSIT_DATA_SIZE", Integer.MIN_VALUE, null, null);
+    // Beacon Rest API
+    builder.addInteger("beaconrestapi.portNumber", 5051, "Port number of Beacon Rest API", null);
 
     builder.validateConfiguration(
         config -> {
@@ -275,17 +174,10 @@ public final class HailongConfiguration {
     }
   }
 
-  /** @return the identity of the node, the hexadecimal representation of its secret key */
   public int getNaughtinessPercentage() {
     return config.getInteger("node.naughtinessPercentage");
   }
 
-  /** @return the identity of the node, the hexadecimal representation of its secret key */
-  public String getIdentity() {
-    return config.getString("node.identity");
-  }
-
-  /** @return the identity of the node, the hexadecimal representation of its secret key */
   public String getTimer() {
     return config.getString("node.timer");
   }
@@ -295,8 +187,8 @@ public final class HailongConfiguration {
     return config.getInteger("node.port");
   }
 
-  public boolean isBootnode() {
-    return config.getBoolean("node.bootnode") && config.getString("node.identity").equals("0x00");
+  public String getDiscovery() {
+    return config.getString("node.discovery");
   }
 
   public String getBootnodes() {
@@ -305,7 +197,8 @@ public final class HailongConfiguration {
 
   /** @return the port this node will advertise as its own */
   public int getAdvertisedPort() {
-    return config.getInteger("node.advertisedPort");
+    final int advertisedPort = config.getInteger("node.advertisedPort");
+    return advertisedPort == NO_VALUE ? getPort() : advertisedPort;
   }
 
   /** @return the network interface this node will bind to */
@@ -313,24 +206,49 @@ public final class HailongConfiguration {
     return config.getString("node.networkInterface");
   }
 
+  public String getConstants() {
+    return config.getString("node.constants");
+  }
+
   /** @return the total number of validators in the network */
   public int getNumValidators() {
     return config.getInteger("deposit.numValidators");
   }
 
-  public boolean getInteropActive() {
-    return config.getBoolean("interop.active");
+  public String getStartState() {
+    final String startState = config.getString("interop.startState");
+    return startState == null || startState.isEmpty() ? null : startState;
   }
 
-  public String getInteropInputFile() {
-    String inputFile = config.getString("interop.inputFile");
-    if (inputFile == null || inputFile.equals("")) return null;
-    return inputFile;
+  public long getGenesisTime() {
+    long genesisTime = config.getLong("interop.genesisTime");
+    if (genesisTime == 0) {
+      return (System.currentTimeMillis() / 1000) + 5;
+    } else {
+      return genesisTime;
+    }
+  }
+
+  public int getInteropOwnedValidatorStartIndex() {
+    return config.getInteger("interop.ownedValidatorStartIndex");
+  }
+
+  public int getInteropOwnedValidatorCount() {
+    return config.getInteger("interop.ownedValidatorCount");
+  }
+
+  public String getInteropPrivateKey() {
+    return config.getString("interop.privateKey");
   }
 
   /** @return the total number of nodes on the network */
   public int getNumNodes() {
     return config.getInteger("deposit.numNodes");
+  }
+
+  public String getValidatorsKeyFile() {
+    final String keyFile = config.getString("validator.validatorsKeyFile");
+    return keyFile == null || keyFile.isEmpty() ? null : keyFile;
   }
 
   /** @return the Deposit simulation flag, w/ optional input file */
@@ -375,259 +293,13 @@ public final class HailongConfiguration {
     return config.getListOfString("metrics.metricsCategories");
   }
 
-  /** @return the Path/filename of the output file. */
-  public String getOutputFile() {
-    return config.getString("output.outputFile");
-  }
-
-  /** @return if output is enabled or not */
-  public Boolean isOutputEnabled() {
-    return this.getOutputFile().length() > 0;
-  }
-
-  /** @return If Output of JSON file is serial or formatted */
-  public Boolean isFormat() {
-    return config.getBoolean("output.formatted");
-  }
-
-  /** @return specific events of Output selector */
-  public List<String> getEvents() {
-    return config.getListOfString("output.events");
-  }
-
-  /** @return specific dynamic event fields of Output selector */
-  public Map<String, Object> getEventFields() {
-
-    return config.getMap("output.fields");
-  }
-
-  /** @return misc constants */
-  public int getShardCount() {
-    return config.getInteger("constants.SHARD_COUNT");
-  }
-
-  public int getTargetCommitteeSize() {
-    return config.getInteger("constants.TARGET_COMMITTEE_SIZE");
-  }
-
-  public int getMaxValidatorsPerCommittee() {
-    return config.getInteger("constants.MAX_VALIDATORS_PER_COMMITTEE");
-  }
-
-  public int getMinPerEpochChurnLimit() {
-    return config.getInteger("constants.MIN_PER_EPOCH_CHURN_LIMIT");
-  }
-
-  public int getChurnLimitQuotient() {
-    return config.getInteger("constants.CHURN_LIMIT_QUOTIENT");
-  }
-
-  public int getShuffleRoundCount() {
-    return config.getInteger("constants.SHUFFLE_ROUND_COUNT");
-  }
-
-  public int getMinGenesisActiveValidatorCount() {
-    return config.getInteger("constants.MIN_GENESIS_ACTIVE_VALIDATOR_COUNT");
-  }
-
-  public long getMinGenesisTime() {
-    return config.getLong("constants.MIN_GENESIS_TIME");
-  }
-
-  /** @return deposit contract constants */
-  public String getDepositContractAddress() {
-    return config.getString("constants.DEPOSIT_CONTRACT_ADDRESS");
-  }
-
-  /** @return gwei value constants */
-  public long getMinDepositAmount() {
-    return config.getLong("constants.MIN_DEPOSIT_AMOUNT");
-  }
-
-  public long getMaxEffectiveBalance() {
-    return config.getLong("constants.MAX_EFFECTIVE_BALANCE");
-  }
-
-  public long getEffectiveBalanceIncrement() {
-    return config.getLong("constants.EFFECTIVE_BALANCE_INCREMENT");
-  }
-
-  public long getEjectionBalance() {
-    return config.getLong("constants.EJECTION_BALANCE");
-  }
-
-  public long getGenesisSlot() {
-    return config.getLong("constants.GENESIS_SLOT");
-  }
-
-  public long getGenesisEpoch() {
-    return config.getLong("constants.GENESIS_EPOCH");
-  }
-
-  public String getBlsWithdrawalPrefix() {
-    return config.getString("constants.BLS_WITHDRAWAL_PREFIX");
-  }
-
-  /** @return time parameter constants */
-  public int getSecondsPerSlot() {
-    return config.getInteger("constants.SECONDS_PER_SLOT");
-  }
-
-  public int getMinAttestationInclusionDelay() {
-    return config.getInteger("constants.MIN_ATTESTATION_INCLUSION_DELAY");
-  }
-
-  public int getSlotsPerEpoch() {
-    return config.getInteger("constants.SLOTS_PER_EPOCH");
-  }
-
-  public int getMinSeedLookahead() {
-    return config.getInteger("constants.MIN_SEED_LOOKAHEAD");
-  }
-
-  public int getActivationExitDelay() {
-    return config.getInteger("constants.ACTIVATION_EXIT_DELAY");
-  }
-
-  public int getSlotsPerEth1VotingPeriod() {
-    return config.getInteger("constants.SLOTS_PER_ETH1_VOTING_PERIOD");
-  }
-
-  public int getSlotsPerHistoricalRoot() {
-    return config.getInteger("constants.SLOTS_PER_HISTORICAL_ROOT");
-  }
-
-  public int getMinValidatorWithdrawabilityDelay() {
-    return config.getInteger("constants.MIN_VALIDATOR_WITHDRAWABILITY_DELAY");
-  }
-
-  public int getPersistentCommitteePeriod() {
-    return config.getInteger("constants.PERSISTENT_COMMITTEE_PERIOD");
-  }
-
-  public int getMaxEpochsPerCrosslink() {
-    return config.getInteger("constants.MAX_EPOCHS_PER_CROSSLINK");
-  }
-
-  public int getMinEpochsToInactivityPenalty() {
-    return config.getInteger("constants.MIN_EPOCHS_TO_INACTIVITY_PENALTY");
-  }
-
-  /** @return state list length constants */
-  public int getEpochsPerHistoricalVector() {
-    return config.getInteger("constants.EPOCHS_PER_HISTORICAL_VECTOR");
-  }
-
-  public int getEpochsPerSlashingsVector() {
-    return config.getInteger("constants.EPOCHS_PER_SLASHINGS_VECTOR");
-  }
-
-  public int getHistoricalRootsLimit() {
-    return config.getInteger("constants.HISTORICAL_ROOTS_LIMIT");
-  }
-
-  public long getValidatorRegistryLimit() {
-    return config.getLong("constants.VALIDATOR_REGISTRY_LIMIT");
-  }
-
-  /** @return reward and penalty quotient constants */
-  public int getBaseRewardFactor() {
-    return config.getInteger("constants.BASE_REWARD_FACTOR");
-  }
-
-  public int getWhistleblowerRewardQuotient() {
-    return config.getInteger("constants.WHISTLEBLOWER_REWARD_QUOTIENT");
-  }
-
-  public int getProposerRewardQuotient() {
-    return config.getInteger("constants.PROPOSER_REWARD_QUOTIENT");
-  }
-
-  public int getInactivityPenaltyQuotient() {
-    return config.getInteger("constants.INACTIVITY_PENALTY_QUOTIENT");
-  }
-
-  public int getMinSlashingPenaltyQuotient() {
-    return config.getInteger("constants.MIN_SLASHING_PENALTY_QUOTIENT");
-  }
-
-  /** @return max transactions per block constants */
-  public int getMaxProposerSlashings() {
-    return config.getInteger("constants.MAX_PROPOSER_SLASHINGS");
-  }
-
-  public int getMaxAttesterSlashings() {
-    return config.getInteger("constants.MAX_ATTESTER_SLASHINGS");
-  }
-
-  public int getMaxAttestations() {
-    return config.getInteger("constants.MAX_ATTESTATIONS");
-  }
-
-  public int getMaxDeposits() {
-    return config.getInteger("constants.MAX_DEPOSITS");
-  }
-
-  public int getMaxVoluntaryExits() {
-    return config.getInteger("constants.MAX_VOLUNTARY_EXITS");
-  }
-
-  public int getMaxTransfers() {
-    return config.getInteger("constants.MAX_TRANSFERS");
-  }
-
-  /** @return signature domain constants */
-  public int getDomainBeaconProposer() {
-    return config.getInteger("constants.DOMAIN_BEACON_PROPOSER");
-  }
-
-  public int getDomainRandao() {
-    return config.getInteger("constants.DOMAIN_RANDAO");
-  }
-
-  public int getDomainAttestation() {
-    return config.getInteger("constants.DOMAIN_ATTESTATION");
-  }
-
-  public int getDomainDeposit() {
-    return config.getInteger("constants.DOMAIN_DEPOSIT");
-  }
-
-  public int getDomainVoluntaryExit() {
-    return config.getInteger("constants.DOMAIN_VOLUNTARY_EXIT");
-  }
-
-  public int getDomainTransfer() {
-    return config.getInteger("constants.DOMAIN_TRANSFER");
+  public String getTransitionRecordDir() {
+    return Strings.emptyToNull(config.getString("output.transitionRecordDir"));
   }
 
   /** @return Hailong specific constants */
-  public String getSimDepositValue() {
-    return config.getString("constants.SIM_DEPOSIT_VALUE");
-  }
-
-  public int getDepositDataSize() {
-    return config.getInteger("constants.DEPOSIT_DATA_SIZE");
-  }
-
-  /** @return the list of static peers associated with this node */
-  public List<URI> getStaticPeers() {
-    return config.getListOfString("node.peers").stream()
-        .map(
-            (peer) -> {
-              try {
-                return new URI(peer);
-              } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
-              }
-            })
-        .collect(Collectors.toList());
-  }
-
-  /** @return the identity key pair of the node */
-  public SECP256K1.KeyPair getKeyPair() {
-    return SECP256K1.KeyPair.fromSecretKey(
-        SECP256K1.SecretKey.fromBytes(Bytes32.fromHexString(getIdentity())));
+  public List<String> getStaticPeers() {
+    return config.getListOfString("node.peers");
   }
 
   /** @return the identifier of the network (mainnet, testnet, sidechain) */
@@ -635,14 +307,9 @@ public final class HailongConfiguration {
     return config.getLong("node.networkID");
   }
 
-  /** @return the mode of the network to use - mock or hobbits */
+  /** @return the mode of the network to use - mock or libp2p */
   public String getNetworkMode() {
     return config.getString("node.networkMode");
-  }
-
-  /** @return the gossip protocol to use */
-  public String getGossipProtocol() {
-    return config.getString("node.gossipProtocol");
   }
 
   /** @return the path to the log file */
@@ -653,5 +320,19 @@ public final class HailongConfiguration {
   /** @return the name of the log file */
   public String getLogFile() {
     return config.getString("output.logFile");
+  }
+
+  public boolean startFromDisk() {
+    return config.getBoolean("database.startFromDisk");
+  }
+
+  public void validateConfig() throws IllegalArgumentException {
+    if (getNumValidators() < Constants.SLOTS_PER_EPOCH) {
+      throw new IllegalArgumentException("Invalid config.toml");
+    }
+  }
+
+  public int getBeaconRestAPIPortNumber() {
+    return config.getInteger("beaconrestapi.portNumber");
   }
 }

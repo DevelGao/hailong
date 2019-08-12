@@ -18,17 +18,17 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
-import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.tuweni.bytes.Bytes;
 import tech.devgao.hailong.proto.messagesigner.MessageSignerGrpc;
 import tech.devgao.hailong.proto.messagesigner.SignatureRequest;
 import tech.devgao.hailong.proto.messagesigner.SignatureResponse;
-import tech.devgao.hailong.util.alogger.ALogger;
 import tech.devgao.hailong.util.bls.BLSKeyPair;
 import tech.devgao.hailong.util.bls.BLSSignature;
 
 public class ValidatorClient {
-  private static final ALogger LOG = new ALogger(ValidatorClient.class.getName());
+  private static final Logger LOG = LogManager.getLogger();
   private BLSKeyPair keypair;
   private Server server;
 
@@ -37,7 +37,7 @@ public class ValidatorClient {
     try {
       start(port);
     } catch (IOException e) {
-      LOG.log(Level.WARN, "Error starting VC on port " + port);
+      LOG.warn("Error starting VC on port {}", port);
     }
   }
 
@@ -46,25 +46,12 @@ public class ValidatorClient {
     server =
         ServerBuilder.forPort(port).addService(new MessageSignerService(keypair)).build().start();
 
-    LOG.log(
-        Level.DEBUG,
-        "ValidatorClient started. Listening on "
-            + port
-            + " representing public key: "
-            + keypair.getPublicKey());
+    LOG.debug(
+        "ValidatorClient started. Listening on {} representing public key: {}",
+        port,
+        keypair.getPublicKey());
 
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread() {
-              @Override
-              public void run() {
-                // Use stderr here since the logger may have been reset by its JVM shutdown hook.
-                System.err.println(
-                    "*** Shutting down Validator Client gRPC server since JVM is shutting down");
-                stopServer();
-                System.err.println("*** Server shut down");
-              }
-            });
+    Runtime.getRuntime().addShutdownHook(new Thread(this::stopServer));
   }
 
   private void stopServer() {
@@ -91,7 +78,7 @@ public class ValidatorClient {
 
     private ByteString performSigning(SignatureRequest request) {
       Bytes message = Bytes.wrap(request.getMessage().toByteArray());
-      int domain = request.getDomain();
+      Bytes domain = Bytes.wrap(request.getDomain().toByteArray());
       return ByteString.copyFrom(BLSSignature.sign(keypair, message, domain).toBytes().toArray());
     }
   }

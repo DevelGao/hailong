@@ -15,6 +15,7 @@ package tech.devgao.hailong.datastructures.blocks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static tech.devgao.hailong.datastructures.util.DataStructureUtil.randomBytes32;
 import static tech.devgao.hailong.datastructures.util.DataStructureUtil.randomUnsignedLong;
 
 import com.google.common.primitives.UnsignedLong;
@@ -22,18 +23,16 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 import tech.devgao.hailong.datastructures.util.DataStructureUtil;
-import tech.devgao.hailong.util.bls.BLSSignature;
 
 class BeaconBlockHeaderTest {
-
-  private UnsignedLong slot = randomUnsignedLong();
-  private Bytes32 previous_block_root = Bytes32.random();
-  private Bytes32 state_root = Bytes32.random();
-  private Bytes32 block_body_root = Bytes32.random();
-  private BLSSignature signature = BLSSignature.random();
+  private int seed = 100;
+  private UnsignedLong slot = randomUnsignedLong(seed);
+  private Bytes32 previous_block_root = randomBytes32(seed++);
+  private Bytes32 state_root = randomBytes32(seed++);
+  private Bytes32 block_body_root = randomBytes32(seed++);
 
   private BeaconBlockHeader beaconBlockHeader =
-      new BeaconBlockHeader(slot, previous_block_root, state_root, block_body_root, signature);
+      new BeaconBlockHeader(slot, previous_block_root, state_root, block_body_root);
 
   @Test
   void equalsReturnsTrueWhenObjectAreSame() {
@@ -45,7 +44,7 @@ class BeaconBlockHeaderTest {
   @Test
   void equalsReturnsTrueWhenObjectFieldsAreEqual() {
     BeaconBlockHeader testBeaconBlockHeader =
-        new BeaconBlockHeader(slot, previous_block_root, state_root, block_body_root, signature);
+        new BeaconBlockHeader(slot, previous_block_root, state_root, block_body_root);
 
     assertEquals(beaconBlockHeader, testBeaconBlockHeader);
   }
@@ -54,11 +53,10 @@ class BeaconBlockHeaderTest {
   void equalsReturnsFalseWhenSlotsAreDifferent() {
     BeaconBlockHeader testBeaconBlockHeader =
         new BeaconBlockHeader(
-            slot.plus(randomUnsignedLong()),
+            slot.plus(randomUnsignedLong(seed++)),
             previous_block_root,
             state_root,
-            block_body_root,
-            signature);
+            block_body_root);
 
     assertNotEquals(beaconBlockHeader, testBeaconBlockHeader);
   }
@@ -66,8 +64,7 @@ class BeaconBlockHeaderTest {
   @Test
   void equalsReturnsFalseWhenPreviousBlockRootsAreDifferent() {
     BeaconBlockHeader testBeaconBlockHeader =
-        new BeaconBlockHeader(
-            slot, previous_block_root.not(), state_root, block_body_root, signature);
+        new BeaconBlockHeader(slot, previous_block_root.not(), state_root, block_body_root);
 
     assertNotEquals(beaconBlockHeader, testBeaconBlockHeader);
   }
@@ -75,8 +72,7 @@ class BeaconBlockHeaderTest {
   @Test
   void equalsReturnsFalseWhenStateRootsAreDifferent() {
     BeaconBlockHeader testBeaconBlockHeader =
-        new BeaconBlockHeader(
-            slot, previous_block_root, state_root.not(), block_body_root, signature);
+        new BeaconBlockHeader(slot, previous_block_root, state_root.not(), block_body_root);
 
     assertNotEquals(beaconBlockHeader, testBeaconBlockHeader);
   }
@@ -84,22 +80,7 @@ class BeaconBlockHeaderTest {
   @Test
   void equalsReturnsFalseWhenBlockBodyRootsAreDifferent() {
     BeaconBlockHeader testBeaconBlockHeader =
-        new BeaconBlockHeader(
-            slot, previous_block_root, state_root, block_body_root.not(), signature);
-
-    assertNotEquals(beaconBlockHeader, testBeaconBlockHeader);
-  }
-
-  @Test
-  void equalsReturnsFalseWhenSignaturesAreDifferent() {
-    BLSSignature differentSignature = BLSSignature.random();
-    while (differentSignature.equals(signature)) {
-      differentSignature = BLSSignature.random();
-    }
-
-    BeaconBlockHeader testBeaconBlockHeader =
-        new BeaconBlockHeader(
-            slot, previous_block_root, state_root, block_body_root, differentSignature);
+        new BeaconBlockHeader(slot, previous_block_root, state_root, block_body_root.not());
 
     assertNotEquals(beaconBlockHeader, testBeaconBlockHeader);
   }
@@ -112,15 +93,13 @@ class BeaconBlockHeaderTest {
 
   @Test
   void blockRootHeaderRootMatchingTests() {
-    BeaconBlock block = DataStructureUtil.randomBeaconBlock(90000000);
+    BeaconBlock block = DataStructureUtil.randomBeaconBlock(90000000, seed++);
     BeaconBlockHeader blockHeader =
         new BeaconBlockHeader(
             block.getSlot(),
             block.getParent_root(),
             block.getState_root(),
-            block.getBody().hash_tree_root(),
-            block.getSignature());
-    assertEquals(block.signing_root("signature"), blockHeader.signing_root("signature"));
+            block.getBody().hash_tree_root());
     assertEquals(block.hash_tree_root(), blockHeader.hash_tree_root());
   }
 }

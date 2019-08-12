@@ -1,8 +1,13 @@
 dependencies {
+  implementation project(':events')
   implementation project(':networking:p2p')
+  implementation project(':networking:eth2')
   implementation project(':validator:coordinator')
   implementation project(':validator:client')
   implementation project(':storage')
+  implementation project(':sync')
+  implementation project(':data:metrics')
+  implementation project(':data:beaconrestapi')
   implementation project(':ethereum:statetransition')
   implementation project(':ethereum:datastructures')
   implementation project(':services:serviceutils')
@@ -15,20 +20,8 @@ dependencies {
   runtime 'org.apache.logging.log4j:log4j-core'
   implementation 'org.apache.tuweni:tuweni-config'
   implementation 'org.apache.tuweni:tuweni-crypto'
+  implementation 'org.hyperledger.besu:plugin-api'
+  implementation 'io.libp2p:jvm-libp2p-minimal'
   implementation 'io.vertx:vertx-core'
   implementation 'io.vertx:vertx-web'
-
-  testSupportImplementation 'io.vertx:vertx-core'
-}
-
-configurations { testArtifacts }
-task testJar (type: Jar) {
-  baseName = "${project.name}-test"
-  from sourceSets.test.output
-}
-
-
-artifacts {
-  testArtifacts testJar
-  testSupportArtifacts testSupportJar
 }

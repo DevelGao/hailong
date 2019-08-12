@@ -15,169 +15,248 @@ package tech.devgao.hailong.datastructures.util;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.Math.toIntExact;
-import static tech.devgao.hailong.datastructures.Constants.ACTIVATION_EXIT_DELAY;
-import static tech.devgao.hailong.datastructures.Constants.CHURN_LIMIT_QUOTIENT;
-import static tech.devgao.hailong.datastructures.Constants.DOMAIN_DEPOSIT;
-import static tech.devgao.hailong.datastructures.Constants.EPOCHS_PER_HISTORICAL_VECTOR;
-import static tech.devgao.hailong.datastructures.Constants.EPOCHS_PER_SLASHINGS_VECTOR;
-import static tech.devgao.hailong.datastructures.Constants.FAR_FUTURE_EPOCH;
-import static tech.devgao.hailong.datastructures.Constants.GENESIS_EPOCH;
-import static tech.devgao.hailong.datastructures.Constants.MAX_EFFECTIVE_BALANCE;
-import static tech.devgao.hailong.datastructures.Constants.MIN_PER_EPOCH_CHURN_LIMIT;
-import static tech.devgao.hailong.datastructures.Constants.MIN_SEED_LOOKAHEAD;
-import static tech.devgao.hailong.datastructures.Constants.MIN_SLASHING_PENALTY_QUOTIENT;
-import static tech.devgao.hailong.datastructures.Constants.MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
-import static tech.devgao.hailong.datastructures.Constants.PROPOSER_REWARD_QUOTIENT;
-import static tech.devgao.hailong.datastructures.Constants.SHARD_COUNT;
-import static tech.devgao.hailong.datastructures.Constants.SHUFFLE_ROUND_COUNT;
-import static tech.devgao.hailong.datastructures.Constants.SLOTS_PER_EPOCH;
-import static tech.devgao.hailong.datastructures.Constants.SLOTS_PER_HISTORICAL_ROOT;
-import static tech.devgao.hailong.datastructures.Constants.TARGET_COMMITTEE_SIZE;
-import static tech.devgao.hailong.datastructures.Constants.WHISTLEBLOWER_REWARD_QUOTIENT;
-import static tech.devgao.hailong.datastructures.util.CrosslinkCommitteeUtil.get_crosslink_committee;
-import static tech.devgao.hailong.datastructures.util.CrosslinkCommitteeUtil.get_start_shard;
+import static tech.devgao.hailong.datastructures.util.CommitteeUtil.compute_proposer_index;
 import static tech.devgao.hailong.datastructures.util.ValidatorsUtil.decrease_balance;
 import static tech.devgao.hailong.datastructures.util.ValidatorsUtil.get_active_validator_indices;
 import static tech.devgao.hailong.datastructures.util.ValidatorsUtil.increase_balance;
+import static tech.devgao.hailong.util.alogger.ALogger.STDOUT;
 import static tech.devgao.hailong.util.bls.BLSVerify.bls_verify;
+import static tech.devgao.hailong.util.config.Constants.CHURN_LIMIT_QUOTIENT;
+import static tech.devgao.hailong.util.config.Constants.DEPOSIT_CONTRACT_TREE_DEPTH;
+import static tech.devgao.hailong.util.config.Constants.DOMAIN_BEACON_PROPOSER;
+import static tech.devgao.hailong.util.config.Constants.DOMAIN_DEPOSIT;
+import static tech.devgao.hailong.util.config.Constants.EFFECTIVE_BALANCE_INCREMENT;
+import static tech.devgao.hailong.util.config.Constants.EPOCHS_PER_HISTORICAL_VECTOR;
+import static tech.devgao.hailong.util.config.Constants.EPOCHS_PER_SLASHINGS_VECTOR;
+import static tech.devgao.hailong.util.config.Constants.FAR_FUTURE_EPOCH;
+import static tech.devgao.hailong.util.config.Constants.GENESIS_EPOCH;
+import static tech.devgao.hailong.util.config.Constants.MAX_COMMITTEES_PER_SLOT;
+import static tech.devgao.hailong.util.config.Constants.MAX_EFFECTIVE_BALANCE;
+import static tech.devgao.hailong.util.config.Constants.MAX_SEED_LOOKAHEAD;
+import static tech.devgao.hailong.util.config.Constants.MIN_GENESIS_ACTIVE_VALIDATOR_COUNT;
+import static tech.devgao.hailong.util.config.Constants.MIN_GENESIS_TIME;
+import static tech.devgao.hailong.util.config.Constants.MIN_PER_EPOCH_CHURN_LIMIT;
+import static tech.devgao.hailong.util.config.Constants.MIN_SEED_LOOKAHEAD;
+import static tech.devgao.hailong.util.config.Constants.MIN_SLASHING_PENALTY_QUOTIENT;
+import static tech.devgao.hailong.util.config.Constants.MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
+import static tech.devgao.hailong.util.config.Constants.PROPOSER_REWARD_QUOTIENT;
+import static tech.devgao.hailong.util.config.Constants.SECONDS_PER_DAY;
+import static tech.devgao.hailong.util.config.Constants.SHUFFLE_ROUND_COUNT;
+import static tech.devgao.hailong.util.config.Constants.SLOTS_PER_EPOCH;
+import static tech.devgao.hailong.util.config.Constants.SLOTS_PER_HISTORICAL_ROOT;
+import static tech.devgao.hailong.util.config.Constants.TARGET_COMMITTEE_SIZE;
+import static tech.devgao.hailong.util.config.Constants.WHISTLEBLOWER_REWARD_QUOTIENT;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.UnsignedLong;
 import java.nio.ByteOrder;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.crypto.Hash;
-import org.apache.tuweni.ssz.SSZ;
-import tech.devgao.hailong.datastructures.Constants;
+import tech.devgao.hailong.datastructures.blocks.BeaconBlockBody;
+import tech.devgao.hailong.datastructures.blocks.BeaconBlockHeader;
 import tech.devgao.hailong.datastructures.blocks.Eth1Data;
 import tech.devgao.hailong.datastructures.operations.Deposit;
+import tech.devgao.hailong.datastructures.operations.DepositData;
+import tech.devgao.hailong.datastructures.operations.DepositMessage;
 import tech.devgao.hailong.datastructures.state.BeaconState;
 import tech.devgao.hailong.datastructures.state.BeaconStateWithCache;
 import tech.devgao.hailong.datastructures.state.Validator;
-import tech.devgao.hailong.util.alogger.ALogger;
+import tech.devgao.hailong.util.SSZTypes.Bitvector;
+import tech.devgao.hailong.util.SSZTypes.Bytes4;
+import tech.devgao.hailong.util.SSZTypes.SSZList;
 import tech.devgao.hailong.util.bls.BLSPublicKey;
+import tech.devgao.hailong.util.config.Constants;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil;
-import tech.devgao.hailong.util.hashtree.HashTreeUtil.SSZTypes;
 
 public class BeaconStateUtil {
 
-  private static final ALogger LOG = new ALogger(BeaconStateUtil.class.getName());
+  /**
+   * For debug/test purposes only enables/disables {@link DepositData} BLS signature verification
+   * Setting to <code>false</code> significantly speeds up state initialization
+   */
+  public static boolean BLS_VERIFY_DEPOSIT = true;
 
   /**
-   * Get the genesis BeaconState.
-   *
-   * @param state
-   * @param genesis_validator_deposits
-   * @param genesis_time
-   * @param genesis_eth1_data
-   * @return
-   * @throws IllegalStateException
+   * For debug/test purposes only enables/disables deposit root Merkle proofs generation/validation
+   * Setting to <code>false</code> significantly speeds up state initialization
    */
-  public static BeaconStateWithCache get_genesis_beacon_state(
-      BeaconStateWithCache state,
-      List<Deposit> genesis_validator_deposits,
-      UnsignedLong genesis_time,
-      Eth1Data genesis_eth1_data)
-      throws IllegalStateException {
-    state.setLatest_eth1_data(genesis_eth1_data);
+  public static boolean DEPOSIT_PROOFS_ENABLED = true;
 
-    // Process genesis deposits
-    process_genesis_deposits(state, genesis_validator_deposits);
+  public static BeaconStateWithCache initialize_beacon_state_from_eth1(
+      Bytes32 eth1_block_hash, UnsignedLong eth1_timestamp, List<? extends Deposit> deposits) {
+    UnsignedLong genesis_time =
+        eth1_timestamp
+            .minus(eth1_timestamp.mod(UnsignedLong.valueOf(SECONDS_PER_DAY)))
+            .plus(UnsignedLong.valueOf(2).times(UnsignedLong.valueOf(SECONDS_PER_DAY)));
 
-    // Process genesis activations
-    for (Validator validator : state.getValidator_registry()) {
-      if (validator.getEffective_balance().compareTo(UnsignedLong.valueOf(MAX_EFFECTIVE_BALANCE))
-          >= 0) {
-        validator.setActivation_eligibility_epoch(UnsignedLong.valueOf(GENESIS_EPOCH));
-        validator.setActivation_epoch(UnsignedLong.valueOf(GENESIS_EPOCH));
+    Eth1Data eth1_data = new Eth1Data();
+    eth1_data.setBlock_hash(eth1_block_hash);
+    eth1_data.setDeposit_count(UnsignedLong.valueOf(deposits.size()));
+    BeaconBlockHeader beaconBlockHeader = new BeaconBlockHeader();
+    Bytes32 latestBlockRoot = new BeaconBlockBody().hash_tree_root();
+    beaconBlockHeader.setBody_root(latestBlockRoot);
+
+    BeaconStateWithCache state = new BeaconStateWithCache();
+    state.setGenesis_time(genesis_time);
+    state.setEth1_data(eth1_data);
+    state.setLatest_block_header(beaconBlockHeader);
+    for (int i = 0; i < state.getRandao_mixes().size(); i++) {
+      state.getRandao_mixes().set(i, eth1_block_hash);
+    }
+
+    // Process deposits
+    Map<BLSPublicKey, Integer> keyCache = new HashMap<>();
+    if (DEPOSIT_PROOFS_ENABLED) {
+      DepositUtil.calcDepositProofs(deposits);
+      long depositListLength = ((long) 1) << DEPOSIT_CONTRACT_TREE_DEPTH;
+      List<DepositData> leaves =
+          deposits.stream().map(Deposit::getData).collect(Collectors.toList());
+      for (int i = 0; i < deposits.size(); i++) {
+        SSZList<DepositData> deposit_data_list =
+            new SSZList<>(leaves.subList(0, i + 1), depositListLength, DepositData.class);
+        state
+            .getEth1_data()
+            .setDeposit_root(
+                HashTreeUtil.hash_tree_root(
+                    HashTreeUtil.SSZTypes.LIST_OF_COMPOSITE, depositListLength, deposit_data_list));
+        STDOUT.log(Level.DEBUG, "About to process deposit: " + i);
+        process_deposit(state, deposits.get(i), keyCache);
       }
+    } else {
+      STDOUT.log(Level.WARN, "About to process " + deposits.size() + " deposits without proofs.");
+      deposits.forEach(deposit -> process_deposit(state, deposit, keyCache));
     }
 
-    // Process latest_active_index_roots
-    List<Integer> active_validator_indices =
-        get_active_validator_indices(state, UnsignedLong.valueOf(GENESIS_EPOCH));
-    Bytes32 genesis_active_index_root =
-        HashTreeUtil.hash_tree_root(
-            SSZTypes.LIST_OF_BASIC,
-            active_validator_indices.stream()
-                .map(item -> SSZ.encodeUInt64(item.longValue()))
-                .collect(Collectors.toList()));
-    for (int index = 0; index < state.getLatest_active_index_roots().size(); index++) {
-      state.getLatest_active_index_roots().set(index, genesis_active_index_root);
-    }
+    // Process activations
+    IntStream.range(0, state.getValidators().size())
+        .forEach(
+            index -> {
+              Validator validator = state.getValidators().get(index);
+              UnsignedLong balance = state.getBalances().get(index);
+              UnsignedLong effective_balance =
+                  min(
+                      balance.minus(balance.mod(UnsignedLong.valueOf(EFFECTIVE_BALANCE_INCREMENT))),
+                      UnsignedLong.valueOf(MAX_EFFECTIVE_BALANCE));
+              validator.setEffective_balance(effective_balance);
+
+              if (validator
+                  .getEffective_balance()
+                  .equals(UnsignedLong.valueOf(MAX_EFFECTIVE_BALANCE))) {
+                validator.setActivation_eligibility_epoch(UnsignedLong.valueOf(GENESIS_EPOCH));
+                validator.setActivation_epoch(UnsignedLong.valueOf(GENESIS_EPOCH));
+              }
+            });
 
     return state;
   }
 
   /**
+   * Processes deposits
+   *
    * @param state
-   * @param deposits
+   * @param deposit
+   * @see
+   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#deposits</a>
    */
-  private static void process_genesis_deposits(BeaconState state, List<Deposit> deposits) {
-    for (Deposit deposit : deposits) {
-      /*
+  public static void process_deposit(BeaconState state, Deposit deposit) {
+    process_deposit(state, deposit, null);
+  }
+
+  private static void process_deposit(
+      BeaconState state, Deposit deposit, Map<BLSPublicKey, Integer> pubKeyToIndexMap) {
+
+    if (DEPOSIT_PROOFS_ENABLED) {
       checkArgument(
           is_valid_merkle_branch(
               deposit.getData().hash_tree_root(),
               deposit.getProof(),
-              Constants.DEPOSIT_CONTRACT_TREE_DEPTH,
-              toIntExact(state.getDeposit_index().longValue()),
-              state.getLatest_eth1_data().getDeposit_root()),
-          "process_deposits: Verify the Merkle branch");
-          */
+              Constants.DEPOSIT_CONTRACT_TREE_DEPTH + 1, // Add 1 for the `List` length mix-in
+              toIntExact(state.getEth1_deposit_index().longValue()),
+              state.getEth1_data().getDeposit_root()),
+          "process_deposit: Verify the Merkle branch");
+    }
 
-      state.setDeposit_index(state.getDeposit_index().plus(UnsignedLong.ONE));
+    state.setEth1_deposit_index(state.getEth1_deposit_index().plus(UnsignedLong.ONE));
 
-      BLSPublicKey pubkey = deposit.getData().getPubkey();
-      UnsignedLong amount = deposit.getData().getAmount();
-      List<BLSPublicKey> validator_pubkeys =
-          state.getValidator_registry().stream()
-              .map(Validator::getPubkey)
-              .collect(Collectors.toList());
-      if (!validator_pubkeys.contains(pubkey)) {
+    final BLSPublicKey pubkey = deposit.getData().getPubkey();
+    final UnsignedLong amount = deposit.getData().getAmount();
 
-        // Verify the deposit signature (proof of possession).
-        // Invalid signatures are allowed by the deposit contract,
-        // and hence included on-chain, but must not be processed.
-        // Note: deposits are valid across forks, hence the deposit
-        // domain is retrieved directly from `bls_domain`
+    SSZList<Validator> validators = state.getValidators();
+    OptionalInt existingIndex;
+    if (pubKeyToIndexMap != null) {
+      Integer cachedIndex = pubKeyToIndexMap.putIfAbsent(pubkey, state.getValidators().size());
+      existingIndex = cachedIndex == null ? OptionalInt.empty() : OptionalInt.of(cachedIndex);
+    } else {
+      existingIndex =
+          IntStream.range(0, validators.size())
+              .filter(index -> pubkey.equals(validators.get(index).getPubkey()))
+              .findFirst();
+    }
+
+    if (existingIndex.isEmpty()) {
+
+      // Verify the deposit signature (proof of possession) for new validators.
+      // Note: Deposits are valid across forks, thus the deposit
+      // domain is retrieved directly from `compute_domain`
+      if (BLS_VERIFY_DEPOSIT) {
+        final DepositMessage deposit_message =
+            new DepositMessage(pubkey, deposit.getData().getWithdrawal_credentials(), amount);
         boolean proof_is_valid =
-            bls_verify(
-                pubkey,
-                deposit.getData().signing_root("signature"),
-                deposit.getData().getSignature(),
-                bls_domain(DOMAIN_DEPOSIT));
+            !BLS_VERIFY_DEPOSIT
+                || bls_verify(
+                    pubkey,
+                    deposit_message.hash_tree_root(),
+                    deposit.getData().getSignature(),
+                    compute_domain(DOMAIN_DEPOSIT));
         if (!proof_is_valid) {
+          STDOUT.log(Level.DEBUG, "Skipping invalid deposit");
           return;
         }
-
-        state
-            .getValidator_registry()
-            .add(
-                new Validator(
-                    pubkey,
-                    deposit.getData().getWithdrawal_credentials(),
-                    FAR_FUTURE_EPOCH,
-                    FAR_FUTURE_EPOCH,
-                    FAR_FUTURE_EPOCH,
-                    FAR_FUTURE_EPOCH,
-                    false,
-                    min(
-                        amount.minus(
-                            amount.mod(
-                                UnsignedLong.valueOf(Constants.EFFECTIVE_BALANCE_INCREMENT))),
-                        UnsignedLong.valueOf(MAX_EFFECTIVE_BALANCE))));
-        state.getBalances().add(amount);
-      } else {
-        int index = validator_pubkeys.indexOf(pubkey);
-        increase_balance(state, index, amount);
       }
+
+      if (pubKeyToIndexMap == null) {
+        STDOUT.log(Level.DEBUG, "Adding new validator to state: " + state.getValidators().size());
+      }
+      state
+          .getValidators()
+          .add(
+              new Validator(
+                  pubkey,
+                  deposit.getData().getWithdrawal_credentials(),
+                  min(
+                      amount.minus(
+                          amount.mod(UnsignedLong.valueOf(Constants.EFFECTIVE_BALANCE_INCREMENT))),
+                      UnsignedLong.valueOf(MAX_EFFECTIVE_BALANCE)),
+                  false,
+                  FAR_FUTURE_EPOCH,
+                  FAR_FUTURE_EPOCH,
+                  FAR_FUTURE_EPOCH,
+                  FAR_FUTURE_EPOCH));
+      state.getBalances().add(amount);
+    } else {
+      increase_balance(state, existingIndex.getAsInt(), amount);
     }
+  }
+
+  public static boolean is_valid_genesis_state(BeaconState state) {
+    return !(state.getGenesis_time().compareTo(MIN_GENESIS_TIME) < 0)
+        && !(get_active_validator_indices(state, UnsignedLong.valueOf(GENESIS_EPOCH)).size()
+            < MIN_GENESIS_ACTIVE_VALIDATOR_COUNT);
+  }
+
+  public static boolean is_valid_genesis_stateSim(BeaconState state) {
+    return !(get_active_validator_indices(state, UnsignedLong.valueOf(GENESIS_EPOCH)).size()
+        < MIN_GENESIS_ACTIVE_VALIDATOR_COUNT);
   }
 
   /**
@@ -216,30 +295,13 @@ public class BeaconStateUtil {
    * @see
    *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_seed</a>
    */
-  public static Bytes32 get_seed(BeaconState state, UnsignedLong epoch)
+  public static Bytes32 get_seed(BeaconState state, UnsignedLong epoch, Bytes4 domain_type)
       throws IllegalArgumentException {
     UnsignedLong randaoIndex =
-        epoch.plus(UnsignedLong.valueOf(EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD));
-    Bytes32 randao_mix = get_randao_mix(state, randaoIndex);
-    Bytes32 active_index_root = state.getActive_index_roots().get(epoch.mod(UnsignedLong.valueOf(EPOCHS_PER_HISTORICAL_VECTOR)).intValue());
-    Bytes32 epochBytes = int_to_bytes32(epoch.longValue());
-    return Hash.sha2_256(Bytes.wrap(randao_mix, active_index_root, epochBytes));
-  }
-
-  /**
-   * Return the index root at a recent ``epoch``. ``epoch`` expected to be between (current_epoch -
-   * LATEST_ACTIVE_INDEX_ROOTS_LENGTH + ACTIVATION_EXIT_DELAY, current_epoch +
-   * ACTIVATION_EXIT_DELAY].
-   *
-   * @param state - The BeaconState under consideration.
-   * @param epoch - The epoch to get the index root for.
-   * @return
-   * @see
-   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#get_active_index_root</a>
-   */
-  public static Bytes32 get_active_index_root(BeaconState state, UnsignedLong epoch) {
-    int index = epoch.mod(UnsignedLong.valueOf(LATEST_ACTIVE_INDEX_ROOTS_LENGTH)).intValue();
-    return state.getLatest_active_index_roots().get(index);
+        epoch.plus(UnsignedLong.valueOf(EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD - 1));
+    Bytes32 mix = get_randao_mix(state, randaoIndex);
+    Bytes epochBytes = int_to_bytes(epoch.longValue(), 8);
+    return Hash.sha2_256(Bytes.concatenate(domain_type.getWrappedBytes(), epochBytes, mix));
   }
 
   /**
@@ -252,12 +314,11 @@ public class BeaconStateUtil {
    * @see
    *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_total_balance</a>
    */
-  public static UnsignedLong get_total_balance(BeaconState state, List<Integer> indices) {
+  public static UnsignedLong get_total_balance(BeaconState state, Collection<Integer> indices) {
     UnsignedLong sum = UnsignedLong.ZERO;
-    Iterator<Integer> itr = indices.iterator();
     List<Validator> validator_registry = state.getValidators();
-    while (itr.hasNext()) {
-      sum = sum.plus(validator_registry.get(itr.next()).getEffective_balance());
+    for (Integer index : indices) {
+      sum = sum.plus(validator_registry.get(index).getEffective_balance());
     }
     return max(sum, UnsignedLong.ONE);
   }
@@ -271,46 +332,49 @@ public class BeaconStateUtil {
    *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_total_active_balance</a>
    */
   public static UnsignedLong get_total_active_balance(BeaconState state) {
-    return get_total_balance(state, get_active_validator_indices(state, get_current_epoch(state)));
+    return BeaconStateWithCache.getTransitionCaches(state)
+        .getTotalActiveBalance()
+        .get(
+            get_current_epoch(state),
+            epoch -> get_total_balance(state, get_active_validator_indices(state, epoch)));
   }
 
-
   /**
-   *  Return the domain for the ``domain_type`` and ``fork_version``.
+   * Return the domain for the ``domain_type`` and ``fork_version``.
    *
    * @param domain_type
    * @param fork_version
    * @return domain
-   * @see <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#compute_domain</a>
+   * @see
+   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#compute_domain</a>
    */
-  public static Bytes compute_domain(Bytes domain_type, Bytes fork_version) {
-    checkArgument(domain_type.size() == 4, "domain_type must be of type Bytes4");
-    checkArgument(fork_version.size() == 4, "fork_version must be of type Bytes4");
-    Bytes domain = Bytes.concatenate(domain_type, fork_version);
-    checkArgument(domain_type.size() == 8, "domain must be of type Bytes8");
+  public static Bytes compute_domain(Bytes4 domain_type, Bytes4 fork_version) {
+    Bytes domain = Bytes.concatenate(domain_type.getWrappedBytes(), fork_version.getWrappedBytes());
+    checkArgument(domain.size() == 8, "domain must be of type Bytes8");
     return domain;
   }
 
   /**
-   *  Return the domain for the ``domain_type``.
+   * Return the domain for the ``domain_type``.
    *
    * @param domain_type
    * @return domain
-   * @see <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#compute_domain</a>
+   * @see
+   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#compute_domain</a>
    */
-  public static Bytes compute_domain(Bytes domain_type) {
-    return compute_domain(domain_type, Bytes.wrap(new byte[4]));
-  }i
-
+  public static Bytes compute_domain(Bytes4 domain_type) {
+    return compute_domain(domain_type, new Bytes4(Bytes.wrap(new byte[4])));
+  }
 
   /**
    * Returns the epoch number of the given slot.
    *
    * @param slot - The slot number under consideration.
    * @return The epoch associated with the given slot number.
-   * @see <a> https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#compute_epoch_of_slot</a>
+   * @see <a>
+   *     https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#compute_epoch_of_slot</a>
    */
-  public static UnsignedLong compute_epoch_of_slot(UnsignedLong slot) {
+  public static UnsignedLong compute_epoch_at_slot(UnsignedLong slot) {
     return slot.dividedBy(UnsignedLong.valueOf(Constants.SLOTS_PER_EPOCH));
   }
 
@@ -335,10 +399,11 @@ public class BeaconStateUtil {
    *
    * @param state The beacon state under consideration.
    * @return The current epoch number for the given state.
-   * @see <a> https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_current_epoch</a>
+   * @see <a>
+   *     https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_current_epoch</a>
    */
   public static UnsignedLong get_current_epoch(BeaconState state) {
-    return compute_epoch_of_slot(state.getSlot());
+    return compute_epoch_at_slot(state.getSlot());
   }
 
   /**
@@ -359,29 +424,21 @@ public class BeaconStateUtil {
    *
    * @param epoch - The epoch under consideration.
    * @return The slot that the given epoch starts at.
-   * @see <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#compute_epoch_of_slot</a>
+   * @see
+   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#compute_epoch_of_slot</a>
    */
-  public static UnsignedLong compute_start_slot_of_epoch(UnsignedLong epoch) {
+  public static UnsignedLong compute_start_slot_at_epoch(UnsignedLong epoch) {
     return epoch.times(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
   }
 
   /**
-   * An entry or exit triggered in the ``epoch`` given by the input takes effect at the epoch given
-   * by the output.
-   *
-   * @param epoch
-   */
-  public static UnsignedLong get_entry_exit_effect_epoch(UnsignedLong epoch) {
-    return epoch.plus(UnsignedLong.ONE).plus(UnsignedLong.valueOf(ACTIVATION_EXIT_DELAY));
-  }
-
-  /**
-   *  Initiate the exit of the validator with index ``index``.
+   * Initiate the exit of the validator with index ``index``.
    *
    * @param state
    * @param index
    * @return
-   * @see <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#initiate_validator_exit</a>
+   * @see
+   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#initiate_validator_exit</a>
    */
   public static void initiate_validator_exit(BeaconState state, int index) {
     Validator validator = state.getValidators().get(index);
@@ -417,12 +474,14 @@ public class BeaconStateUtil {
   }
 
   /**
-   *  Slash the validator with index ``slashed_index``.
+   * Slash the validator with index ``slashed_index``.
    *
    * @param state
-   * @param index
+   * @param slashed_index
+   * @param whistleblower_index
    * @return
-   * @see <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#slash_validator/a>
+   * @see
+   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#slash_validator/a>
    */
   public static void slash_validator(
       BeaconState state, int slashed_index, int whistleblower_index) {
@@ -430,10 +489,20 @@ public class BeaconStateUtil {
     initiate_validator_exit(state, slashed_index);
     Validator validator = state.getValidators().get(slashed_index);
     validator.setSlashed(true);
-    validator.setWithdrawable_epoch(max(validator.getWithdrawable_epoch(), epoch.plus(UnsignedLong.valueOf(EPOCHS_PER_SLASHINGS_VECTOR))));
+    validator.setWithdrawable_epoch(
+        max(
+            validator.getWithdrawable_epoch(),
+            epoch.plus(UnsignedLong.valueOf(EPOCHS_PER_SLASHINGS_VECTOR))));
     int index = epoch.mod(UnsignedLong.valueOf(EPOCHS_PER_SLASHINGS_VECTOR)).intValue();
-    state.getSlashings().set(index, state.getSlashings().get(index).plus(validator.getEffective_balance()));
-    decrease_balance(state, slashed_index, validator.getEffective_balance().dividedBy(UnsignedLong.valueOf(MIN_SLASHING_PENALTY_QUOTIENT)));
+    state
+        .getSlashings()
+        .set(index, state.getSlashings().get(index).plus(validator.getEffective_balance()));
+    decrease_balance(
+        state,
+        slashed_index,
+        validator
+            .getEffective_balance()
+            .dividedBy(UnsignedLong.valueOf(MIN_SLASHING_PENALTY_QUOTIENT)));
 
     // Apply proposer and whistleblower rewards
     int proposer_index = get_beacon_proposer_index(state);
@@ -441,7 +510,10 @@ public class BeaconStateUtil {
       whistleblower_index = proposer_index;
     }
 
-    UnsignedLong whistleblower_reward = validator.getEffective_balance().dividedBy(UnsignedLong.valueOf(WHISTLEBLOWER_REWARD_QUOTIENT));
+    UnsignedLong whistleblower_reward =
+        validator
+            .getEffective_balance()
+            .dividedBy(UnsignedLong.valueOf(WHISTLEBLOWER_REWARD_QUOTIENT));
     UnsignedLong proposer_reward =
         whistleblower_reward.dividedBy(UnsignedLong.valueOf(PROPOSER_REWARD_QUOTIENT));
     increase_balance(state, proposer_index, proposer_reward);
@@ -449,7 +521,7 @@ public class BeaconStateUtil {
   }
 
   public static void slash_validator(BeaconState state, int slashed_index) {
-    slash_validator(state, slashed_index,  -1);
+    slash_validator(state, slashed_index, -1);
   }
 
   /**
@@ -463,32 +535,32 @@ public class BeaconStateUtil {
    */
   public static Bytes32 get_block_root(BeaconState state, UnsignedLong epoch)
       throws IllegalArgumentException {
-    return get_block_root_at_slot(state, compute_start_slot_of_epoch(epoch));
+    return get_block_root_at_slot(state, compute_start_slot_at_epoch(epoch));
   }
 
   /**
-   * Return the number of committees at ``epoch``.
+   * return the number of committees at ``slot``.
    *
    * @param state
-   * @param epoch
+   * @param slot
    * @return
-   * @see
-   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_committee_count</a>
    */
-  public static UnsignedLong get_committee_count(BeaconState state, UnsignedLong epoch) {
+  public static UnsignedLong get_committee_count_at_slot(BeaconState state, UnsignedLong slot) {
+    UnsignedLong epoch = compute_epoch_at_slot(slot);
     List<Integer> active_validator_indices = get_active_validator_indices(state, epoch);
-    return max(
-            UnsignedLong.ONE,
-            min(
-                UnsignedLong.valueOf(Math.floorDiv(SHARD_COUNT, SLOTS_PER_EPOCH)),
-                UnsignedLong.valueOf(active_validator_indices.size())
-                    .dividedBy(UnsignedLong.valueOf(SLOTS_PER_EPOCH))
-                    .dividedBy(UnsignedLong.valueOf(TARGET_COMMITTEE_SIZE))))
-        .times(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
+    return UnsignedLong.valueOf(
+        Math.max(
+            1,
+            Math.min(
+                MAX_COMMITTEES_PER_SLOT,
+                Math.floorDiv(
+                    Math.floorDiv(active_validator_indices.size(), SLOTS_PER_EPOCH),
+                    TARGET_COMMITTEE_SIZE))));
   }
 
   /**
-   *    Return the randao mix at a recent ``epoch``.
+   * Return the randao mix at a recent ``epoch``.
+   *
    * @param state
    * @param epoch
    * @return
@@ -547,14 +619,14 @@ public class BeaconStateUtil {
       Bytes hashBytes = Bytes.EMPTY;
       for (int i = 0; i < (list_size + 255) / 256; i++) {
         Bytes iAsBytes4 = int_to_bytes(i, 4);
-        hashBytes = Bytes.wrap(hashBytes, Hash.keccak256(Bytes.wrap(seed, roundAsByte, iAsBytes4)));
+        hashBytes = Bytes.wrap(hashBytes, Hash.sha2_256(Bytes.wrap(seed, roundAsByte, iAsBytes4)));
       }
 
       // This needs to be unsigned modulo.
       int pivot =
           toIntExact(
               Long.remainderUnsigned(
-                  bytes_to_int(Hash.keccak256(Bytes.wrap(seed, roundAsByte)).slice(0, 8)),
+                  bytes_to_int(Hash.sha2_256(Bytes.wrap(seed, roundAsByte)).slice(0, 8)),
                   list_size));
 
       for (int i = 0; i < list_size; i++) {
@@ -594,7 +666,7 @@ public class BeaconStateUtil {
   }
 
   /**
-   *   Return the beacon proposer index at the current slot.
+   * Return the beacon proposer index at the current slot.
    *
    * @param state
    * @return
@@ -602,35 +674,20 @@ public class BeaconStateUtil {
    *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_beacon_proposer_index</a>
    */
   public static int get_beacon_proposer_index(BeaconState state) {
-    UnsignedLong epoch = get_current_epoch(state);
-    UnsignedLong committees_per_slot =
-        get_committee_count(state, epoch).dividedBy(UnsignedLong.valueOf(SLOTS_PER_EPOCH));
-    UnsignedLong offset =
-        committees_per_slot.times(state.getSlot().mod(UnsignedLong.valueOf(SLOTS_PER_EPOCH)));
-    UnsignedLong shard =
-        get_start_shard(state, epoch).plus(offset).mod(UnsignedLong.valueOf(SHARD_COUNT));
-
-    List<Integer> first_committee = get_crosslink_committee(state, epoch, shard);
-    long MAX_RANDOM_BYTE = (long) Math.pow(2.0d, 8.0d) - 1;
-    Bytes seed = get_seed(state, epoch);
-    int i = 0;
-    while (true) {
-      int index =
-          epoch
-              .plus(UnsignedLong.valueOf(i))
-              .mod(UnsignedLong.valueOf(first_committee.size()))
-              .intValue();
-      int candidate_index = first_committee.get(index);
-      Bytes digest = Hash.sha2_256(Bytes.concatenate(seed, int_to_bytes(Math.floorDiv(i, 32), 8)));
-      byte random_byte = digest.get(i % 32);
-      UnsignedLong effective_balance =
-          state.getValidators().get(candidate_index).getEffective_balance();
-
-      long minRandomBalance = effective_balance.longValue() * MAX_RANDOM_BYTE;
-      long maxRandomBalance = Math.toIntExact(MAX_EFFECTIVE_BALANCE) * random_byte;
-      if (minRandomBalance >= maxRandomBalance) return candidate_index;
-      i++;
-    }
+    return BeaconStateWithCache.getTransitionCaches(state)
+        .getBeaconProposerIndex()
+        .get(
+            state.getSlot(),
+            slot -> {
+              UnsignedLong epoch = get_current_epoch(state);
+              Bytes32 seed =
+                  Hash.sha2_256(
+                      Bytes.concatenate(
+                          get_seed(state, epoch, DOMAIN_BEACON_PROPOSER),
+                          int_to_bytes(state.getSlot().longValue(), 8)));
+              List<Integer> indices = get_active_validator_indices(state, epoch);
+              return compute_proposer_index(state, indices, seed);
+            });
   }
 
   /**
@@ -675,13 +732,14 @@ public class BeaconStateUtil {
    * @see
    *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_domain</a>
    */
-  public static int get_domain(BeaconState state, int domain_type, UnsignedLong message_epoch) {
+  public static Bytes get_domain(
+      BeaconState state, Bytes4 domain_type, UnsignedLong message_epoch) {
     UnsignedLong epoch = (message_epoch == null) ? get_current_epoch(state) : message_epoch;
-    Bytes fork_version =
+    Bytes4 fork_version =
         (epoch.compareTo(state.getFork().getEpoch()) < 0)
             ? state.getFork().getPrevious_version()
             : state.getFork().getCurrent_version();
-    return bls_domain(domain_type, fork_version);
+    return compute_domain(domain_type, fork_version);
   }
 
   /**
@@ -692,9 +750,9 @@ public class BeaconStateUtil {
    * @return The fork version and signature domain. This format ((fork version << 32) +
    *     SignatureDomain) is used to partition BLS signatures.
    * @see
-   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#get_domain</a>
+   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_domain</a>
    */
-  public static int get_domain(BeaconState state, int domain_type) {
+  public static Bytes get_domain(BeaconState state, Bytes4 domain_type) {
     return get_domain(state, domain_type, null);
   }
 
@@ -717,7 +775,6 @@ public class BeaconStateUtil {
    * (defaults to zero).
    *
    * @param domain_type
-   * @param fork_version
    * @return
    * @see
    *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#bls_domain</a>
@@ -735,7 +792,8 @@ public class BeaconStateUtil {
    *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_validator_churn_limit</a>
    */
   public static UnsignedLong get_validator_churn_limit(BeaconState state) {
-    List<Integer> active_validator_indices = get_active_validator_indices(state, get_current_epoch(state));
+    List<Integer> active_validator_indices =
+        get_active_validator_indices(state, get_current_epoch(state));
     return max(
         UnsignedLong.valueOf(MIN_PER_EPOCH_CHURN_LIMIT),
         UnsignedLong.valueOf(active_validator_indices.size() / CHURN_LIMIT_QUOTIENT));
@@ -746,76 +804,20 @@ public class BeaconStateUtil {
    *
    * @param epoch - The epoch under consideration.
    * @return The epoch at which an activation or exit in the given `epoch` will take effect.
-   * @see <a> https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#compute_activation_exit_epoch</a>
+   * @see <a>
+   *     https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#compute_activation_exit_epoch</a>
    */
   public static UnsignedLong compute_activation_exit_epoch(UnsignedLong epoch) {
-    return epoch.plus(UnsignedLong.ONE).plus(UnsignedLong.valueOf(ACTIVATION_EXIT_DELAY));
+    return epoch.plus(UnsignedLong.ONE).plus(UnsignedLong.valueOf(MAX_SEED_LOOKAHEAD));
   }
 
-  /**
-   * Extract the bit in ``bitfield`` at position ``i``.
-   *
-   * @param bitfield - The Bytes value that describes the bitfield to operate on.
-   * @param i - The index.
-   * @return The bit at bitPosition from the given bitfield.
-   * @see <a
-   *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.4.0/specs/core/0_beacon-chain.md#get_bitfield_bit">get_bitfield_bit
-   *     - Spec v0.4</a>
-   */
-  public static int get_bitfield_bit(Bytes bitfield, int i) {
-    return (bitfield.get(i / 8) >>> (i % 8)) % 2;
-  }
-
-  /**
-   * Verify ``bitfield`` against the ``committee_size``.
-   *
-   * @param bitfield - The bitfield under consideration.
-   * @param committee_size - The size of the committee associated with the bitfield.
-   * @return True if the given bitfield is valid for the given committee_size, false otherwise.
-   * @see <a
-   *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.4.0/specs/core/0_beacon-chain.md#verify_bitfield">verify_bitfield
-   *     - Spec v0.4</a>
-   */
-  public static boolean verify_bitfield(Bytes bitfield, int committee_size) {
-    if (bitfield.size() != (committee_size + 7) / 8) {
-      return false;
-    }
-
-    for (int i = committee_size; i < bitfield.size() * 8; i++) {
-      if (get_bitfield_bit(bitfield, i) == 0b1) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  // TODO test this function
-  public static Bytes setBit(Bytes bits, int pos) {
-    byte[] bitsByteArray = bits.toArray();
-    byte myByte = bitsByteArray[pos / 8];
-    myByte = (byte) (myByte | (1 << (7 - (pos % 8))));
-    bitsByteArray[pos / 8] = myByte;
-    return Bytes.wrap(bitsByteArray);
-  }
-
-  public static boolean all(Bytes bits, int start, int end) {
+  public static boolean all(Bitvector bitvector, int start, int end) {
     for (int i = start; i < end; i++) {
-      if (get_bitfield_bit(bits, i) == 0) {
+      if (bitvector.getBit(i) == 0) {
         return false;
       }
     }
     return true;
-  }
-
-  /** Activate the validator with the given 'index'. Note that this function mutates 'state'. */
-  @VisibleForTesting
-  public static void activate_validator(BeaconState state, int index, boolean is_genesis) {
-    Validator validator = state.getValidator_registry().get(index);
-    validator.setActivation_epoch(
-        is_genesis
-            ? UnsignedLong.valueOf(GENESIS_EPOCH)
-            : BeaconStateUtil.compute_activation_exit_epoch(
-                BeaconStateUtil.get_current_epoch(state)));
   }
 
   /**
@@ -823,8 +825,8 @@ public class BeaconStateUtil {
    *
    * @param n - The highest bound of x.
    * @return The largest integer 'x' such that 'x**2' is less than 'n'.
-   * @see
-   * <a> https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#integer_squareroot</a>
+   * @see <a>
+   *     https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#integer_squareroot</a>
    */
   public static UnsignedLong integer_squareroot(UnsignedLong n) {
     checkArgument(
@@ -851,7 +853,7 @@ public class BeaconStateUtil {
    * @return The value represented as the requested number of bytes.
    */
   public static Bytes int_to_bytes(long value, int numBytes) {
-    final int longBytes = Long.SIZE / 8;
+    int longBytes = Long.SIZE / 8;
     Bytes valueBytes = Bytes.ofUnsignedLong(value, ByteOrder.LITTLE_ENDIAN);
     if (numBytes <= longBytes) {
       return valueBytes.slice(0, numBytes);
@@ -872,7 +874,7 @@ public class BeaconStateUtil {
    * @param data - The value to be converted to int.
    * @return An integer representation of the bytes value given.
    * @see
-   * <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#bytes_to_int</a>
+   *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#bytes_to_int</a>
    */
   public static long bytes_to_int(Bytes data) {
     return data.toLong(ByteOrder.LITTLE_ENDIAN);
@@ -889,14 +891,17 @@ public class BeaconStateUtil {
    */
   public static Bytes32 get_block_root_at_slot(BeaconState state, UnsignedLong slot)
       throws IllegalArgumentException {
-    UnsignedLong slotPlusHistoricalRoot =
-        slot.plus(UnsignedLong.valueOf(SLOTS_PER_HISTORICAL_ROOT));
     checkArgument(
-        slot.compareTo(state.getSlot()) < 0
-            && state.getSlot().compareTo(slotPlusHistoricalRoot) <= 0,
-        "BeaconStateUtil.get_block_root_at_slot");
+        isBlockRootAvailableFromState(state, slot), "BeaconStateUtil.get_block_root_at_slot");
     int latestBlockRootIndex = slot.mod(UnsignedLong.valueOf(SLOTS_PER_HISTORICAL_ROOT)).intValue();
     return state.getBlock_roots().get(latestBlockRootIndex);
+  }
+
+  public static boolean isBlockRootAvailableFromState(BeaconState state, UnsignedLong slot) {
+    UnsignedLong slotPlusHistoricalRoot =
+        slot.plus(UnsignedLong.valueOf(SLOTS_PER_HISTORICAL_ROOT));
+    return slot.compareTo(state.getSlot()) < 0
+        && state.getSlot().compareTo(slotPlusHistoricalRoot) <= 0;
   }
 
   /**

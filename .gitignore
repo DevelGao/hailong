@@ -6,8 +6,10 @@
 *.launch
 *.swp
 *.log
+*.db
 .classpath
 .DS_Store
+.gradletasknamecache
 .externalToolBuilders/
 .gradle/
 .idea/
@@ -28,9 +30,8 @@ out/
 web3j/
 ganache-cli/
 pow/src/main/resources/keys.json
-*.csv*
-*.json*
 !validator_test_data.json
+/interopDepositsAndKeys.json
 *.vscode/
 pow/truffle/.vscode/
 pow/truffle/node_modules/
@@ -44,19 +45,9 @@ proto/gen/*
 *.d
 *.a
 *.class
-libs/manifest.txt
-libs/net
-libs/release/.cargo-lock
-libs/release/.fingerprint/
-libs/release/libmothra.dylib
-libs/libmothra.dylib
-libs/release/deps/libasn1_der_derive-c41e073854e61c82.dylib
-libs/release/deps/libfailure_derive-c05426e8cc646749.dylib
-libs/release/deps/liblibp2p_core_derive-20fa5cb5b0cef8fc.dylib
-libs/release/deps/liblibp2p_core_derive-f2986c33559ab810.dylib
-libs/release/deps/libmothra.a
-libs/release/deps/libserde_derive-a084dc5caa702239.dylib
-libs/release/deps/libwasm_bindgen_macro-b1e3be38bd95b757.dylib
-libs/release/deps/libzeroize_derive-5e6e5f86427574f8.dylib
-libs/release/deps/libzeroize_derive-e8c58a63184da022.dylib
+scripts/.java-version
+config/peer_ids.dat
+eth-reference-tests/src/test/
+eth-reference-tests/src/referenceTest/resources/eth2.0-spec-tests/
+
 

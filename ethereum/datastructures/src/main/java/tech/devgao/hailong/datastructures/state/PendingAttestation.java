@@ -14,9 +14,9 @@
 package tech.devgao.hailong.datastructures.state;
 
 import com.google.common.primitives.UnsignedLong;
-
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
@@ -24,24 +24,27 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.ssz.SSZ;
 import tech.devgao.hailong.datastructures.Copyable;
 import tech.devgao.hailong.datastructures.operations.AttestationData;
+import tech.devgao.hailong.util.SSZTypes.Bitlist;
+import tech.devgao.hailong.util.SSZTypes.SSZContainer;
+import tech.devgao.hailong.util.config.Constants;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil.SSZTypes;
 import tech.devgao.hailong.util.hashtree.Merkleizable;
 import tech.devgao.hailong.util.sos.SimpleOffsetSerializable;
 
 public class PendingAttestation
-    implements Copyable<PendingAttestation>, Merkleizable, SimpleOffsetSerializable {
+    implements Copyable<PendingAttestation>, Merkleizable, SimpleOffsetSerializable, SSZContainer {
 
   // The number of SimpleSerialize basic types in this SSZ Container/POJO.
   public static final int SSZ_FIELD_COUNT = 3;
 
-  private Bytes aggregation_bits; // bitlist bounded by MAX_VALIDATORS_PER_COMMITTEE
+  private Bitlist aggregation_bits; // bitlist bounded by MAX_VALIDATORS_PER_COMMITTEE
   private AttestationData data;
   private UnsignedLong inclusion_delay;
   private UnsignedLong proposer_index;
 
   public PendingAttestation(
-      Bytes aggregation_bitfield,
+      Bitlist aggregation_bitfield,
       AttestationData data,
       UnsignedLong inclusion_delay,
       UnsignedLong proposer_index) {
@@ -51,9 +54,14 @@ public class PendingAttestation
     this.proposer_index = proposer_index;
   }
 
+  public PendingAttestation() {
+    this.aggregation_bits =
+        new Bitlist(Constants.MAX_VALIDATORS_PER_COMMITTEE, Constants.MAX_VALIDATORS_PER_COMMITTEE);
+  }
+
   public PendingAttestation(PendingAttestation pendingAttestation) {
     this.aggregation_bits = pendingAttestation.getAggregation_bits().copy();
-    this.data = new AttestationData(pendingAttestation.getData());
+    this.data = pendingAttestation.getData();
     this.inclusion_delay = pendingAttestation.getInclusion_delay();
     this.proposer_index = pendingAttestation.getProposer_index();
   }
@@ -71,43 +79,27 @@ public class PendingAttestation
   @Override
   public List<Bytes> get_fixed_parts() {
     List<Bytes> fixedPartsList = new ArrayList<>();
-    fixedPartsList.addAll(
-        List.of(Bytes.EMPTY));
+    fixedPartsList.addAll(List.of(Bytes.EMPTY));
     fixedPartsList.addAll(data.get_fixed_parts());
     fixedPartsList.addAll(
-        List.of(SSZ.encodeUInt64(inclusion_delay.longValue()),
-        SSZ.encodeUInt64(proposer_index.longValue())));
+        List.of(
+            SSZ.encodeUInt64(inclusion_delay.longValue()),
+            SSZ.encodeUInt64(proposer_index.longValue())));
     return fixedPartsList;
   }
 
   @Override
   public List<Bytes> get_variable_parts() {
     List<Bytes> variablePartsList = new ArrayList<>();
-    // variablePartsList.addAll( /* TODO Serialize Bitlist */ );
-    variablePartsList.addAll(
-        List.of(Bytes.EMPTY, Bytes.EMPTY, Bytes.EMPTY));
+    // TODO The below lines are a hack while Tuweni SSZ/SOS is being upgraded. To be uncommented
+    // once we shift from Bytes to a real bitlist type.
+    // Bytes serialized_aggregation_bits =
+    // Bytes.fromHexString("0x01").shiftLeft(aggregation_bits.bitLength()).or(aggregation_bits);
+    // variablePartsList.addAll(List.of(serialized_aggregation_bits));
+    variablePartsList.addAll(List.of(aggregation_bits.serialize()));
+    variablePartsList.addAll(Collections.nCopies(data.getSSZFieldCount(), Bytes.EMPTY));
+    variablePartsList.addAll(List.of(Bytes.EMPTY, Bytes.EMPTY));
     return variablePartsList;
-  }
-
-  public static PendingAttestation fromBytes(Bytes bytes) {
-    return SSZ.decode(
-        bytes,
-        reader ->
-            new PendingAttestation(
-                Bytes.wrap(reader.readBytes()), // TODO readBitlist logic required
-                AttestationData.fromBytes(reader.readBytes()),
-                UnsignedLong.fromLongBits(reader.readUInt64()),
-                UnsignedLong.fromLongBits(reader.readUInt64())));
-  }
-
-  public Bytes toBytes() {
-    return SSZ.encode(
-        writer -> {
-          writer.writeBytes(aggregation_bits); // TODO writeBitlist logic required
-          writer.writeBytes(data.toBytes());
-          writer.writeUInt64(inclusion_delay.longValue());
-          writer.writeUInt64(proposer_index.longValue());
-        });
   }
 
   @Override
@@ -137,11 +129,11 @@ public class PendingAttestation
   }
 
   /** ******************* * GETTERS & SETTERS * * ******************* */
-  public Bytes getAggregation_bits() {
+  public Bitlist getAggregation_bits() {
     return aggregation_bits;
   }
 
-  public void setAggregation_bits(Bytes aggregation_bitfield) {
+  public void setAggregation_bits(Bitlist aggregation_bitfield) {
     this.aggregation_bits = aggregation_bitfield;
   }
 
@@ -173,7 +165,9 @@ public class PendingAttestation
   public Bytes32 hash_tree_root() {
     return HashTreeUtil.merkleize(
         Arrays.asList(
-            HashTreeUtil.hash_tree_root(SSZTypes.LIST_OF_BASIC, aggregation_bits),// TODO writeBitlist logic required
+            // HashTreeUtil.hash_tree_root(
+            //   SSZTypes.BITLIST, Constants.MAX_VALIDATORS_PER_COMMITTEE, aggregation_bits),
+            HashTreeUtil.hash_tree_root_bitlist(aggregation_bits),
             data.hash_tree_root(),
             HashTreeUtil.hash_tree_root(
                 SSZTypes.BASIC, SSZ.encodeUInt64(inclusion_delay.longValue())),

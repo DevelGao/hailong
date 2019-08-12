@@ -23,4 +23,4 @@ This Document was adapted by the following:
 - Kubernetes collab.md, available at [kub collab]  
 
 [kub collab]: https://raw.githubusercontent.com/kubernetes/community/master/contributors/devel/collab.md
-[Hailong Gitter]: https://gitter.im/devgaoEng/hailong
+[Hailong Gitter]: https://gitter.im/DevelGao/hailong

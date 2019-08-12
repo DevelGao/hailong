@@ -13,6 +13,7 @@
 
 package tech.devgao.hailong.util.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
@@ -40,18 +41,9 @@ final class HailongConfigurationTest {
   }
 
   @Test
-  void validPeer() {
-    HailongConfiguration.fromString(
-        "node.identity=\"2345\"\nnode.peers=[\"enode://a0b0e0f099@localhost:9000\"]");
-  }
-
-  @Test
-  void invalidPeer() {
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            HailongConfiguration.fromString(
-                "node.identity=\"2345\"\nnode.peers=[\"enode://localhost:9000\"]"));
+  void advertisedPortDefaultsToPort() {
+    final HailongConfiguration config = HailongConfiguration.fromString("node.port=1234");
+    assertThat(config.getAdvertisedPort()).isEqualTo(1234);
   }
 
   @Test
@@ -61,5 +53,19 @@ final class HailongConfigurationTest {
         () ->
             HailongConfiguration.fromString(
                 "node.identity=\"2345\"\nnode.networkMode=\"tcpblah\""));
+  }
+
+  @Test
+  void invalidMinimalHailongConfig() {
+    Constants.setConstants("minimal");
+    HailongConfiguration config = HailongConfiguration.fromString("deposit.numValidators=7");
+    assertThrows(IllegalArgumentException.class, () -> config.validateConfig());
+  }
+
+  @Test
+  void invalidMainnetHailongConfig() {
+    Constants.setConstants("mainnet");
+    HailongConfiguration config = HailongConfiguration.fromString("deposit.numValidators=31");
+    assertThrows(IllegalArgumentException.class, () -> config.validateConfig());
   }
 }

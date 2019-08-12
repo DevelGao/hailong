@@ -1,8 +1,8 @@
 # hailong
 
- [![Build Status](https://jenkins.devgao.tech/job/Hailong/job/master/badge/icon)](https://jenkins.devgao.tech/job/Hailong/job/master/)
- [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/DevgaoEng/hailong/blob/master/LICENSE)
- [![Gitter chat](https://badges.gitter.im/devgaoEng/hailong.png)](https://gitter.im/devgaoEng/hailong)
+ [![Build Status](https://circleci.com/gh/DevelGao/hailong.svg?style=svg)](https://circleci.com/gh/devgaoEng/workflows/hailong)
+ [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/DevelGao/hailong/blob/master/LICENSE)
+ [![Gitter chat](https://badges.gitter.im/DevelGao/hailong.png)](https://gitter.im/DevelGao/hailong)
 
 Implementation of the Ethereum 2.0 Beacon Chain.
 
@@ -10,42 +10,163 @@ Based on the (evolving) [specification](https://github.com/ethereum/eth2.0-specs
 
 ## Build Instructions
 
+### Install Prerequisites
+
+**1) Java 11**
+
+Ubuntu: `sudo apt install openjdk-11-jdk`
+
+MacOS: `brew tap AdoptOpenJDK/openjdk && brew cask install adoptopenjdk11`
+
+Other systems: [https://adoptopenjdk.net/] is very helpful. 
+
+**2) Gradle**
+
+Ubuntu: 
+
+1) Download Gradle
+```shell script
+wget https://services.gradle.org/distributions/gradle-5.0-bin.zip -P /tmp
+sudo unzip -d /opt/gradle /tmp/gradle-*.zip
+```
+2) Setup environment variables
+
+Create gradle.sh in /etc/profile.d/
+
+```shell script
+export GRADLE_HOME=/opt/gradle/gradle-5.0
+export PATH=${GRADLE_HOME}/bin:${PATH}
+```
+
+Make gradle.sh executable and source the script
+
+```shell script
+sudo chmod +x /etc/profile.d/gradle.sh
+source /etc/profile.d/gradle.sh
+```
+
+OSX: `brew install gradle`
+
+### Build and Dist
+
+To create a ready to run distribution:
+
+```shell script
+bash <(curl -s https://raw.githubusercontent.com/DevelGao/hailong/master/scripts/clone-repo.sh)
+cd hailong && ./gradlew distTar installDist
+```
+
+This will produce:
+- a fully packaged distribution in `build/distributions` 
+- an expanded distribution, ready to run in `build/install/hailong`
+
+### Build and Test
+
 To build, clone this repo and run with `gradle` like so:
 
+```shell script
+bash <(curl -s https://raw.githubusercontent.com/DevelGao/hailong/master/scripts/clone-repo.sh)
+cd hailong && ./gradlew
+
 ```
-$ git clone --recursive https://github.com/devgaoEng/hailong.git
-$ cd hailong
-$ ./gradlew
+
+Or clone it manually:
+
+```shell script
+git clone git@github.com:jrhea/eth2.0-spec-tests-template.git /tmp/eth2.0-spec-tests-template
+git clone --recursive --template=/tmp/eth2.0-spec-tests-template git@github.com:DevelGao/hailong.git
+cd hailong && ./gradlew
 ```
 
 After a successful build, distribution packages will be available in `build/distributions`.
 
-## Run Demo (Hobbits)
+### Other Useful Gradle Targets
 
-After building, follow these instructions:
+| Target       |  Description                              |
+|--------------|--------------------------------------------
+| distTar      | Builds a full distribution in build/distributions (as .tar.gz)
+| distZip      | Builds a full distribution in build/distributions (as .zip)
+| installDist  | Builds an expanded distribution in build/install/hailong
+| distDocker   | Builds the develgao/hailong docker image
 
-```bash
-$ cd scripts
-$ sh run.sh -n=[NUMBER OF NODES]
+## Run Multiple Hailong nodes
+
+### Prereqs:
+
+- tmux
+
+After building with `./gradlew distTar`, the simplest way to run is by using this command: 
+
+```shell script
+cd scripts && sh run.sh -n=[NUMBER OF NODES]
 ```
 
-## Run Demo (Mothra)
+Help is available for this script as well:
 
-After building, follow these instructions:
-
-```bash
-$ cd scripts
-$ sh run.sh -n=[NUMBER OF NODES] -m=mothra
+```
+sh run.sh -h
+Runs a simulation of hailong with NODES nodes, where NODES > 0 and NODES < 256
+Usage: sh run.sh [--numNodes, -n=NODES]  [--config=/path/to/your-config.toml] [--logging, -l=OFF|FATAL|WARN|INFO|DEBUG|TRACE|ALL]
+                 [--help, -h]
+- If config files are specifed for specific nodes, those input files will be used to
+configure their respective nodes.
+- If no logging option is specified, then INFO is the default
 ```
 
-> Note:  You will need tmux installed for this demo to work
+## Run in Interop Mode
+
+An interop script is provided to create a network with Hailong and a number of other clients. 
+
+### Prereqs:
+
+- tmux
+- [zcli](https://github.com/protolambda/zcli)
+- You will need to have at least one other client built on your machine for this to work
+
+The simplest way to run in interop mode is by using this command: 
+
+```shell script
+cd scripts
+sh interop.sh [validator_count] [owned_validator_start_index] [owned_validator_count] [start_delay]
+```
+Help is available for this script as well:
+
+```
+sh interop.sh 
+Runs a multiclient testnet
+Usage: sh interop.sh [validator_count] [owned_validator_start_index] [owned_validator_count] [start_delay]
+Example: Run multiple clients in interop mode using static peering. 16 validators and all are assigned to Hailong
+         sh interop.sh 16 0 16 10
+```
+
+### Manual configuration
+
+To configure it manually, set these options in the config.toml:
+
+```toml
+[interop]
+genesisTime = 5778872 #seconds since 1970-01-01 00:00:00 UTC
+ownedValidatorStartIndex = 0
+ownedValidatorCount = 8
+startState = "/tmp/genesis.ssz"
+privateKey = 0x00 #libp2p private key associated with this node's peerID
+
+[deposit]
+
+numValidators = 16
+
+```
+
+## Deposit Simulation
+
+Click [here](pow/README.md) for setup instructions
 
 ## Code Style
 
 We use Google's Java coding conventions for the project. To reformat code, run: 
 
-```
-$ ./gradlew spotlessApply
+```shell script 
+./gradlew spotlessApply
 ```
 
 Code style will be checked automatically during a build.
@@ -53,8 +174,9 @@ Code style will be checked automatically during a build.
 ## Testing
 
 All the unit tests are run as part of the build, but can be explicitly triggered with:
-```
-$ ./gradlew test
+
+```shell script 
+./gradlew test
 ```
 
 ## Run Options
@@ -62,87 +184,71 @@ $ ./gradlew test
 To view the run menu:
 
 ```
-$ ./gradlew run --args='-h'
+./gradlew run --args='-h'
 
-Usage: Hailong [-hV] [-c=<FILENAME>] [-l=<LOG VERBOSITY LEVEL>]
--c, --config=<FILENAME>   Path/filename of the config file
--h, --help                Show this help message and exit.
--l, --logging=<LOG VERBOSITY LEVEL>
-                          Logging verbosity levels: OFF, FATAL, WARN, INFO, DEBUG,
-                            TRACE, ALL (default: INFO).
--V, --version             Print version information and exit.
+hailong [OPTIONS] [COMMAND]
+
+Description:
+
+Run the Hailong beacon chain client and validator
+
+Options:
+  -c, --config=<FILENAME>   Path/filename of the config file
+  -h, --help                Show this help message and exit.
+  -l, --logging=<LOG VERBOSITY LEVEL>
+                            Logging verbosity levels: OFF, FATAL, WARN, INFO,
+                              DEBUG, TRACE, ALL (default: INFO).
+  -V, --version             Print version information and exit.
+Commands:
+  transition  Manually run state transitions
+  peer        Commands for LibP2P PeerID
+
+Hailong is licensed under the Apache License 2.0
 
 ```
 
 You can run the executable from the CLI with this command:
-```
-$ ./gradlew run
+```shell script
+./gradlew run
 ```
 
 Refer to `config/config.toml` for a set of default configuration settings.
 
-To run and send formatted output to a json file:
-```
-[output]
-outputFile = "hailong.json"
-providerType = "JSON"
-```
 
-Then run:
-```
-$ ./gradlew run
-```
+To run with logging level set to DEBUG
 
-To run and send formatted output to a csv file:
-```
-[output]
-outputFile = "hailong.csv"
-providerType = "CSV"
-```
-
-Then run:
-```
-$ ./gradlew run
-```
-
-To run with loggin level set to DEBUG
-
-```
-$ ./gradlew run --args='-l=DEBUG'
+```shell script
+./gradlew run --args='-l=DEBUG'
 ```
 
 To profile and/or generate flow diagrams for Hailong: 
 
 Setup:
 
-```bash
-$ source hailong.env 
+```shell script 
+source hailong.env 
 ```
 
 Run:
 
-
 Terminal 1:
 
-```bash
-$ flow
+```shell script
+flow
 ```
 
 Terminal 2:
-``` bash
-$ ./gradlew run -PgenerateFlow
+```shell script
+./gradlew run -PgenerateFlow
 ```
 
-## Activating Interop Mode
+## Special thanks
+YourKit for providing us with a free profiler open source license. 
 
-To initialize BeaconState and Validators staticly for interop testing, change the
-interop settings in `config/config.toml`.
+YourKit supports open source projects with innovative and intelligent tools
+for monitoring and profiling Java and .NET applications.
+YourKit is the creator of <a href="https://www.yourkit.com/java/profiler/">YourKit Java Profiler</a>,
+<a href="https://www.yourkit.com/.net/profiler/">YourKit .NET Profiler</a>,
+and <a href="https://www.yourkit.com/youmonitor/">YourKit YouMonitor</a>.
 
-1) Set the active boolean to true.
-2) Set the inputFile string to the JSON file that has Validator private key and Deposit objec information.
-
-```
-[interop]
-active = true
-inputFile = "interopDepositsAndKeys.json"
-```
+![YourKit Logo](https://www.yourkit.com/images/yklogo.png)

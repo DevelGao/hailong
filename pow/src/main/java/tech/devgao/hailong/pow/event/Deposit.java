@@ -15,49 +15,40 @@ package tech.devgao.hailong.pow.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.MoreObjects;
 import com.google.common.primitives.UnsignedLong;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.ArrayUtils;
+import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.hailong.datastructures.interfaces.IRecordAdapter;
 import tech.devgao.hailong.pow.api.DepositEvent;
-import tech.devgao.hailong.pow.contract.DepositContract.DepositEventResponse;
+import tech.devgao.hailong.pow.contract.DepositContract;
 import tech.devgao.hailong.util.bls.BLSPublicKey;
 import tech.devgao.hailong.util.bls.BLSSignature;
 
-public class Deposit extends AbstractEvent<DepositEventResponse>
+public class Deposit extends AbstractEvent<DepositContract.DepositEventEventResponse>
     implements DepositEvent, IRecordAdapter {
   // processed fields
-  private BLSPublicKey pubkey;
-  private Bytes32 withdrawal_credentials;
-  private BLSSignature signature;
-  private UnsignedLong amount;
-  private UnsignedLong merkle_tree_index;
+  private final BLSPublicKey pubkey;
+  private final Bytes32 withdrawal_credentials;
+  private final BLSSignature signature;
+  private final UnsignedLong amount;
+  private final UnsignedLong merkle_tree_index;
 
   private static final ObjectMapper mapper = new ObjectMapper();
 
   private Map<String, Object> outputFieldMap = new HashMap<>();
 
-  public Deposit(DepositEventResponse response) {
+  public Deposit(DepositContract.DepositEventEventResponse response) {
     super(response);
-
-    ArrayUtils.reverse(response.merkle_tree_index);
-    this.merkle_tree_index = UnsignedLong.valueOf(Bytes.wrap(response.merkle_tree_index).toLong());
-
-    ArrayUtils.reverse(response.pubkey);
+    this.merkle_tree_index = UnsignedLong.valueOf(Bytes.wrap(response.index).reverse().toLong());
     this.pubkey = BLSPublicKey.fromBytesCompressed(Bytes.wrap(response.pubkey));
-
-    ArrayUtils.reverse(response.withdrawal_credentials);
     this.withdrawal_credentials = Bytes32.wrap(response.withdrawal_credentials);
-
-    ArrayUtils.reverse(response.signature);
     this.signature = BLSSignature.fromBytes(Bytes.wrap(response.signature));
-
-    ArrayUtils.reverse(response.amount);
-    this.amount = UnsignedLong.valueOf(Bytes.wrap(response.amount).toLong());
+    this.amount = UnsignedLong.valueOf(Bytes.wrap(response.amount).reverse().toLong());
   }
 
   public UnsignedLong getMerkle_tree_index() {
@@ -76,28 +67,8 @@ public class Deposit extends AbstractEvent<DepositEventResponse>
     return amount;
   }
 
-  public void setPubkey(BLSPublicKey pubkey) {
-    this.pubkey = pubkey;
-  }
-
-  public void setWithdrawal_credentials(Bytes32 withdrawal_credentials) {
-    this.withdrawal_credentials = withdrawal_credentials;
-  }
-
   public BLSSignature getSignature() {
     return signature;
-  }
-
-  public void setSignature(BLSSignature signature) {
-    this.signature = signature;
-  }
-
-  public void setAmount(UnsignedLong amount) {
-    this.amount = amount;
-  }
-
-  public void setMerkle_tree_index(UnsignedLong merkle_tree_index) {
-    this.merkle_tree_index = merkle_tree_index;
   }
 
   @Override
@@ -132,9 +103,7 @@ public class Deposit extends AbstractEvent<DepositEventResponse>
 
   @Override
   public String toJSON() throws JsonProcessingException {
-    String jsonOutputString = null;
-    jsonOutputString = mapper.writerFor(Map.class).writeValueAsString(this.outputFieldMap);
-    return jsonOutputString;
+    return mapper.writerFor(Map.class).writeValueAsString(this.outputFieldMap);
   }
 
   @Override
@@ -152,5 +121,40 @@ public class Deposit extends AbstractEvent<DepositEventResponse>
   @Override
   public String[] toLabels() {
     return (String[]) this.outputFieldMap.values().toArray();
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final Deposit deposit = (Deposit) o;
+    return Objects.equals(pubkey, deposit.pubkey)
+        && Objects.equals(withdrawal_credentials, deposit.withdrawal_credentials)
+        && Objects.equals(signature, deposit.signature)
+        && Objects.equals(amount, deposit.amount)
+        && Objects.equals(merkle_tree_index, deposit.merkle_tree_index)
+        && Objects.equals(outputFieldMap, deposit.outputFieldMap);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        pubkey, withdrawal_credentials, signature, amount, merkle_tree_index, outputFieldMap);
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("pubkey", pubkey)
+        .add("withdrawal_credentials", withdrawal_credentials)
+        .add("signature", signature)
+        .add("amount", amount)
+        .add("merkle_tree_index", merkle_tree_index)
+        .add("outputFieldMap", outputFieldMap)
+        .toString();
   }
 }

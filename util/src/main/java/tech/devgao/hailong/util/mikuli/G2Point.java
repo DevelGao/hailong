@@ -17,9 +17,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static tech.devgao.hailong.util.mikuli.Util.calculateYFlag;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Objects;
+import java.util.Random;
 import org.apache.milagro.amcl.BLS381.BIG;
 import org.apache.milagro.amcl.BLS381.ECP2;
 import org.apache.milagro.amcl.BLS381.FP2;
@@ -40,7 +40,21 @@ public final class G2Point implements Group<G2Point> {
    * @return a random point on the curve.
    */
   public static G2Point random() {
-    SecureRandom rng = new SecureRandom();
+    return random(new Random());
+  }
+
+  /**
+   * Generate a random point on the curve from a seed value. The same seed value gives the same
+   * point.
+   *
+   * @param seed a seed value
+   * @return a random point on the curve.
+   */
+  public static G2Point random(long seed) {
+    return random(new Random(seed));
+  }
+
+  private static G2Point random(Random rng) {
     ECP2 point;
     byte[] xReBytes = new byte[48];
     byte[] xImBytes = new byte[48];
@@ -61,26 +75,23 @@ public final class G2Point implements Group<G2Point> {
    * Hashes to the G2 curve as described in the Eth2 spec
    *
    * @param message the message to be hashed. This is usually the 32 byte message digest.
-   * @param domain the signature domain as defined in the Eth2 spec
+   * @param domainBytes the signature domain as defined in the Eth2 spec. Should be 8 bytes.
    * @return a point from the G2 group representing the message hash
    */
   @VisibleForTesting
-  public static G2Point hashToG2(Bytes message, long domain) {
+  public static G2Point hashToG2(Bytes message, Bytes domainBytes) {
     Security.addProvider(new BouncyCastleProvider());
-    Bytes domainBytes = Bytes.ofUnsignedLong(domain);
     Bytes padding = Bytes.wrap(new byte[16]);
 
     byte[] xReBytes =
         Bytes.concatenate(
                 padding,
-                Hash.keccak256(
-                    Bytes.concatenate(message, domainBytes, Bytes.fromHexString("0x01"))))
+                Hash.sha2_256(Bytes.concatenate(message, domainBytes, Bytes.fromHexString("0x01"))))
             .toArray();
     byte[] xImBytes =
         Bytes.concatenate(
                 padding,
-                Hash.keccak256(
-                    Bytes.concatenate(message, domainBytes, Bytes.fromHexString("0x02"))))
+                Hash.sha2_256(Bytes.concatenate(message, domainBytes, Bytes.fromHexString("0x02"))))
             .toArray();
 
     BIG xRe = BIG.fromBytes(xReBytes);
@@ -234,7 +245,7 @@ public final class G2Point implements Group<G2Point> {
    * @param bytes the compressed serialised form of the point
    * @return the point
    */
-  static G2Point fromBytesCompressed(Bytes bytes) {
+  public static G2Point fromBytesCompressed(Bytes bytes) {
     checkArgument(
         bytes.size() == 2 * fpPointSize,
         "Expected %s bytes but received %s",
@@ -332,10 +343,6 @@ public final class G2Point implements Group<G2Point> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        point.getX().getA().norm(),
-        point.getY().getA().norm(),
-        point.getX().getB().norm(),
-        point.getY().getB().norm());
+    return Objects.hash(point.toString());
   }
 }

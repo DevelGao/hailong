@@ -13,14 +13,15 @@
 
 package tech.devgao.hailong.service.serviceutils;
 
-import com.google.common.eventbus.EventBus;
+import static tech.devgao.hailong.util.alogger.ALogger.STDOUT;
+
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import tech.devgao.hailong.util.cli.CommandLineArguments;
+import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.Level;
 
 public class ServiceController {
-
   private ServiceInterface beaconChainService;
   private ServiceInterface powchainService;
   private ServiceInterface chainStorageService;
@@ -29,44 +30,73 @@ public class ServiceController {
   private final ExecutorService powchainExecuterService = Executors.newSingleThreadExecutor();
   private final ExecutorService chainStorageExecutorService = Executors.newSingleThreadExecutor();
 
+  private boolean powChainServiceActive;
+
   // initialize/register all services
   public <U extends ServiceInterface, V extends ServiceInterface, W extends ServiceInterface>
       void initAll(
-          EventBus eventBus,
           ServiceConfig config,
           Class<U> beaconChainServiceType,
           Class<V> powchainServiceType,
           Class<W> chainStorageServiceType) {
-    beaconChainService = ServiceFactory.getInstance(beaconChainServiceType).getInstance();
-    powchainService = ServiceFactory.getInstance(powchainServiceType).getInstance();
+    powChainServiceActive = !config.getConfig().getDepositMode().equals("test");
     chainStorageService = ServiceFactory.getInstance(chainStorageServiceType).getInstance();
+    beaconChainService = ServiceFactory.getInstance(beaconChainServiceType).getInstance();
 
+    // Chain storage has to be initialized first due to node start event requiring storage service
+    // to be online
     beaconChainService.init(config);
-    powchainService.init(config);
     chainStorageService.init(config);
+
+    if (powChainServiceActive) {
+      powchainService = ServiceFactory.getInstance(powchainServiceType).getInstance();
+      powchainService.init(config);
+    }
   }
 
-  public void startAll(CommandLineArguments cliArgs) {
-
+  public void startAll() {
     // start all services
-    beaconChainExecuterService.execute(beaconChainService);
-    powchainExecuterService.execute(powchainService);
     chainStorageExecutorService.execute(chainStorageService);
+    beaconChainExecuterService.execute(beaconChainService);
+    if (powChainServiceActive) {
+      powchainExecuterService.execute(powchainService);
+    }
   }
 
-  public void stopAll(CommandLineArguments cliArgs) {
+  public void stopAll() {
     // stop all services
-    beaconChainExecuterService.shutdown();
+    STDOUT.log(Level.DEBUG, "ServiceController.stopAll()");
     if (!Objects.isNull(beaconChainService)) {
       beaconChainService.stop();
     }
-    powchainExecuterService.shutdown();
-    if (!Objects.isNull(powchainService)) {
-      powchainService.stop();
-    }
-    chainStorageExecutorService.shutdown();
     if (!Objects.isNull(chainStorageService)) {
       chainStorageService.stop();
+    }
+    if (powChainServiceActive) {
+      if (!Objects.isNull(powchainService)) {
+        powchainService.stop();
+      }
+    }
+
+    beaconChainExecuterService.shutdown();
+    chainStorageExecutorService.shutdown();
+    powchainExecuterService.shutdown();
+
+    try {
+      if (!beaconChainExecuterService.awaitTermination(250, TimeUnit.MILLISECONDS)) {
+        beaconChainExecuterService.shutdownNow();
+      }
+      if (!chainStorageExecutorService.awaitTermination(250, TimeUnit.MILLISECONDS)) {
+        chainStorageExecutorService.shutdownNow();
+      }
+      if (powChainServiceActive
+          && !powchainExecuterService.awaitTermination(250, TimeUnit.MILLISECONDS)) {
+        powchainExecuterService.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      beaconChainExecuterService.shutdownNow();
+      chainStorageExecutorService.shutdownNow();
+      powchainExecuterService.shutdownNow();
     }
   }
 }

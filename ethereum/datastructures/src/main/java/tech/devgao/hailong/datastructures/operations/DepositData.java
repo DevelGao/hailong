@@ -21,21 +21,23 @@ import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.ssz.SSZ;
+import tech.devgao.hailong.util.SSZTypes.SSZContainer;
 import tech.devgao.hailong.util.bls.BLSPublicKey;
 import tech.devgao.hailong.util.bls.BLSSignature;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil.SSZTypes;
+import tech.devgao.hailong.util.hashtree.Merkleizable;
 import tech.devgao.hailong.util.sos.SimpleOffsetSerializable;
 
-public class DepositData implements SimpleOffsetSerializable {
+public class DepositData implements Merkleizable, SimpleOffsetSerializable, SSZContainer {
 
   // The number of SimpleSerialize basic types in this SSZ Container/POJO.
   private static final int SSZ_FIELD_COUNT = 2;
 
-  private BLSPublicKey pubkey;
-  private Bytes32 withdrawal_credentials;
-  private UnsignedLong amount;
-  private BLSSignature signature;
+  private final BLSPublicKey pubkey;
+  private final Bytes32 withdrawal_credentials;
+  private final UnsignedLong amount;
+  private BLSSignature signature; // Signing over DepositMessage
 
   public DepositData(
       BLSPublicKey pubkey,
@@ -46,6 +48,21 @@ public class DepositData implements SimpleOffsetSerializable {
     this.withdrawal_credentials = withdrawal_credentials;
     this.amount = amount;
     this.signature = signature;
+  }
+
+  public DepositData(final DepositMessage depositMessage, final BLSSignature signature) {
+    this(
+        depositMessage.getPubkey(),
+        depositMessage.getWithdrawal_credentials(),
+        depositMessage.getAmount(),
+        signature);
+  }
+
+  public DepositData() {
+    this.pubkey = BLSPublicKey.empty();
+    this.withdrawal_credentials = Bytes32.ZERO;
+    this.amount = UnsignedLong.ZERO;
+    this.signature = BLSSignature.empty();
   }
 
   @Override
@@ -86,7 +103,6 @@ public class DepositData implements SimpleOffsetSerializable {
         });
   }
 
-  // TODO: check if this is correct
   public Bytes serialize() {
     return Bytes.wrap(
         pubkey.getPublicKey().toBytesCompressed(),
@@ -126,24 +142,12 @@ public class DepositData implements SimpleOffsetSerializable {
     return pubkey;
   }
 
-  public void setPubkey(BLSPublicKey pubkey) {
-    this.pubkey = pubkey;
-  }
-
   public Bytes32 getWithdrawal_credentials() {
     return withdrawal_credentials;
   }
 
-  public void setWithdrawal_credentials(Bytes32 withdrawal_credentials) {
-    this.withdrawal_credentials = withdrawal_credentials;
-  }
-
   public UnsignedLong getAmount() {
     return amount;
-  }
-
-  public void setAmount(UnsignedLong amount) {
-    this.amount = amount;
   }
 
   public BLSSignature getSignature() {
@@ -154,27 +158,13 @@ public class DepositData implements SimpleOffsetSerializable {
     this.signature = signature;
   }
 
-  public Bytes32 signing_root(String truncation_param) {
-    if (!truncation_param.equals("signature")) {
-      throw new UnsupportedOperationException(
-          "Only signed_root(proposal, \"signature\") is currently supported for type Proposal.");
-    }
-
-    return Bytes32.rightPad(
-        HashTreeUtil.merkleize(
-            Arrays.asList(
-                HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, pubkey.toBytes()),
-                HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, withdrawal_credentials),
-                HashTreeUtil.hash_tree_root(
-                    SSZTypes.BASIC, SSZ.encodeUInt64(amount.longValue())))));
-  }
-
+  @Override
   public Bytes32 hash_tree_root() {
     return HashTreeUtil.merkleize(
         Arrays.asList(
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, pubkey.toBytes()),
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, withdrawal_credentials),
+            HashTreeUtil.hash_tree_root(SSZTypes.VECTOR_OF_BASIC, pubkey.toBytes()),
+            HashTreeUtil.hash_tree_root(SSZTypes.VECTOR_OF_BASIC, withdrawal_credentials),
             HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(amount.longValue())),
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, signature.toBytes())));
+            HashTreeUtil.hash_tree_root(SSZTypes.VECTOR_OF_BASIC, signature.toBytes())));
   }
 }

@@ -14,122 +14,232 @@
 package tech.devgao.hailong.datastructures.state;
 
 import com.google.common.primitives.UnsignedLong;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import tech.devgao.hailong.datastructures.Copyable;
 import tech.devgao.hailong.datastructures.blocks.BeaconBlockHeader;
 import tech.devgao.hailong.datastructures.blocks.Eth1Data;
+import tech.devgao.hailong.util.SSZTypes.Bitvector;
+import tech.devgao.hailong.util.SSZTypes.SSZList;
+import tech.devgao.hailong.util.SSZTypes.SSZVector;
 
 public final class BeaconStateWithCache extends BeaconState {
 
-  protected Map<UnsignedLong, UnsignedLong> startShards = new HashMap<>();
-  protected Map<String, List<Integer>> crosslinkCommittees = new HashMap<>();
+  private final TransitionCaches transitionCaches;
 
   public BeaconStateWithCache() {
     super();
+    transitionCaches = TransitionCaches.createNewEmpty();
   }
 
-  public BeaconStateWithCache(BeaconStateWithCache state) {
-    this.slot = state.getSlot();
-    this.genesis_time = state.getGenesis_time();
-    this.fork = new Fork(state.getFork());
+  public BeaconStateWithCache(
+      // Versioning
+      UnsignedLong genesis_time,
+      UnsignedLong slot,
+      Fork fork,
 
-    this.validators = this.copyList(state.getValidator_registry(), new ArrayList<>());
-    this.balances = state.getBalances().stream().collect(Collectors.toList());
+      // History
+      BeaconBlockHeader latest_block_header,
+      SSZVector<Bytes32> block_roots,
+      SSZVector<Bytes32> state_roots,
+      SSZList<Bytes32> historical_roots,
 
-    this.latest_randao_mixes =
-        this.copyBytesList(state.getLatest_randao_mixes(), new ArrayList<>());
-    this.latest_start_shard = state.getLatest_start_shard();
+      // Eth1
+      Eth1Data eth1_data,
+      SSZList<Eth1Data> eth1_data_votes,
+      UnsignedLong eth1_deposit_index,
 
-    this.previous_epoch_attestations =
-        this.copyList(state.getPrevious_epoch_attestations(), new ArrayList<>());
-    this.current_epoch_attestations =
-        this.copyList(state.getCurrent_epoch_attestations(), new ArrayList<>());
-    this.previous_justified_checkpoint = state.getPrevious_justified_checkpoint();
-    this.current_justified_chekpoint = state.getCurrent_justified_chekpoint();
-    this.previous_justified_root = state.getPrevious_justified_root();
-    this.current_justified_root = state.getCurrent_justified_root();
-    this.justification_bitfield = state.getJustification_bitfield();
-    this.finalized_epoch = state.getFinalized_epoch();
-    this.finalized_checkpoint = state.getFinalized_checkpoint();
+      // Registry
+      SSZList<Validator> validators,
+      SSZList<UnsignedLong> balances,
 
-    this.current_crosslinks = this.copyList(state.getCurrent_crosslinks(), new ArrayList<>());
-    this.previous_crosslinks = this.copyList(state.getPrevious_crosslinks(), new ArrayList<>());
-    this.latest_block_roots = this.copyBytesList(state.getLatest_block_roots(), new ArrayList<>());
-    this.latest_state_roots = this.copyBytesList(state.getLatest_state_roots(), new ArrayList<>());
-    this.latest_active_index_roots =
-        this.copyBytesList(state.getLatest_active_index_roots(), new ArrayList<>());
-    this.latest_slashed_balances =
-        state.getLatest_slashed_balances().stream().collect(Collectors.toList());
-    this.latest_block_header =
-        BeaconBlockHeader.fromBytes(state.getLatest_block_header().toBytes());
-    this.historical_roots = this.copyBytesList(state.getHistorical_roots(), new ArrayList<>());
-    this.latest_eth1_data = new Eth1Data(state.getLatest_eth1_data());
-    this.eth1_data_votes = state.getEth1_data_votes().stream().collect(Collectors.toList());
-    this.deposit_index = state.getDeposit_index();
+      // Randomness
+      SSZVector<Bytes32> randao_mixes,
 
-    this.crosslinkCommittees = state.getCrossLinkCommittees();
-    this.startShards = state.getStartShards();
+      // Slashings
+      SSZVector<UnsignedLong> slashings,
+
+      // Attestations
+      SSZList<PendingAttestation> previous_epoch_attestations,
+      SSZList<PendingAttestation> current_epoch_attestations,
+
+      // Finality
+      Bitvector justification_bits,
+      Checkpoint previous_justified_checkpoint,
+      Checkpoint current_justified_checkpoint,
+      Checkpoint finalized_checkpoint) {
+    super(
+        genesis_time,
+        slot,
+        fork,
+        latest_block_header,
+        block_roots,
+        state_roots,
+        historical_roots,
+        eth1_data,
+        eth1_data_votes,
+        eth1_deposit_index,
+        validators,
+        balances,
+        randao_mixes,
+        slashings,
+        previous_epoch_attestations,
+        current_epoch_attestations,
+        justification_bits,
+        previous_justified_checkpoint,
+        current_justified_checkpoint,
+        finalized_checkpoint);
+    transitionCaches = TransitionCaches.createNewEmpty();
   }
 
-  private <S extends Copyable<S>, T extends List<S>> T copyList(T sourceList, T destinationList) {
+  private BeaconStateWithCache(
+      UnsignedLong genesis_time,
+      UnsignedLong slot,
+      Fork fork,
+      BeaconBlockHeader latest_block_header,
+      SSZVector<Bytes32> block_roots,
+      SSZVector<Bytes32> state_roots,
+      SSZList<Bytes32> historical_roots,
+      Eth1Data eth1_data,
+      SSZList<Eth1Data> eth1_data_votes,
+      UnsignedLong eth1_deposit_index,
+      SSZList<Validator> validators,
+      SSZList<UnsignedLong> balances,
+      SSZVector<Bytes32> randao_mixes,
+      SSZVector<UnsignedLong> slashings,
+      SSZList<PendingAttestation> previous_epoch_attestations,
+      SSZList<PendingAttestation> current_epoch_attestations,
+      Bitvector justification_bits,
+      Checkpoint previous_justified_checkpoint,
+      Checkpoint current_justified_checkpoint,
+      Checkpoint finalized_checkpoint,
+      TransitionCaches transitionCaches) {
+    super(
+        genesis_time,
+        slot,
+        fork,
+        latest_block_header,
+        block_roots,
+        state_roots,
+        historical_roots,
+        eth1_data,
+        eth1_data_votes,
+        eth1_deposit_index,
+        validators,
+        balances,
+        randao_mixes,
+        slashings,
+        previous_epoch_attestations,
+        current_epoch_attestations,
+        justification_bits,
+        previous_justified_checkpoint,
+        current_justified_checkpoint,
+        finalized_checkpoint);
+    this.transitionCaches = transitionCaches;
+  }
+
+  public static BeaconStateWithCache deepCopy(BeaconState state) {
+    final SSZList<Validator> validators =
+        copyList(
+            state.getValidators(),
+            new SSZList<>(Validator.class, state.getValidators().getMaxSize()));
+    final SSZList<PendingAttestation> previous_epoch_attestations =
+        copyList(
+            state.getPrevious_epoch_attestations(),
+            new SSZList<>(
+                PendingAttestation.class, state.getPrevious_epoch_attestations().getMaxSize()));
+    final SSZList<PendingAttestation> current_epoch_attestations =
+        copyList(
+            state.getCurrent_epoch_attestations(),
+            new SSZList<>(
+                PendingAttestation.class, state.getCurrent_epoch_attestations().getMaxSize()));
+
+    return new BeaconStateWithCache(
+        state.getGenesis_time(),
+        state.getSlot(),
+        new Fork(state.getFork()),
+
+        // History
+        new BeaconBlockHeader(state.getLatest_block_header()),
+        new SSZVector<>(state.getBlock_roots()),
+        new SSZVector<>(state.getState_roots()),
+        new SSZList<>(state.getHistorical_roots()),
+
+        // Eth1
+        new Eth1Data(state.getEth1_data()),
+        new SSZList<>(state.getEth1_data_votes()),
+        state.getEth1_deposit_index(),
+
+        // Registry
+        validators,
+        new SSZList<>(state.getBalances()),
+
+        // Randomness
+        new SSZVector<>(state.getRandao_mixes()),
+
+        // Slashings
+        new SSZVector<>(state.getSlashings()),
+
+        // Attestations
+        previous_epoch_attestations,
+        current_epoch_attestations,
+
+        // Finality
+        state.getJustification_bits().copy(),
+        state.getPrevious_justified_checkpoint(),
+        state.getCurrent_justified_checkpoint(),
+        state.getFinalized_checkpoint(),
+        state instanceof BeaconStateWithCache
+            ? ((BeaconStateWithCache) state).transitionCaches.copy()
+            : TransitionCaches.createNewEmpty());
+  }
+
+  /**
+   * Creates a BeaconStateWithCache with empty caches from the given BeaconState.
+   *
+   * @param state state to create from
+   * @return created state with empty caches
+   */
+  public static BeaconStateWithCache fromBeaconState(BeaconState state) {
+    if (state instanceof BeaconStateWithCache) return (BeaconStateWithCache) state;
+    return new BeaconStateWithCache(
+        state.getGenesis_time(),
+        state.getSlot(),
+        state.getFork(),
+        state.getLatest_block_header(),
+        state.getBlock_roots(),
+        state.getState_roots(),
+        state.getHistorical_roots(),
+        state.getEth1_data(),
+        state.getEth1_data_votes(),
+        state.getEth1_deposit_index(),
+        state.getValidators(),
+        state.getBalances(),
+        state.getRandao_mixes(),
+        state.getSlashings(),
+        state.getPrevious_epoch_attestations(),
+        state.getCurrent_epoch_attestations(),
+        state.getJustification_bits(),
+        state.getPrevious_justified_checkpoint(),
+        state.getCurrent_justified_checkpoint(),
+        state.getFinalized_checkpoint());
+  }
+
+  public static TransitionCaches getTransitionCaches(BeaconState state) {
+    return state instanceof BeaconStateWithCache
+        ? ((BeaconStateWithCache) state).getTransitionCaches()
+        : TransitionCaches.getNoOp();
+  }
+
+  public TransitionCaches getTransitionCaches() {
+    return transitionCaches;
+  }
+
+  private static <S extends Copyable<S>, T extends List<S>> T copyList(
+      T sourceList, T destinationList) {
     for (S sourceItem : sourceList) {
       destinationList.add(sourceItem.copy());
     }
     return destinationList;
-  }
-
-  private <T extends List<Bytes32>> T copyBytesList(T sourceList, T destinationList) {
-    for (Bytes sourceItem : sourceList) {
-      destinationList.add((Bytes32) sourceItem.copy());
-    }
-    return destinationList;
-  }
-
-  public static BeaconStateWithCache deepCopy(BeaconStateWithCache state) {
-    return new BeaconStateWithCache(state);
-  }
-
-  public Map<String, List<Integer>> getCrossLinkCommittees() {
-    return this.crosslinkCommittees;
-  }
-
-  public List<Integer> getCrossLinkCommittee(UnsignedLong epoch, UnsignedLong shard) {
-    String key = epoch.toString() + "_" + shard.toString();
-    if (crosslinkCommittees.containsKey(key)) {
-      return crosslinkCommittees.get(key);
-    }
-    return null;
-  }
-
-  public void setCrossLinkCommittee(
-      List<Integer> crosslinkCommittees, UnsignedLong epoch, UnsignedLong shard) {
-    this.crosslinkCommittees.put(epoch.toString() + "_" + shard.toString(), crosslinkCommittees);
-  }
-
-  public Map<UnsignedLong, UnsignedLong> getStartShards() {
-    return this.startShards;
-  }
-
-  public UnsignedLong getStartShard(UnsignedLong epoch) {
-    if (startShards.containsKey(epoch)) {
-      return startShards.get(epoch);
-    }
-    return null;
-  }
-
-  public void setStartShard(UnsignedLong epoch, UnsignedLong shard) {
-    this.startShards.put(epoch, shard);
-  }
-
-  public void invalidateCache() {
-    // TODO: clean this cache after finalization
-    this.startShards = new HashMap<>();
-    this.crosslinkCommittees = new HashMap<>();
   }
 }

@@ -21,23 +21,26 @@ import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.ssz.SSZ;
-import tech.devgao.hailong.datastructures.blocks.BeaconBlockHeader;
+import tech.devgao.hailong.datastructures.blocks.SignedBeaconBlockHeader;
+import tech.devgao.hailong.util.SSZTypes.SSZContainer;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil.SSZTypes;
 import tech.devgao.hailong.util.hashtree.Merkleizable;
 import tech.devgao.hailong.util.sos.SimpleOffsetSerializable;
 
-public class ProposerSlashing implements Merkleizable, SimpleOffsetSerializable {
+public class ProposerSlashing implements Merkleizable, SimpleOffsetSerializable, SSZContainer {
 
   // The number of SimpleSerialize basic types in this SSZ Container/POJO.
   public static final int SSZ_FIELD_COUNT = 1;
 
   private UnsignedLong proposer_index;
-  private BeaconBlockHeader header_1;
-  private BeaconBlockHeader header_2;
+  private SignedBeaconBlockHeader header_1;
+  private SignedBeaconBlockHeader header_2;
 
   public ProposerSlashing(
-      UnsignedLong proposer_index, BeaconBlockHeader header_1, BeaconBlockHeader header_2) {
+      UnsignedLong proposer_index,
+      SignedBeaconBlockHeader header_1,
+      SignedBeaconBlockHeader header_2) {
     this.proposer_index = proposer_index;
     this.header_1 = header_1;
     this.header_2 = header_2;
@@ -55,25 +58,6 @@ public class ProposerSlashing implements Merkleizable, SimpleOffsetSerializable 
     fixedPartsList.addAll(header_1.get_fixed_parts());
     fixedPartsList.addAll(header_2.get_fixed_parts());
     return fixedPartsList;
-  }
-
-  public static ProposerSlashing fromBytes(Bytes bytes) {
-    return SSZ.decode(
-        bytes,
-        reader ->
-            new ProposerSlashing(
-                UnsignedLong.fromLongBits(reader.readUInt64()),
-                BeaconBlockHeader.fromBytes(reader.readBytes()),
-                BeaconBlockHeader.fromBytes(reader.readBytes())));
-  }
-
-  public Bytes toBytes() {
-    return SSZ.encode(
-        writer -> {
-          writer.writeUInt64(proposer_index.longValue());
-          writer.writeBytes(header_1.toBytes());
-          writer.writeBytes(header_2.toBytes());
-        });
   }
 
   @Override
@@ -110,19 +94,19 @@ public class ProposerSlashing implements Merkleizable, SimpleOffsetSerializable 
     this.proposer_index = proposer_index;
   }
 
-  public BeaconBlockHeader getHeader_1() {
+  public SignedBeaconBlockHeader getHeader_1() {
     return header_1;
   }
 
-  public void setHeader_1(BeaconBlockHeader header_1) {
+  public void setHeader_1(SignedBeaconBlockHeader header_1) {
     this.header_1 = header_1;
   }
 
-  public BeaconBlockHeader getHeader_2() {
+  public SignedBeaconBlockHeader getHeader_2() {
     return header_2;
   }
 
-  public void setHeader_2(BeaconBlockHeader header_2) {
+  public void setHeader_2(SignedBeaconBlockHeader header_2) {
     this.header_2 = header_2;
   }
 

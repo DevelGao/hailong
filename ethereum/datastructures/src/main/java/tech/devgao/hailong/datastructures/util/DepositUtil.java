@@ -13,11 +13,12 @@
 
 package tech.devgao.hailong.datastructures.util;
 
-import static tech.devgao.hailong.datastructures.Constants.DEPOSIT_CONTRACT_TREE_DEPTH;
+import static com.google.common.base.Preconditions.checkArgument;
+import static tech.devgao.hailong.util.config.Constants.DEPOSIT_CONTRACT_TREE_DEPTH;
+import static tech.devgao.hailong.util.config.Constants.MIN_DEPOSIT_AMOUNT;
 
+import com.google.common.primitives.UnsignedLong;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -26,25 +27,32 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.crypto.Hash;
 import tech.devgao.hailong.datastructures.operations.Deposit;
 import tech.devgao.hailong.datastructures.operations.DepositData;
+import tech.devgao.hailong.datastructures.operations.DepositWithIndex;
 import tech.devgao.hailong.pow.contract.DepositContract;
-import tech.devgao.hailong.pow.event.Eth2Genesis;
+import tech.devgao.hailong.util.SSZTypes.SSZVector;
 
 public class DepositUtil {
 
-  public static List<Deposit> generateBranchProofs(List<Deposit> deposits) {
-    deposits = sortDepositsByIndexAscending(deposits);
-    MerkleTree<Deposit> merkleTree = new MerkleTree<Deposit>(DEPOSIT_CONTRACT_TREE_DEPTH);
+  public static void calcDepositProofs(List<? extends Deposit> deposits) {
+    MerkleTree<Bytes32> merkleTree = new MerkleTree<Bytes32>(DEPOSIT_CONTRACT_TREE_DEPTH);
+    deposits.stream()
+        .forEach(
+            deposit -> {
+              Bytes32 value = deposit.getData().hash_tree_root();
+              merkleTree.add(value);
+              deposit.setProof(merkleTree.getProofTreeByValue(value));
+            });
+  }
 
+  public static List<DepositWithIndex> applyBranchProofs(
+      MerkleTree<DepositWithIndex> merkleTree, List<DepositWithIndex> deposits) {
     for (int i = 0; i < deposits.size(); i++)
-      merkleTree.add(
-          deposits.get(i).getIndex().intValue(),
-          Hash.sha2_256(deposits.get(i).getData().serialize()));
-    for (int i = 0; i < deposits.size(); i++)
-      deposits.get(i).setProof(merkleTree.getProofTreeByIndex(i));
+      deposits.get(i).setProof(new SSZVector<>(merkleTree.getProofTreeByIndex(i), Bytes32.class));
     return deposits;
   }
 
-  public static boolean validateDeposits(List<Deposit> deposits, Bytes32 root, int height) {
+  public static boolean validateDeposits(
+      List<DepositWithIndex> deposits, Bytes32 root, int height) {
     for (int i = 0; i < deposits.size(); i++) {
       if (BeaconStateUtil.is_valid_merkle_branch(
           Hash.sha2_256(deposits.get(i).getData().serialize()),
@@ -95,14 +103,14 @@ public class DepositUtil {
     return branchIndex;
   }
 
-  public static Bytes32 calculatePubKeyRoot(Deposit deposit) {
+  public static Bytes32 calculatePubKeyRoot(DepositWithIndex deposit) {
     return Hash.sha2_256(
         Bytes.concatenate(
             deposit.getData().getPubkey().getPublicKey().toBytesCompressed(),
             Bytes.wrap(new byte[16])));
   }
 
-  public static Bytes32 calculateSignatureRoot(Deposit deposit) {
+  public static Bytes32 calculateSignatureRoot(DepositWithIndex deposit) {
     Bytes32 signature_root_start =
         Hash.sha2_256(
             Bytes.wrap(
@@ -128,7 +136,7 @@ public class DepositUtil {
   }
 
   public static Bytes32 calculateBranchValue(
-      Bytes32 pubkey_root, Bytes32 signature_root, Deposit deposit) {
+      Bytes32 pubkey_root, Bytes32 signature_root, DepositWithIndex deposit) {
     Bytes32 value_start =
         Hash.sha2_256(
             Bytes.concatenate(pubkey_root, deposit.getData().getWithdrawal_credentials()));
@@ -142,57 +150,46 @@ public class DepositUtil {
     return Hash.sha2_256(Bytes.concatenate(value_start, value_end));
   }
 
-  public static List<Deposit> sortDepositsByIndexAscending(List<Deposit> deposits) {
+  public static List<DepositWithIndex> sortDepositsByIndexAscending(
+      List<DepositWithIndex> deposits) {
     deposits.sort(
-        new Comparator<Deposit>() {
+        new Comparator<DepositWithIndex>() {
           @Override
-          public int compare(Deposit o1, Deposit o2) {
+          public int compare(DepositWithIndex o1, DepositWithIndex o2) {
             return o1.getIndex().compareTo(o2.getIndex());
           }
         });
     return deposits;
   }
 
-  public static Deposit convertEventDepositToOperationDeposit(
+  public static DepositWithIndex convertDepositEventToOperationDeposit(
       tech.devgao.hailong.pow.event.Deposit event) {
+    checkArgument(
+        event.getAmount().compareTo(UnsignedLong.valueOf(MIN_DEPOSIT_AMOUNT)) >= 0,
+        "Deposit amount too low");
     DepositData data =
         new DepositData(
             event.getPubkey(),
             event.getWithdrawal_credentials(),
             event.getAmount(),
             event.getSignature());
-    return new Deposit(data, event.getMerkle_tree_index());
-  }
-
-  // deprecated, being used until a new validators_test_data.json can be generated
-  public static Eth2Genesis convertJsonDataToEth2Genesis(JsonObject event) {
-    DepositContract.Eth2GenesisEventResponse response =
-        new DepositContract.Eth2GenesisEventResponse();
-    response.deposit_root =
-        Bytes.fromHexString(event.getAsJsonObject().get("deposit_root").getAsString()).toArray();
-    response.deposit_count =
-        Bytes.ofUnsignedInt(
-                event.getAsJsonObject().get("deposit_count").getAsInt(), ByteOrder.BIG_ENDIAN)
-            .toArray();
-    response.time =
-        Bytes.ofUnsignedLong(event.getAsJsonObject().get("time").getAsLong(), ByteOrder.BIG_ENDIAN)
-            .toArray();
-    return new Eth2Genesis(response);
+    return new DepositWithIndex(data, event.getMerkle_tree_index(), event.getResponse().log);
   }
 
   // deprecated, being used until a new validators_test_data.json can be generated
   public static tech.devgao.hailong.pow.event.Deposit convertJsonDataToEventDeposit(
       JsonElement event) {
     byte[] data = Bytes.fromHexString(event.getAsJsonObject().get("data").getAsString()).toArray();
-    byte[] merkle_tree_index =
+    byte[] index =
         Bytes.fromHexString(event.getAsJsonObject().get("merkle_tree_index").getAsString())
             .toArray();
-    DepositContract.DepositEventResponse response = new DepositContract.DepositEventResponse();
+    DepositContract.DepositEventEventResponse response =
+        new DepositContract.DepositEventEventResponse();
     response.pubkey = Arrays.copyOfRange(data, 0, 48);
     response.withdrawal_credentials = Arrays.copyOfRange(data, 48, 80);
     response.amount = Arrays.copyOfRange(data, 80, 88);
     response.signature = Arrays.copyOfRange(data, 88, 184);
-    response.merkle_tree_index = merkle_tree_index;
+    response.index = index;
     return new tech.devgao.hailong.pow.event.Deposit(response);
   }
 }

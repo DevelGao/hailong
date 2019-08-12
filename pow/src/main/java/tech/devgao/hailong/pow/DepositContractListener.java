@@ -13,30 +13,44 @@
 
 package tech.devgao.hailong.pow;
 
-import static tech.devgao.hailong.pow.contract.DepositContract.DEPOSIT_EVENT;
-import static tech.devgao.hailong.pow.contract.DepositContract.ETH2GENESIS_EVENT;
+import static tech.devgao.hailong.pow.contract.DepositContract.DEPOSITEVENT_EVENT;
 
-import com.google.common.eventbus.EventBus;
+import com.google.common.primitives.UnsignedLong;
+import io.reactivex.Flowable;
 import io.reactivex.disposables.Disposable;
+import java.util.List;
+import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.web3j.abi.EventEncoder;
+import org.web3j.abi.datatypes.Type;
+import org.web3j.protocol.Web3j;
+import org.web3j.protocol.core.DefaultBlockParameter;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.request.EthFilter;
-import tech.devgao.hailong.pow.api.Eth2GenesisEvent;
+import org.web3j.protocol.core.methods.request.Transaction;
+import org.web3j.protocol.core.methods.response.EthBlock;
+import org.web3j.protocol.core.methods.response.EthBlock.Block;
 import tech.devgao.hailong.pow.contract.DepositContract;
 import tech.devgao.hailong.pow.event.Deposit;
-import tech.devgao.hailong.pow.event.Eth2Genesis;
+import tech.devgao.hailong.pow.exception.Eth1RequestException;
+import tech.devgao.hailong.util.async.SafeFuture;
 
 public class DepositContractListener {
+  private final Disposable subscriptionNewDeposit;
+  private final Web3j web3j;
+  private final DepositContract contract;
+  private volatile Optional<EthBlock.Block> cachedBlock = Optional.empty();
+  private final PublishOnInactivityDepositHandler depositHandler;
 
-  private Disposable depositEventSub;
-  private Disposable eth2GenesisEventSub;
-  private EventBus eventBus;
-
-  private DepositContract contract;
-
-  public DepositContractListener(EventBus eventBus, DepositContract contract) {
-    this.eventBus = eventBus;
+  public DepositContractListener(
+      Web3j web3j,
+      DepositContract contract,
+      final PublishOnInactivityDepositHandler depositHandler) {
+    this.web3j = web3j;
     this.contract = contract;
+    this.depositHandler = depositHandler;
 
     // Filter by the contract address and by begin/end blocks
     EthFilter depositEventFilter =
@@ -44,39 +58,85 @@ public class DepositContractListener {
                 DefaultBlockParameterName.EARLIEST,
                 DefaultBlockParameterName.LATEST,
                 contract.getContractAddress().substring(2))
-            .addSingleTopic(EventEncoder.encode(DEPOSIT_EVENT));
-
-    EthFilter eth2GenesisEventFilter =
-        new EthFilter(
-                DefaultBlockParameterName.EARLIEST,
-                DefaultBlockParameterName.LATEST,
-                contract.getContractAddress().substring(2))
-            .addSingleTopic(EventEncoder.encode(ETH2GENESIS_EVENT));
+            .addSingleTopic(EventEncoder.encode(DEPOSITEVENT_EVENT));
 
     // Subscribe to the event of a validator being registered in the
     // DepositContract
-    depositEventSub =
+    subscriptionNewDeposit =
         contract
-            .depositEventFlowable(depositEventFilter)
-            .subscribe(
-                response -> {
-                  Deposit deposit = new Deposit(response);
-                  eventBus.post(deposit);
-                });
+            .depositEventEventFlowable(depositEventFilter)
+            .flatMap(
+                event ->
+                    getBlockByHash(event.log.getBlockHash())
+                        .map(block -> Pair.of(block, new Deposit(event))))
+            .subscribe(pair -> this.depositHandler.onDepositEvent(pair.getLeft(), pair.getRight()));
+  }
 
-    // Subscribe to the event when 2^14 validators have been registered in the
-    // DepositContract
-    eth2GenesisEventSub =
-        contract
-            .eth2GenesisEventFlowable(eth2GenesisEventFilter)
-            .subscribe(
-                response -> {
-                  Eth2GenesisEvent event = new Eth2Genesis(response);
-                  eventBus.post(event);
-                });
+  private Flowable<Block> getBlockByHash(final String blockHash) {
+    return cachedBlock
+        .filter(block -> block.getHash().equals(blockHash))
+        .map(Flowable::just)
+        .orElseGet(
+            () ->
+                web3j
+                    .ethGetBlockByHash(blockHash, false)
+                    .flowable()
+                    .map(
+                        blockResponse -> {
+                          cachedBlock = Optional.of(blockResponse.getBlock());
+                          return blockResponse.getBlock();
+                        }));
+  }
+
+  @SuppressWarnings("rawtypes")
+  public SafeFuture<Bytes32> getDepositRoot(UnsignedLong blockHeight) {
+    String encodedFunction = contract.get_deposit_root().encodeFunctionCall();
+    return callFunctionAtBlockNumber(encodedFunction, blockHeight)
+        .thenApply(
+            value -> {
+              List<Type> list = contract.get_deposit_root().decodeFunctionResponse(value);
+              return Bytes32.wrap((byte[]) list.get(0).getValue());
+            });
+  }
+
+  @SuppressWarnings("rawtypes")
+  public SafeFuture<UnsignedLong> getDepositCount(UnsignedLong blockHeight) {
+    String encodedFunction = contract.get_deposit_count().encodeFunctionCall();
+    return callFunctionAtBlockNumber(encodedFunction, blockHeight)
+        .thenApply(
+            value -> {
+              List<Type> list = contract.get_deposit_count().decodeFunctionResponse(value);
+              byte[] bytes = (byte[]) list.get(0).getValue();
+              long deposit_count = Bytes.wrap(bytes).reverse().toLong();
+              return UnsignedLong.valueOf(deposit_count);
+            });
   }
 
   public DepositContract getContract() {
     return contract;
+  }
+
+  public void stop() {
+    subscriptionNewDeposit.dispose();
+  }
+
+  private SafeFuture<String> callFunctionAtBlockNumber(
+      String encodedFunction, UnsignedLong blockHeight) {
+    return SafeFuture.of(
+            web3j
+                .ethCall(
+                    Transaction.createEthCallTransaction(
+                        null, contract.getContractAddress(), encodedFunction),
+                    DefaultBlockParameter.valueOf(blockHeight.bigIntegerValue()))
+                .sendAsync())
+        .thenApply(
+            ethCall -> {
+              if (ethCall.hasError()) {
+                throw new Eth1RequestException(
+                    "Eth1 call has failed:" + ethCall.getError().getMessage());
+              } else {
+                return ethCall.getValue();
+              }
+            });
   }
 }

@@ -16,13 +16,14 @@ package tech.devgao.hailong.datastructures.util;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.UnsignedLong;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import tech.devgao.hailong.datastructures.state.BeaconState;
+import tech.devgao.hailong.datastructures.state.BeaconStateWithCache;
 import tech.devgao.hailong.datastructures.state.Validator;
+import tech.devgao.hailong.util.config.Constants;
 
 public class ValidatorsUtil {
 
@@ -31,11 +32,41 @@ public class ValidatorsUtil {
    *
    * @param epoch - The epoch under consideration.
    * @return A boolean indicating if the validator is active.
-   * @see <a> https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#is_active_validator </a>
+   * @see <a>
+   *     https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#is_active_validator
+   *     </a>
    */
   public static boolean is_active_validator(Validator validator, UnsignedLong epoch) {
     return validator.getActivation_epoch().compareTo(epoch) <= 0
         && epoch.compareTo(validator.getExit_epoch()) < 0;
+  }
+
+  /**
+   * Check if validator is eligible to be placed into the activation queue.
+   *
+   * @param validator the validator
+   * @return true if eligible for the activation queue otherwise false
+   */
+  public static boolean is_eligible_for_activation_queue(Validator validator) {
+    return validator.getActivation_eligibility_epoch().equals(Constants.FAR_FUTURE_EPOCH)
+        && validator
+            .getEffective_balance()
+            .equals(UnsignedLong.valueOf(Constants.MAX_EFFECTIVE_BALANCE));
+  }
+
+  /**
+   * Check if validator is eligible for activation.
+   *
+   * @param state the beacon state
+   * @param validator the validator
+   * @return true if the validator is eligible for activation
+   */
+  public static boolean is_eligible_for_activation(BeaconState state, Validator validator) {
+    return validator
+                .getActivation_eligibility_epoch()
+                .compareTo(state.getFinalized_checkpoint().getEpoch())
+            <= 0
+        && validator.getActivation_epoch().equals(Constants.FAR_FUTURE_EPOCH);
   }
 
   /**
@@ -70,32 +101,17 @@ public class ValidatorsUtil {
    *     <a>https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#get_active_validator_indices</a>
    */
   public static List<Integer> get_active_validator_indices(BeaconState state, UnsignedLong epoch) {
-    List<Integer> active_validator_indices = Collections.synchronizedList(new ArrayList<>());
-    List<Validator> validators = state.getValidators();
-    IntStream.range(0, validators.size())
-        .parallel()
-        .forEachOrdered(
-            index -> {
-              if (is_active_validator(validators.get(index), epoch)) {
-                active_validator_indices.add(index);
-              }
+    return BeaconStateWithCache.getTransitionCaches(state)
+        .getActiveValidators()
+        .get(
+            epoch,
+            e -> {
+              List<Validator> validators = state.getValidators();
+              return IntStream.range(0, validators.size())
+                  .filter(index -> is_active_validator(validators.get(index), epoch))
+                  .boxed()
+                  .collect(Collectors.toList());
             });
-
-    return active_validator_indices;
-  }
-
-  /**
-   * if index represents an active validator then return True else return False
-   *
-   * @param state
-   * @param index
-   * @param epoch
-   * @return
-   */
-  public static Boolean is_active_validator_index(
-      BeaconState state, int index, UnsignedLong epoch) {
-    List<Validator> all_validators = state.getValidator_registry();
-    return is_active_validator(all_validators.get(index), epoch);
   }
 
   /**

@@ -14,21 +14,26 @@
 package tech.devgao.hailong.pow;
 
 import com.google.common.eventbus.EventBus;
-import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.tx.ClientTransactionManager;
 import org.web3j.tx.gas.DefaultGasProvider;
 import tech.devgao.hailong.ganache.GanacheController;
+import tech.devgao.hailong.pow.api.DepositEventChannel;
 import tech.devgao.hailong.pow.contract.DepositContract;
-import tech.devgao.hailong.util.alogger.ALogger;
+import tech.devgao.hailong.util.time.TimeProvider;
 
 public class DepositContractListenerFactory {
+  private static final Logger LOG = LogManager.getLogger();
 
   public static DepositContractListener simulationDeployDepositContract(
-      EventBus eventBus, GanacheController controller) {
-    ALogger LOG = new ALogger();
+      EventBus eventBus,
+      DepositEventChannel depositEventChannel,
+      GanacheController controller,
+      TimeProvider timeProvider) {
     Web3j web3j = Web3j.build(new HttpService(controller.getProvider()));
     Credentials credentials =
         Credentials.create(controller.getAccounts().get(0).secretKey().bytes().toHexString());
@@ -36,20 +41,34 @@ public class DepositContractListenerFactory {
     try {
       contract = DepositContract.deploy(web3j, credentials, new DefaultGasProvider()).send();
     } catch (Exception e) {
-      LOG.log(
-          Level.FATAL,
-          "DepositContractListenerFactory.simulationDeployDepositContract: DepositContract failed to deploy in the simulation environment\n"
-              + e);
+      LOG.fatal(
+          "DepositContractListenerFactory.simulationDeployDepositContract: DepositContract failed to deploy in the simulation environment",
+          e);
     }
-    return new DepositContractListener(eventBus, contract);
+    return new DepositContractListener(
+        web3j, contract, createDepositHandler(timeProvider, eventBus, depositEventChannel));
   }
 
   public static DepositContractListener eth1DepositContract(
-      EventBus eventBus, String provider, String address) {
-    Web3j web3j = Web3j.build(new HttpService(provider));
+      Web3j web3j,
+      EventBus eventBus,
+      DepositEventChannel depositEventChannel,
+      String address,
+      TimeProvider timeProvider) {
     DepositContract contract =
         DepositContract.load(
             address, web3j, new ClientTransactionManager(web3j, address), new DefaultGasProvider());
-    return new DepositContractListener(eventBus, contract);
+    return new DepositContractListener(
+        web3j, contract, createDepositHandler(timeProvider, eventBus, depositEventChannel));
+  }
+
+  private static PublishOnInactivityDepositHandler createDepositHandler(
+      TimeProvider timeProvider, EventBus eventBus, DepositEventChannel depositEventChannel) {
+    PublishOnInactivityDepositHandler handler =
+        new PublishOnInactivityDepositHandler(
+            timeProvider,
+            new BatchByBlockDepositHandler(depositEventChannel::notifyDepositsFromBlock));
+    eventBus.register(handler);
+    return handler;
   }
 }

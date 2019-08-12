@@ -13,24 +13,58 @@
 
 package tech.devgao.hailong.storage;
 
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import org.apache.tuweni.bytes.Bytes32;
-import tech.devgao.hailong.datastructures.blocks.BeaconBlock;
-import tech.devgao.hailong.util.alogger.ALogger;
+import java.io.File;
+import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import tech.devgao.hailong.datastructures.blocks.SignedBeaconBlock;
+import tech.devgao.hailong.storage.events.GetFinalizedBlockAtSlotRequest;
+import tech.devgao.hailong.storage.events.GetFinalizedBlockAtSlotResponse;
+import tech.devgao.hailong.storage.events.StoreDiskUpdateCompleteEvent;
+import tech.devgao.hailong.storage.events.StoreDiskUpdateEvent;
+import tech.devgao.hailong.storage.events.StoreGenesisDiskUpdateEvent;
+import tech.devgao.hailong.util.config.HailongConfiguration;
 
-/** This class is the ChainStorage server-side logic */
-public class ChainStorageServer extends ChainStorageClient implements ChainStorage {
-  static final ALogger LOG = new ALogger(ChainStorageServer.class.getName());
+public class ChainStorageServer {
+  private static final Logger LOG = LogManager.getLogger();
+  private final Database database;
+  private final EventBus eventBus;
 
-  public ChainStorageServer() {}
-
-  public ChainStorageServer(EventBus eventBus) {
+  public ChainStorageServer(EventBus eventBus, HailongConfiguration config) {
     this.eventBus = eventBus;
+    this.database = MapDbDatabase.createOnDisk(new File("./"), config.startFromDisk());
+    eventBus.register(this);
+    if (config.startFromDisk()) {
+      Store memoryStore = database.createMemoryStore();
+      eventBus.post(memoryStore);
+    }
   }
 
   @Subscribe
-  public void onNewProcessedBlock(Bytes32 blockRoot, BeaconBlock block) {
-    addProcessedBlock(blockRoot, block);
+  public void onStoreDiskUpdate(final StoreDiskUpdateEvent event) {
+    try {
+      database.insert(event);
+
+      eventBus.post(new StoreDiskUpdateCompleteEvent(event.getTransactionId(), Optional.empty()));
+    } catch (final RuntimeException e) {
+      LOG.debug("Transaction " + event.getTransactionId() + " failed", e);
+      eventBus.post(new StoreDiskUpdateCompleteEvent(event.getTransactionId(), Optional.of(e)));
+    }
+  }
+
+  @Subscribe
+  public void onStoreGenesis(final StoreGenesisDiskUpdateEvent event) {
+    database.storeGenesis(event.getStore());
+  }
+
+  @Subscribe
+  @AllowConcurrentEvents
+  public void onGetBlockBySlotRequest(final GetFinalizedBlockAtSlotRequest request) {
+    final Optional<SignedBeaconBlock> block =
+        database.getFinalizedRootAtSlot(request.getSlot()).flatMap(database::getSignedBlock);
+    eventBus.post(new GetFinalizedBlockAtSlotResponse(request.getSlot(), block));
   }
 }

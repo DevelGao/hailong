@@ -13,8 +13,8 @@
 
 package tech.devgao.hailong.datastructures.state;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.primitives.UnsignedLong;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,13 +23,15 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.ssz.SSZ;
 import tech.devgao.hailong.datastructures.Copyable;
+import tech.devgao.hailong.util.SSZTypes.SSZContainer;
 import tech.devgao.hailong.util.bls.BLSPublicKey;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil.SSZTypes;
-import tech.devgao.hailong.util.sos.SimpleOffsetSerializable;
 import tech.devgao.hailong.util.hashtree.Merkleizable;
+import tech.devgao.hailong.util.sos.SimpleOffsetSerializable;
 
-public class Validator implements Copyable<Validator>, Merkleizable, SimpleOffsetSerializable {
+public class Validator
+    implements Copyable<Validator>, Merkleizable, SimpleOffsetSerializable, SSZContainer {
 
   // The number of SimpleSerialize basic types in this SSZ Container/POJO.
   public static final int SSZ_FIELD_COUNT = 7;
@@ -59,7 +61,7 @@ public class Validator implements Copyable<Validator>, Merkleizable, SimpleOffse
       UnsignedLong activation_eligibility_epoch,
       UnsignedLong activation_epoch,
       UnsignedLong exit_epoch,
-      UnsignedLong withdrawable_epoch){
+      UnsignedLong withdrawable_epoch) {
     this.pubkey = pubkey;
     this.withdrawal_credentials = withdrawal_credentials;
     this.slashed = slashed;
@@ -107,14 +109,14 @@ public class Validator implements Copyable<Validator>, Merkleizable, SimpleOffse
     List<Bytes> fixedPartsList = new ArrayList<>();
     fixedPartsList.addAll(pubkey.get_fixed_parts());
     fixedPartsList.addAll(
-      List.of(
-        SSZ.encode(writer -> writer.writeFixedBytes(withdrawal_credentials)),
-        SSZ.encodeUInt64(effective_balance.longValue()),
-        SSZ.encodeBoolean(slashed),
-        SSZ.encodeUInt64(activation_eligibility_epoch.longValue()),
-        SSZ.encodeUInt64(activation_epoch.longValue()),
-        SSZ.encodeUInt64(exit_epoch.longValue()),
-        SSZ.encodeUInt64(withdrawable_epoch.longValue())));
+        List.of(
+            SSZ.encode(writer -> writer.writeFixedBytes(withdrawal_credentials)),
+            SSZ.encodeUInt64(effective_balance.longValue()),
+            SSZ.encodeBoolean(slashed),
+            SSZ.encodeUInt64(activation_eligibility_epoch.longValue()),
+            SSZ.encodeUInt64(activation_epoch.longValue()),
+            SSZ.encodeUInt64(exit_epoch.longValue()),
+            SSZ.encodeUInt64(withdrawable_epoch.longValue())));
     return fixedPartsList;
   }
 
@@ -123,7 +125,7 @@ public class Validator implements Copyable<Validator>, Merkleizable, SimpleOffse
         bytes,
         reader ->
             new Validator(
-                BLSPublicKey.fromBytes(reader.readBytes()),
+                BLSPublicKey.fromBytes(reader.readFixedBytes(48)),
                 Bytes32.wrap(reader.readFixedBytes(32)),
                 UnsignedLong.fromLongBits(reader.readUInt64()),
                 reader.readBoolean(),
@@ -136,7 +138,7 @@ public class Validator implements Copyable<Validator>, Merkleizable, SimpleOffse
   public Bytes toBytes() {
     return SSZ.encode(
         writer -> {
-          writer.writeBytes(pubkey.toBytes());
+          writer.writeFixedBytes(pubkey.toBytes());
           writer.writeFixedBytes(withdrawal_credentials);
           writer.writeUInt64(effective_balance.longValue());
           writer.writeBoolean(slashed);
@@ -176,14 +178,14 @@ public class Validator implements Copyable<Validator>, Merkleizable, SimpleOffse
 
     Validator other = (Validator) obj;
     return Objects.equals(this.getPubkey(), other.getPubkey())
-            && Objects.equals(this.getWithdrawal_credentials(), other.getWithdrawal_credentials())
-            && Objects.equals(this.getEffective_balance(), other.getEffective_balance())
-            && Objects.equals(this.isSlashed(), other.isSlashed())
-            && Objects.equals(
+        && Objects.equals(this.getWithdrawal_credentials(), other.getWithdrawal_credentials())
+        && Objects.equals(this.getEffective_balance(), other.getEffective_balance())
+        && Objects.equals(this.isSlashed(), other.isSlashed())
+        && Objects.equals(
             this.getActivation_eligibility_epoch(), other.getActivation_eligibility_epoch())
-            && Objects.equals(this.getActivation_epoch(), other.getActivation_epoch())
-            && Objects.equals(this.getExit_epoch(), other.getExit_epoch())
-            && Objects.equals(this.getWithdrawable_epoch(), other.getWithdrawable_epoch());
+        && Objects.equals(this.getActivation_epoch(), other.getActivation_epoch())
+        && Objects.equals(this.getExit_epoch(), other.getExit_epoch())
+        && Objects.equals(this.getWithdrawable_epoch(), other.getWithdrawable_epoch());
   }
 
   public BLSPublicKey getPubkey() {
@@ -250,22 +252,35 @@ public class Validator implements Copyable<Validator>, Merkleizable, SimpleOffse
     this.withdrawable_epoch = withdrawable_epoch;
   }
 
-
   @Override
   public Bytes32 hash_tree_root() {
     return HashTreeUtil.merkleize(
-            Arrays.asList(
-                    HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, pubkey.toBytes()),
-                    HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, withdrawal_credentials),
-                    HashTreeUtil.hash_tree_root(
-                            SSZTypes.BASIC, SSZ.encodeUInt64(effective_balance.longValue())),
-                    HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeBoolean(slashed)),
-                    HashTreeUtil.hash_tree_root(
-                            SSZTypes.BASIC, SSZ.encodeUInt64(activation_eligibility_epoch.longValue())),
-                    HashTreeUtil.hash_tree_root(
-                            SSZTypes.BASIC, SSZ.encodeUInt64(activation_epoch.longValue())),
-                    HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(exit_epoch.longValue())),
-                    HashTreeUtil.hash_tree_root(
-                            SSZTypes.BASIC, SSZ.encodeUInt64(withdrawable_epoch.longValue()))));
+        Arrays.asList(
+            HashTreeUtil.hash_tree_root(SSZTypes.VECTOR_OF_BASIC, pubkey.toBytes()),
+            HashTreeUtil.hash_tree_root(SSZTypes.VECTOR_OF_BASIC, withdrawal_credentials),
+            HashTreeUtil.hash_tree_root(
+                SSZTypes.BASIC, SSZ.encodeUInt64(effective_balance.longValue())),
+            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeBoolean(slashed)),
+            HashTreeUtil.hash_tree_root(
+                SSZTypes.BASIC, SSZ.encodeUInt64(activation_eligibility_epoch.longValue())),
+            HashTreeUtil.hash_tree_root(
+                SSZTypes.BASIC, SSZ.encodeUInt64(activation_epoch.longValue())),
+            HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(exit_epoch.longValue())),
+            HashTreeUtil.hash_tree_root(
+                SSZTypes.BASIC, SSZ.encodeUInt64(withdrawable_epoch.longValue()))));
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("pubkey", pubkey)
+        .add("withdrawal_credentials", withdrawal_credentials)
+        .add("effective_balance", effective_balance)
+        .add("slashed", slashed)
+        .add("activation_eligibility_epoch", activation_eligibility_epoch)
+        .add("activation_epoch", activation_epoch)
+        .add("exit_epoch", exit_epoch)
+        .add("withdrawable_epoch", withdrawable_epoch)
+        .toString();
   }
 }

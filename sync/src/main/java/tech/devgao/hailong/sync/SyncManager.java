@@ -1,0 +1,142 @@
+/*
+ * Copyright 2019 Developer Gao.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+
+package tech.devgao.hailong.sync;
+
+import static tech.devgao.hailong.util.async.SafeFuture.completedFuture;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.primitives.UnsignedLong;
+import java.util.Comparator;
+import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import tech.devgao.hailong.networking.eth2.Eth2Network;
+import tech.devgao.hailong.networking.eth2.peers.Eth2Peer;
+import tech.devgao.hailong.service.serviceutils.Service;
+import tech.devgao.hailong.statetransition.blockimport.BlockImporter;
+import tech.devgao.hailong.storage.ChainStorageClient;
+import tech.devgao.hailong.util.async.SafeFuture;
+
+public class SyncManager extends Service {
+  private static final Logger LOG = LogManager.getLogger();
+  private final Eth2Network network;
+  private final ChainStorageClient storageClient;
+  private final PeerSync peerSync;
+
+  private boolean syncActive = false;
+  private boolean syncQueued = false;
+  private volatile long peerConnectSubscriptionId;
+
+  SyncManager(
+      final Eth2Network network, final ChainStorageClient storageClient, final PeerSync peerSync) {
+    this.network = network;
+    this.storageClient = storageClient;
+    this.peerSync = peerSync;
+  }
+
+  public static SyncManager create(
+      final Eth2Network network,
+      final ChainStorageClient storageClient,
+      final BlockImporter blockImporter) {
+    return new SyncManager(network, storageClient, new PeerSync(storageClient, blockImporter));
+  }
+
+  @Override
+  protected SafeFuture<?> doStart() {
+    peerConnectSubscriptionId = network.subscribeConnect(this::onNewPeer);
+    startOrScheduleSync();
+    return completedFuture(null);
+  }
+
+  @Override
+  protected SafeFuture<?> doStop() {
+    network.unsubscribeConnect(peerConnectSubscriptionId);
+    synchronized (this) {
+      syncQueued = false;
+    }
+    peerSync.stop();
+    return completedFuture(null);
+  }
+
+  private void startOrScheduleSync() {
+    synchronized (this) {
+      if (syncActive) {
+        syncQueued = true;
+        return;
+      }
+      syncActive = true;
+    }
+    executeSync()
+        .exceptionally(
+            error -> {
+              LOG.error("Error during sync", error);
+              return null;
+            })
+        .finish(
+            () -> {
+              synchronized (SyncManager.this) {
+                syncActive = false;
+                if (syncQueued) {
+                  syncQueued = false;
+                  startOrScheduleSync();
+                }
+              }
+            });
+  }
+
+  @VisibleForTesting
+  synchronized boolean isSyncActive() {
+    return syncActive;
+  }
+
+  @VisibleForTesting
+  synchronized boolean isSyncQueued() {
+    return syncQueued;
+  }
+
+  private SafeFuture<Void> executeSync() {
+    return findBestSyncPeer().map(this::syncToPeer).orElseGet(() -> completedFuture(null));
+  }
+
+  private SafeFuture<Void> syncToPeer(final Eth2Peer syncPeer) {
+    return peerSync
+        .sync(syncPeer)
+        .thenCompose(
+            result -> {
+              if (result != PeerSyncResult.SUCCESSFUL_SYNC) {
+                return executeSync();
+              } else {
+                return completedFuture(null);
+              }
+            });
+  }
+
+  private Optional<Eth2Peer> findBestSyncPeer() {
+    return network
+        .streamPeers()
+        .filter(this::isPeerSyncSuitable)
+        .max(Comparator.comparing(p -> p.getStatus().getFinalizedEpoch()));
+  }
+
+  private void onNewPeer(Eth2Peer peer) {
+    if (isPeerSyncSuitable(peer)) {
+      startOrScheduleSync();
+    }
+  }
+
+  private boolean isPeerSyncSuitable(Eth2Peer peer) {
+    UnsignedLong ourFinalizedEpoch = storageClient.getFinalizedEpoch();
+    return peer.getStatus().getFinalizedEpoch().compareTo(ourFinalizedEpoch) > 0;
+  }
+}

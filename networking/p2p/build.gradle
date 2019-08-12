@@ -5,36 +5,35 @@ dependencies {
   implementation project(':ethereum:datastructures')
   implementation project(':ethereum:statetransition')
   implementation project(':data')
-  implementation project(':data:adapter')
-  implementation project(':data:provider')
+  implementation project(':data:metrics')
+  implementation project(':validator:coordinator')
   implementation 'com.google.guava:guava'
-  compile files("../../libs/mothra.jar")
+  implementation 'io.libp2p:jvm-libp2p-minimal'
+  implementation 'com.google.protobuf:protobuf-java'
   implementation 'io.vertx:vertx-core'
 
   implementation 'org.apache.tuweni:tuweni-bytes'
-  implementation 'org.apache.tuweni:tuweni-hobbits'
   implementation 'org.apache.tuweni:tuweni-plumtree'
   implementation 'org.apache.tuweni:tuweni-rlpx'
+  implementation 'org.apache.tuweni:tuweni-ssz'
   implementation 'org.apache.tuweni:tuweni-units'
+
+  implementation 'io.projectreactor:reactor-core'
 
   implementation 'org.apache.logging.log4j:log4j-api'
   runtime 'org.apache.logging.log4j:log4j-core'
-  implementation 'org.logl:logl-logl'
-  implementation 'org.logl:logl-log4j2'
 
   implementation 'com.fasterxml.jackson.core:jackson-databind'
   implementation 'de.undercouch:bson4jackson'
   implementation 'org.xerial.snappy:snappy-java'
-}
+  implementation 'org.hyperledger.besu:plugin-api'
 
-configurations { testArtifacts }
-task testJar (type: Jar) {
-  baseName = "${project.name}-test"
-  from sourceSets.test.output
-}
+  testImplementation 'org.mockito:mockito-core'
+  testImplementation project(path: ':ethereum:statetransition', configuration: 'testSupportArtifacts')
+  testImplementation project(path: ':util', configuration: 'testSupportArtifacts')
+  testImplementation 'org.hyperledger.besu.internal:metrics-core'
 
-
-artifacts {
-  testArtifacts testJar
-  testSupportArtifacts testSupportJar
+  testSupportImplementation project(path: ':util', configuration: 'testSupportArtifacts')
+  testSupportImplementation 'org.hyperledger.besu.internal:metrics-core'
+  testSupportCompile 'org.assertj:assertj-core'
 }

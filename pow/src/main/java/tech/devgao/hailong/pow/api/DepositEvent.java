@@ -13,6 +13,6 @@
 
 package tech.devgao.hailong.pow.api;
 
-import tech.devgao.hailong.pow.contract.DepositContract.DepositEventResponse;
+import tech.devgao.hailong.pow.contract.DepositContract;
 
-public interface DepositEvent extends PowEvent<DepositEventResponse> {}
+public interface DepositEvent extends PowEvent<DepositContract.DepositEventEventResponse> {}

@@ -14,82 +14,49 @@
 package tech.devgao.hailong.service.serviceutils;
 
 import com.google.common.eventbus.EventBus;
-import io.vertx.core.Vertx;
-import java.util.Objects;
-import org.apache.tuweni.crypto.SECP256K1;
-import tech.devgao.hailong.util.cli.CommandLineArguments;
+import org.hyperledger.besu.plugin.services.MetricsSystem;
+import tech.devgao.hailong.events.EventChannels;
 import tech.devgao.hailong.util.config.HailongConfiguration;
-import tech.devgao.pantheon.metrics.MetricsSystem;
-import tech.devgao.pantheon.metrics.noop.NoOpMetricsSystem;
+import tech.devgao.hailong.util.time.TimeProvider;
 
 public class ServiceConfig {
-  Vertx vertx;
-  EventBus eventBus;
-  MetricsSystem metricsSystem;
-  HailongConfiguration config;
-  SECP256K1.KeyPair keyPair;
-  CommandLineArguments cliArgs;
 
-  public ServiceConfig() {
-    this.metricsSystem = new NoOpMetricsSystem();
-  }
+  private final TimeProvider timeProvider;
+  private final EventBus eventBus;
+  private final EventChannels eventChannels;
+  private final MetricsSystem metricsSystem;
+  private final HailongConfiguration config;
 
   public ServiceConfig(
-      EventBus eventBus,
-      Vertx vertx,
-      MetricsSystem metricsSystem,
-      HailongConfiguration config,
-      CommandLineArguments cliArgs) {
+      final TimeProvider timeProvider,
+      final EventBus eventBus,
+      final EventChannels eventChannels,
+      final MetricsSystem metricsSystem,
+      final HailongConfiguration config) {
+    this.timeProvider = timeProvider;
     this.eventBus = eventBus;
-    this.vertx = vertx;
+    this.eventChannels = eventChannels;
     this.metricsSystem = metricsSystem;
     this.config = config;
-    this.keyPair = config.getKeyPair();
-    this.cliArgs = cliArgs;
+  }
+
+  public TimeProvider getTimeProvider() {
+    return timeProvider;
   }
 
   public EventBus getEventBus() {
     return this.eventBus;
   }
 
-  public void setEventBus(EventBus eventBus) {
-    this.eventBus = eventBus;
-  }
-
-  public Vertx getVertx() {
-    return this.vertx;
+  public EventChannels getEventChannels() {
+    return eventChannels;
   }
 
   public HailongConfiguration getConfig() {
     return this.config;
   }
 
-  public void setConfig(HailongConfiguration config) {
-    this.config = config;
-  }
-
-  public SECP256K1.KeyPair getKeyPair() {
-    return this.keyPair;
-  }
-
   public MetricsSystem getMetricsSystem() {
     return metricsSystem;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o == this) return true;
-    if (!(o instanceof ServiceConfig)) {
-      return false;
-    }
-    ServiceConfig serviceConfig = (ServiceConfig) o;
-    return Objects.equals(eventBus, serviceConfig.eventBus)
-        && Objects.equals(config, serviceConfig.config)
-        && Objects.equals(keyPair, serviceConfig.keyPair);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(eventBus, config, keyPair);
   }
 }

@@ -1,4 +1,5 @@
 dependencies {
+  implementation project(':events')
   implementation project(':networking:p2p')
   implementation project(':services:powchain')
   implementation project(':services:beaconchain')
@@ -6,15 +7,17 @@ dependencies {
   implementation project(':services:serviceutils')
   implementation project(':util')
   implementation project(':data')
-  implementation project(':data:adapter')
   implementation project(':data:metrics')
-  implementation project(':data:provider')
+  implementation project(':data:recorder')
   implementation project(':ethereum:datastructures')
+  implementation project(':ethereum:statetransition')
+  implementation project(':pow')
   implementation project(':validator:coordinator')
   implementation project(':validator:client')
 
   
-  api 'com.google.guava:guava:27.0.1-jre'
+  api 'com.google.guava:guava'
+  implementation 'com.google.code.gson:gson'
   implementation 'org.apache.tuweni:tuweni-crypto'
   implementation 'org.apache.tuweni:tuweni-plumtree'
   implementation 'org.apache.tuweni:tuweni-ssz'
@@ -22,16 +25,18 @@ dependencies {
   implementation 'org.apache.tuweni:tuweni-units'
   implementation 'info.picocli:picocli'
   implementation 'com.google.guava:guava'
+  implementation 'io.libp2p:jvm-libp2p-minimal'
   implementation 'io.vertx:vertx-core'
   implementation 'io.vertx:vertx-web'
   implementation 'org.apache.logging.log4j:log4j-api'
-  implementation 'org.slf4j:slf4j-nop:1.7.25'
-  implementation 'tech.devgao.pantheon.internal:metrics-core'
+  implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
+  implementation 'org.hyperledger.besu:plugin-api'
 
   runtimeOnly 'org.apache.logging.log4j:log4j-core'
 
   testImplementation 'com.squareup.okhttp3:okhttp'
   testImplementation 'org.awaitility:awaitility'
+  testImplementation project(path: ':util', configuration: 'testSupportArtifacts')
 
   test {
     testLogging.showStandardStreams = true

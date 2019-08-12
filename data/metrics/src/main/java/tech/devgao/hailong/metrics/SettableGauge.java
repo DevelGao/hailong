@@ -14,8 +14,8 @@
 package tech.devgao.hailong.metrics;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import tech.devgao.pantheon.metrics.MetricCategory;
-import tech.devgao.pantheon.metrics.MetricsSystem;
+import org.hyperledger.besu.plugin.services.MetricsSystem;
+import org.hyperledger.besu.plugin.services.metrics.MetricCategory;
 
 public class SettableGauge {
 

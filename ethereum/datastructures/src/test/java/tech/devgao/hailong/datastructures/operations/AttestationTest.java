@@ -13,25 +13,98 @@
 
 package tech.devgao.hailong.datastructures.operations;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static tech.devgao.hailong.datastructures.util.DataStructureUtil.randomAttestationData;
+import static tech.devgao.hailong.datastructures.util.DataStructureUtil.randomBitlist;
 
+import com.google.common.primitives.UnsignedLong;
 import java.util.Objects;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
+import tech.devgao.hailong.datastructures.state.Checkpoint;
+import tech.devgao.hailong.util.SSZTypes.Bitlist;
 import tech.devgao.hailong.util.bls.BLSSignature;
 
 class AttestationTest {
+  private int seed = 100;
+  private Bitlist aggregationBitfield = randomBitlist(seed);
+  private AttestationData data = randomAttestationData(seed++);
+  private BLSSignature aggregateSignature = BLSSignature.random(seed++);
 
-  private Bytes aggregationBitfield = Bytes32.random();
-  private AttestationData data = randomAttestationData();
-  private Bytes custodyBitfield = Bytes32.random();
-  private BLSSignature aggregateSignature = BLSSignature.random();
+  private Attestation attestation = new Attestation(aggregationBitfield, data, aggregateSignature);
 
-  private Attestation attestation =
-      new Attestation(aggregationBitfield, data, custodyBitfield, aggregateSignature);
+  @Test
+  void shouldNotBeProcessableBeforeSlotAfterCreationSlot() {
+    final Attestation attestation =
+        new Attestation(
+            aggregationBitfield,
+            new AttestationData(
+                UnsignedLong.valueOf(60),
+                UnsignedLong.ZERO,
+                Bytes32.ZERO,
+                new Checkpoint(UnsignedLong.ONE, Bytes32.ZERO),
+                new Checkpoint(UnsignedLong.ONE, Bytes32.ZERO)),
+            BLSSignature.empty());
+
+    assertThat(attestation.getEarliestSlotForProcessing()).isEqualTo(UnsignedLong.valueOf(61));
+  }
+
+  @Test
+  void shouldNotBeProcessableBeforeFirstSlotOfTargetEpoch() {
+    final Checkpoint target = new Checkpoint(UnsignedLong.valueOf(10), Bytes32.ZERO);
+    final Attestation attestation =
+        new Attestation(
+            aggregationBitfield,
+            new AttestationData(
+                UnsignedLong.valueOf(1),
+                UnsignedLong.ZERO,
+                Bytes32.ZERO,
+                new Checkpoint(UnsignedLong.ONE, Bytes32.ZERO),
+                target),
+            BLSSignature.empty());
+
+    assertThat(attestation.getEarliestSlotForProcessing()).isEqualTo(target.getEpochSlot());
+  }
+
+  @Test
+  public void shouldBeDependentOnTargetBlockAndBeaconBlockRoot() {
+    final Bytes32 targetRoot = Bytes32.fromHexString("0x01");
+    final Bytes32 beaconBlockRoot = Bytes32.fromHexString("0x02");
+
+    final Attestation attestation =
+        new Attestation(
+            aggregationBitfield,
+            new AttestationData(
+                UnsignedLong.valueOf(1),
+                UnsignedLong.ZERO,
+                beaconBlockRoot,
+                new Checkpoint(UnsignedLong.ONE, Bytes32.ZERO),
+                new Checkpoint(UnsignedLong.valueOf(10), targetRoot)),
+            BLSSignature.empty());
+
+    assertThat(attestation.getDependentBlockRoots())
+        .containsExactlyInAnyOrder(targetRoot, beaconBlockRoot);
+  }
+
+  @Test
+  public void shouldBeDependentOnSingleBlockWhenTargetBlockAndBeaconBlockRootAreEqual() {
+    final Bytes32 root = Bytes32.fromHexString("0x01");
+
+    final Attestation attestation =
+        new Attestation(
+            aggregationBitfield,
+            new AttestationData(
+                UnsignedLong.valueOf(1),
+                UnsignedLong.ZERO,
+                root,
+                new Checkpoint(UnsignedLong.ONE, Bytes32.ZERO),
+                new Checkpoint(UnsignedLong.valueOf(10), root)),
+            BLSSignature.empty());
+
+    assertThat(attestation.getDependentBlockRoots()).containsExactlyInAnyOrder(root);
+  }
 
   @Test
   void equalsReturnsTrueWhenObjectsAreSame() {
@@ -42,16 +115,14 @@ class AttestationTest {
 
   @Test
   void equalsReturnsTrueWhenObjectFieldsAreEqual() {
-    Attestation testAttestation =
-        new Attestation(aggregationBitfield, data, custodyBitfield, aggregateSignature);
+    Attestation testAttestation = new Attestation(aggregationBitfield, data, aggregateSignature);
 
     assertEquals(attestation, testAttestation);
   }
 
   @Test
   void equalsReturnsFalseWhenAggregationBitfieldsAreDifferent() {
-    Attestation testAttestation =
-        new Attestation(aggregationBitfield.not(), data, custodyBitfield, aggregateSignature);
+    Attestation testAttestation = new Attestation(randomBitlist(seed++), data, aggregateSignature);
 
     assertNotEquals(attestation, testAttestation);
   }
@@ -60,21 +131,13 @@ class AttestationTest {
   void equalsReturnsFalseWhenAttestationDataIsDifferent() {
     // AttestationData is rather involved to create. Just create a random one until it is not the
     // same as the original.
-    AttestationData otherData = randomAttestationData();
+    AttestationData otherData = randomAttestationData(seed++);
     while (Objects.equals(otherData, data)) {
-      otherData = randomAttestationData();
+      otherData = randomAttestationData(seed++);
     }
 
     Attestation testAttestation =
-        new Attestation(aggregationBitfield, otherData, custodyBitfield, aggregateSignature);
-
-    assertNotEquals(attestation, testAttestation);
-  }
-
-  @Test
-  void equalsReturnsFalseWhenCustodyBitfieldsAreDifferent() {
-    Attestation testAttestation =
-        new Attestation(aggregationBitfield, data, custodyBitfield.not(), aggregateSignature);
+        new Attestation(aggregationBitfield, otherData, aggregateSignature);
 
     assertNotEquals(attestation, testAttestation);
   }
@@ -87,47 +150,8 @@ class AttestationTest {
     }
 
     Attestation testAttestation =
-        new Attestation(aggregationBitfield, data, custodyBitfield, differentAggregateSignature);
+        new Attestation(aggregationBitfield, data, differentAggregateSignature);
 
     assertNotEquals(attestation, testAttestation);
-  }
-
-  @Test
-  void roundtripSSZ() {
-    Bytes sszAttestationBytes = attestation.toBytes();
-    assertEquals(attestation, Attestation.fromBytes(sszAttestationBytes));
-  }
-
-  @Test
-  void roundtripSSZVariableLengthBitfield() {
-    Attestation byte1BitfieldAttestation =
-        new Attestation(
-            Bytes.fromHexString("0x00"), data, Bytes.fromHexString("0x00"), aggregateSignature);
-    Attestation byte4BitfieldAttestation =
-        new Attestation(
-            Bytes.fromHexString("0x00000000"),
-            data,
-            Bytes.fromHexString("0x00000000"),
-            aggregateSignature);
-    Attestation byte8BitfieldAttestation =
-        new Attestation(
-            Bytes.fromHexString("0x0000000000000000"),
-            data,
-            Bytes.fromHexString("0x0000000000000000"),
-            aggregateSignature);
-    Attestation byte16BitfieldAttestation =
-        new Attestation(
-            Bytes.fromHexString("0x00000000000000000000000000000000"),
-            data,
-            Bytes.fromHexString("0x00000000000000000000000000000000"),
-            aggregateSignature);
-    Bytes byte1BitfieldAttestationBytes = byte1BitfieldAttestation.toBytes();
-    Bytes byte4BitfieldAttestationBytes = byte4BitfieldAttestation.toBytes();
-    Bytes byte8BitfieldAttestationBytes = byte8BitfieldAttestation.toBytes();
-    Bytes byte16BitfieldAttestationBytes = byte16BitfieldAttestation.toBytes();
-    assertEquals(byte1BitfieldAttestation, Attestation.fromBytes(byte1BitfieldAttestationBytes));
-    assertEquals(byte4BitfieldAttestation, Attestation.fromBytes(byte4BitfieldAttestationBytes));
-    assertEquals(byte8BitfieldAttestation, Attestation.fromBytes(byte8BitfieldAttestationBytes));
-    assertEquals(byte16BitfieldAttestation, Attestation.fromBytes(byte16BitfieldAttestationBytes));
   }
 }

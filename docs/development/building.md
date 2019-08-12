@@ -2,11 +2,11 @@
 ## Checkout source code
 
 ```
-git clone --recursive git@github.com:DevgaoEng/Hailong.git
+git clone --recursive git@github.com:DevelGao/hailong.git
 ```
 OR
 ```
-git clone --recursive https://github.com/DevgaoEng/hailong
+git clone --recursive https://github.com/DevelGao/hailong
 ```
 
 ## See what tasks are available

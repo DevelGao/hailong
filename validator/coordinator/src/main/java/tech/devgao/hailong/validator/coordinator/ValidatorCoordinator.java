@@ -13,120 +13,109 @@
 
 package tech.devgao.hailong.validator.coordinator;
 
-import static java.lang.StrictMath.toIntExact;
-import static tech.devgao.hailong.datastructures.Constants.GENESIS_SLOT;
-import static tech.devgao.hailong.datastructures.Constants.SLOTS_PER_EPOCH;
+import static tech.devgao.hailong.datastructures.util.AttestationUtil.getGenericAttestationData;
+import static tech.devgao.hailong.datastructures.util.BeaconStateUtil.compute_epoch_at_slot;
 import static tech.devgao.hailong.datastructures.util.BeaconStateUtil.get_domain;
-import static tech.devgao.hailong.datastructures.util.BeaconStateUtil.compute_epoch_of_slot;
-import static tech.devgao.hailong.statetransition.StateTransition.process_slots;
+import static tech.devgao.hailong.util.alogger.ALogger.STDOUT;
+import static tech.devgao.hailong.util.async.SafeFuture.reportExceptions;
+import static tech.devgao.hailong.util.config.Constants.DOMAIN_BEACON_ATTESTER;
+import static tech.devgao.hailong.util.config.Constants.GENESIS_EPOCH;
+import static tech.devgao.hailong.util.config.Constants.MAX_DEPOSITS;
+import static tech.devgao.hailong.validator.coordinator.ValidatorCoordinatorUtil.getSignature;
+import static tech.devgao.hailong.validator.coordinator.ValidatorCoordinatorUtil.isEpochStart;
+import static tech.devgao.hailong.validator.coordinator.ValidatorCoordinatorUtil.isGenesis;
+import static tech.devgao.hailong.validator.coordinator.ValidatorLoader.initializeValidators;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.primitives.UnsignedLong;
-import com.google.protobuf.ByteString;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.MutableTriple;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.Level;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.crypto.SECP256K1;
-import org.apache.tuweni.ssz.SSZ;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import tech.devgao.hailong.datastructures.Constants;
 import tech.devgao.hailong.datastructures.blocks.BeaconBlock;
+import tech.devgao.hailong.datastructures.blocks.BeaconBlockBodyLists;
+import tech.devgao.hailong.datastructures.blocks.Eth1Data;
+import tech.devgao.hailong.datastructures.blocks.SignedBeaconBlock;
+import tech.devgao.hailong.datastructures.operations.AggregateAndProof;
 import tech.devgao.hailong.datastructures.operations.Attestation;
 import tech.devgao.hailong.datastructures.operations.AttestationData;
 import tech.devgao.hailong.datastructures.operations.Deposit;
 import tech.devgao.hailong.datastructures.operations.ProposerSlashing;
 import tech.devgao.hailong.datastructures.state.BeaconState;
 import tech.devgao.hailong.datastructures.state.BeaconStateWithCache;
-import tech.devgao.hailong.datastructures.state.CrosslinkCommittee;
+import tech.devgao.hailong.datastructures.state.Committee;
 import tech.devgao.hailong.datastructures.state.Validator;
 import tech.devgao.hailong.datastructures.util.AttestationUtil;
-import tech.devgao.hailong.datastructures.util.BeaconStateUtil;
-import tech.devgao.hailong.datastructures.util.DataStructureUtil;
-import tech.devgao.hailong.proto.messagesigner.MessageSignerGrpc;
-import tech.devgao.hailong.proto.messagesigner.SignatureRequest;
-import tech.devgao.hailong.proto.messagesigner.SignatureResponse;
-import tech.devgao.hailong.service.serviceutils.ServiceConfig;
-import tech.devgao.hailong.statetransition.GenesisHeadStateEvent;
-import tech.devgao.hailong.statetransition.HeadStateEvent;
+import tech.devgao.hailong.datastructures.util.DepositUtil;
+import tech.devgao.hailong.datastructures.validator.AttesterInformation;
+import tech.devgao.hailong.datastructures.validator.Signer;
+import tech.devgao.hailong.statetransition.AttestationAggregator;
+import tech.devgao.hailong.statetransition.BlockAttestationsPool;
+import tech.devgao.hailong.statetransition.BlockProposalUtil;
 import tech.devgao.hailong.statetransition.StateTransition;
 import tech.devgao.hailong.statetransition.StateTransitionException;
+import tech.devgao.hailong.statetransition.events.BlockImportedEvent;
+import tech.devgao.hailong.statetransition.events.BlockProposedEvent;
+import tech.devgao.hailong.statetransition.events.BroadcastAggregatesEvent;
+import tech.devgao.hailong.statetransition.events.BroadcastAttestationEvent;
+import tech.devgao.hailong.statetransition.events.ProcessedAggregateEvent;
+import tech.devgao.hailong.statetransition.events.ProcessedAttestationEvent;
 import tech.devgao.hailong.statetransition.util.EpochProcessingException;
 import tech.devgao.hailong.statetransition.util.SlotProcessingException;
 import tech.devgao.hailong.storage.ChainStorageClient;
-import tech.devgao.hailong.util.alogger.ALogger;
-import tech.devgao.hailong.util.bls.BLSKeyPair;
+import tech.devgao.hailong.storage.Store;
+import tech.devgao.hailong.storage.events.SlotEvent;
+import tech.devgao.hailong.storage.events.StoreInitializedEvent;
+import tech.devgao.hailong.util.SSZTypes.Bitlist;
+import tech.devgao.hailong.util.SSZTypes.SSZList;
 import tech.devgao.hailong.util.bls.BLSPublicKey;
 import tech.devgao.hailong.util.bls.BLSSignature;
 import tech.devgao.hailong.util.config.HailongConfiguration;
-import tech.devgao.hailong.util.hashtree.HashTreeUtil;
-import tech.devgao.hailong.util.hashtree.HashTreeUtil.SSZTypes;
-import tech.devgao.hailong.util.mikuli.KeyPair;
-import tech.devgao.hailong.util.mikuli.SecretKey;
-import tech.devgao.hailong.validator.client.ValidatorClient;
-import tech.devgao.hailong.validator.client.ValidatorClientUtil;
+import tech.devgao.hailong.util.config.Constants;
+import tech.devgao.hailong.util.time.TimeProvider;
 
 /** This class coordinates the activity between the validator clients and the the beacon chain */
 public class ValidatorCoordinator {
-  private static final ALogger LOG = new ALogger(ValidatorCoordinator.class.getName());
-  private static final ALogger STDOUT = new ALogger("stdout");
   private final EventBus eventBus;
-  private StateTransition stateTransition;
-  private final Boolean printEnabled = false;
-  private SECP256K1.SecretKey nodeIdentity;
-  private BeaconState headState;
-  private int numValidators;
-  private int numNodes;
-  private BeaconBlock validatorBlock;
-  private ArrayList<Deposit> newDeposits = new ArrayList<>();
-  private final HashMap<BLSPublicKey, MutableTriple<BLSKeyPair, Boolean, Integer>> validatorSet =
-      new HashMap<>();
-  private ChainStorageClient store;
-  private HashMap<BLSPublicKey, ManagedChannel> validatorClientChannels = new HashMap<>();
-  private HashMap<UnsignedLong, List<Triple<List<Integer>, UnsignedLong, Integer>>>
-      committeeAssignments = new HashMap<>();
+  private final Map<BLSPublicKey, ValidatorInfo> validators;
+  private final StateTransition stateTransition;
+  private final BlockProposalUtil blockCreator;
+  private final SSZList<Deposit> newDeposits = new SSZList<>(Deposit.class, MAX_DEPOSITS);
+  private final ChainStorageClient chainStorageClient;
+  private final AttestationAggregator attestationAggregator;
+  private final BlockAttestationsPool blockAttestationsPool;
+  private Eth1DataCache eth1DataCache;
+  private CommitteeAssignmentManager committeeAssignmentManager;
+
+  //  maps slots to Lists of attestation informations
+  //  (which contain information for our validators to produce attestations)
+  private Map<UnsignedLong, List<AttesterInformation>> committeeAssignments = new HashMap<>();
+
   private LinkedBlockingQueue<ProposerSlashing> slashings = new LinkedBlockingQueue<>();
-  private int naughtinessPercentage;
 
-  static final Integer UNPROCESSED_BLOCKS_LENGTH = 100;
-
-  @SuppressWarnings("unchecked")
-  public ValidatorCoordinator(ServiceConfig config, ChainStorageClient store) {
-    this.eventBus = config.getEventBus();
+  public ValidatorCoordinator(
+      TimeProvider timeProvider,
+      EventBus eventBus,
+      ChainStorageClient chainStorageClient,
+      AttestationAggregator attestationAggregator,
+      BlockAttestationsPool blockAttestationsPool,
+      HailongConfiguration config) {
+    this.eventBus = eventBus;
+    this.chainStorageClient = chainStorageClient;
+    this.stateTransition = new StateTransition(false);
+    this.blockCreator = new BlockProposalUtil(stateTransition);
+    this.validators = initializeValidators(config);
+    this.attestationAggregator = attestationAggregator;
+    this.blockAttestationsPool = blockAttestationsPool;
+    this.eth1DataCache = new Eth1DataCache(eventBus, timeProvider);
     this.eventBus.register(this);
-    this.nodeIdentity =
-        SECP256K1.SecretKey.fromBytes(Bytes32.fromHexString(config.getConfig().getIdentity()));
-    this.naughtinessPercentage = config.getConfig().getNaughtinessPercentage();
-    this.numNodes = config.getConfig().getNumNodes();
-    this.numValidators = config.getConfig().getNumValidators();
-    this.store = store;
-
-    stateTransition = new StateTransition(printEnabled);
-
-    initializeValidators(config.getConfig());
   }
 
   /*
@@ -171,313 +160,269 @@ public class ValidatorCoordinator {
     }
     this.store.addUnprocessedBlockHeader(proposerIndex, blockHeader);
   }
-
   */
+
+  @Subscribe
+  public void onStoreInitializedEvent(final StoreInitializedEvent event) {
+    // Any deposits pre-genesis can be ignored.
+    newDeposits.clear();
+
+    final Store store = chainStorageClient.getStore();
+    final Bytes32 head = chainStorageClient.getBestBlockRoot();
+    final BeaconState genesisState = store.getBlockState(head);
+
+    // Get validator indices of our own validators
+    getIndicesOfOurValidators(genesisState, validators);
+
+    this.committeeAssignmentManager =
+        new CommitteeAssignmentManager(validators, committeeAssignments);
+    eth1DataCache.startBeaconChainMode(genesisState);
+
+    // Update committee assignments and subscribe to required committee indices for the next 2
+    // epochs
+    UnsignedLong genesisEpoch = UnsignedLong.valueOf(GENESIS_EPOCH);
+    committeeAssignmentManager.updateCommitteeAssignments(genesisState, genesisEpoch, eventBus);
+    committeeAssignmentManager.updateCommitteeAssignments(
+        genesisState, genesisEpoch.plus(UnsignedLong.ONE), eventBus);
+  }
+
   @Subscribe
   // TODO: make sure blocks that are produced right even after new slot to be pushed.
-  public void onNewSlot(Date date) {
-    if (validatorBlock != null) {
-      this.eventBus.post(validatorBlock);
-      validatorBlock = null;
+  public void onNewSlot(SlotEvent slotEvent) {
+    UnsignedLong slot = slotEvent.getSlot();
+    BeaconState headState =
+        chainStorageClient.getStore().getBlockState(chainStorageClient.getBestBlockRoot());
+    BeaconBlock headBlock =
+        chainStorageClient.getStore().getBlock(chainStorageClient.getBestBlockRoot());
+
+    // Copy state so that state transition during block creation
+    // does not manipulate headState in storage
+    if (!isGenesis(slot)) {
+      createBlockIfNecessary(BeaconStateWithCache.fromBeaconState(headState), headBlock, slot);
     }
   }
 
   @Subscribe
-  public void onGenesisHeadStateEvent(GenesisHeadStateEvent genesisHeadStateEvent) {
-    onNewHeadStateEvent(
-        new HeadStateEvent(
-            genesisHeadStateEvent.getHeadState(), genesisHeadStateEvent.getHeadBlock()));
-
-    // Get validator indices of our own validators
-    List<Validator> validatorRegistry = headState.getValidator_registry();
-    IntStream.range(0, validatorRegistry.size())
-        .forEach(
-            i -> {
-              if (validatorSet.keySet().contains(validatorRegistry.get(i).getPubkey())) {
-                validatorSet.get(validatorRegistry.get(i).getPubkey()).setRight(i);
-              }
-            });
-
-    this.eventBus.post(true);
+  public void onProcessedAttestationEvent(ProcessedAttestationEvent event) {
+    attestationAggregator.processAttestation(event.getAttestation());
   }
 
   @Subscribe
-  public void onNewHeadStateEvent(HeadStateEvent headStateEvent) throws IllegalArgumentException {
-    try {
-      // Retrieve headState and headBlock from event
-      BeaconStateWithCache headState = headStateEvent.getHeadState();
-      BeaconBlock headBlock = headStateEvent.getHeadBlock();
+  public void onProcessedAggregateEvent(ProcessedAggregateEvent event) {
+    blockAttestationsPool.addUnprocessedAggregateAttestationToQueue(event.getAttestation());
+  }
 
-      if (headState.getSlot().mod(UnsignedLong.valueOf(SLOTS_PER_EPOCH)).equals(UnsignedLong.ZERO)
-          || headState.getSlot().equals(UnsignedLong.valueOf(GENESIS_SLOT + 1))) {
-        validatorSet.forEach(
-            (pubKey, validatorInformation) -> {
-              Optional<Triple<List<Integer>, UnsignedLong, UnsignedLong>> committeeAssignment =
-                  ValidatorClientUtil.get_committee_assignment(
-                      headState,
-                      compute_epoch_of_slot(headState.getSlot()),
-                      validatorInformation.getRight());
-              committeeAssignment.ifPresent(
-                  assignment -> {
-                    UnsignedLong slot = assignment.getRight();
-                    List<Triple<List<Integer>, UnsignedLong, Integer>> assignmentsInSlot =
-                        committeeAssignments.get(slot);
-                    if (assignmentsInSlot == null) {
-                      assignmentsInSlot = new ArrayList<>();
-                      committeeAssignments.put(slot, assignmentsInSlot);
-                    }
-                    assignmentsInSlot.add(
-                        new MutableTriple<>(
-                            assignment.getLeft(),
-                            assignment.getMiddle(),
-                            validatorInformation.getRight()));
-                  });
-            });
+  @Subscribe
+  public void onBlockImported(BlockImportedEvent event) {
+    event
+        .getBlock()
+        .getMessage()
+        .getBody()
+        .getAttestations()
+        .forEach(blockAttestationsPool::addAggregateAttestationProcessedInBlock);
+  }
+
+  @Subscribe
+  public void onNewDeposit(tech.devgao.hailong.pow.event.Deposit event) {
+    STDOUT.log(Level.DEBUG, "New deposit received by ValidatorCoordinator");
+    Deposit deposit = DepositUtil.convertDepositEventToOperationDeposit(event);
+    if (!newDeposits.contains(deposit)) newDeposits.add(deposit);
+  }
+
+  @Subscribe
+  public void onAttestationEvent(BroadcastAttestationEvent event) throws IllegalArgumentException {
+    try {
+      Store store = chainStorageClient.getStore();
+      BeaconBlock headBlock = store.getBlock(event.getHeadBlockRoot());
+      BeaconState headState = store.getBlockState(event.getHeadBlockRoot());
+      UnsignedLong slot = event.getNodeSlot();
+
+      if (!isGenesis(slot) && isEpochStart(slot)) {
+        UnsignedLong epoch = compute_epoch_at_slot(slot);
+        // NOTE: we get commmittee assignments for NEXT epoch
+        reportExceptions(
+            CompletableFuture.runAsync(
+                () ->
+                    committeeAssignmentManager.updateCommitteeAssignments(
+                        headState, epoch.plus(UnsignedLong.ONE), eventBus)));
       }
 
-      List<Triple<BLSPublicKey, Integer, CrosslinkCommittee>> attesters =
-          AttestationUtil.getAttesterInformation(headState, committeeAssignments);
-      AttestationData genericAttestationData =
-          AttestationUtil.getGenericAttestationData(headState, headBlock);
+      // Get attester information to prepare AttestationAggregator for new slot's aggregation
+      List<AttesterInformation> attesterInformations = committeeAssignments.get(slot);
 
-      CompletableFuture.runAsync(
-          () ->
-              attesters
-                  .parallelStream()
-                  .forEach(
-                      attesterInfo ->
-                          produceAttestations(
-                              headState,
-                              attesterInfo.getLeft(),
-                              attesterInfo.getMiddle(),
-                              attesterInfo.getRight(),
-                              genericAttestationData)));
+      // If our beacon node does have any attestation responsibilities for this slot
+      if (attesterInformations == null) {
+        return;
+      }
 
-      // Copy state so that state transition during block creation does not manipulate headState in
-      // storage
-      createBlockIfNecessary(headState, headBlock);
+      // Pass attestationAggregator all the attester information necessary
+      // for aggregation
+      attestationAggregator.updateAggregatorInformations(attesterInformations);
+
+      asyncProduceAttestations(
+          attesterInformations, headState, getGenericAttestationData(headState, headBlock));
 
       // Save headState to check for slashings
-      this.headState = headState;
+      //      this.headState = headState;
     } catch (IllegalArgumentException e) {
       STDOUT.log(Level.WARN, "Can not produce attestations or create a block" + e.toString());
     }
+  }
+
+  @Subscribe
+  public void onAggregationEvent(BroadcastAggregatesEvent event) {
+    List<AggregateAndProof> aggregateAndProofs = attestationAggregator.getAggregateAndProofs();
+    for (AggregateAndProof aggregateAndProof : aggregateAndProofs) {
+      this.eventBus.post(aggregateAndProof);
+    }
+    attestationAggregator.reset();
   }
 
   private void produceAttestations(
       BeaconState state,
       BLSPublicKey attester,
       int indexIntoCommittee,
-      CrosslinkCommittee committee,
+      Committee committee,
       AttestationData genericAttestationData) {
-    int arrayLength = Math.toIntExact((committee.getCommittee().size() + 7) / 8);
-    Bytes aggregationBitfield =
-        AttestationUtil.getAggregationBitfield(indexIntoCommittee, arrayLength);
-    Bytes custodyBitfield = AttestationUtil.getCustodyBitfield(arrayLength);
-    AttestationData attestationData =
-        AttestationUtil.completeAttestationData(
-            state, new AttestationData(genericAttestationData), committee);
+    int commmitteSize = committee.getCommitteeSize();
+    Bitlist aggregationBitfield =
+        AttestationUtil.getAggregationBits(commmitteSize, indexIntoCommittee);
+    AttestationData attestationData = genericAttestationData.withIndex(committee.getIndex());
     Bytes32 attestationMessage = AttestationUtil.getAttestationMessageToSign(attestationData);
-    int domain = AttestationUtil.getDomain(state, attestationData);
+    Bytes domain =
+        get_domain(state, DOMAIN_BEACON_ATTESTER, attestationData.getTarget().getEpoch());
 
-    BLSSignature signature = getSignature(attestationMessage, domain, attester);
-    this.eventBus.post(
-        new Attestation(aggregationBitfield, attestationData, custodyBitfield, signature));
+    BLSSignature signature = getSignature(validators, attestationMessage, domain, attester);
+    Attestation attestation = new Attestation(aggregationBitfield, attestationData, signature);
+    attestationAggregator.addOwnValidatorAttestation(new Attestation(attestation));
+    this.eventBus.post(attestation);
   }
 
-  private BLSSignature getEpochSignature(BeaconState state, BLSPublicKey proposer) {
-    UnsignedLong slot = state.getSlot().plus(UnsignedLong.ONE);
-    UnsignedLong epoch = BeaconStateUtil.compute_epoch_of_slot(slot);
+  private void createBlockIfNecessary(
+      BeaconStateWithCache previousState, BeaconBlock previousBlock, UnsignedLong newSlot) {
+    try {
 
-    Bytes32 messageHash =
-        HashTreeUtil.hash_tree_root(SSZTypes.BASIC, SSZ.encodeUInt64(epoch.longValue()));
-    int domain = get_domain(state, Constants.DOMAIN_RANDAO, epoch);
-    return getSignature(messageHash, domain, proposer);
+      BeaconStateWithCache newState = BeaconStateWithCache.deepCopy(previousState);
+      // Process empty slots up to the new slot
+      stateTransition.process_slots(newState, newSlot, false);
+
+      // Check if we should be proposing
+      final BLSPublicKey proposer = blockCreator.getProposerForSlot(newState, newSlot);
+      if (!validators.containsKey(proposer)) {
+        // We're not proposing now
+        return;
+      }
+
+      SignedBeaconBlock newBlock;
+      // Collect attestations to include
+      SSZList<Attestation> attestations = getAttestationsForSlot(newSlot);
+      // Collect slashing to include
+      final SSZList<ProposerSlashing> slashingsInBlock = getSlashingsForBlock(newState);
+      // Collect deposits
+      final SSZList<Deposit> deposits = getDepositsForBlock();
+
+      final Signer signer = getSigner(proposer);
+      Eth1Data eth1Data = eth1DataCache.get_eth1_vote(newState);
+      final Bytes32 parentRoot = previousBlock.hash_tree_root();
+      newBlock =
+          blockCreator.createNewBlock(
+              signer,
+              newSlot,
+              newState,
+              parentRoot,
+              eth1Data,
+              attestations,
+              slashingsInBlock,
+              deposits);
+
+      this.eventBus.post(new BlockProposedEvent(newBlock));
+      STDOUT.log(Level.DEBUG, "Local validator produced a new block");
+
+      if (validators.get(proposer).isNaughty()) {
+        final SignedBeaconBlock naughtyBlock =
+            blockCreator.createEmptyBlock(signer, newSlot, newState, parentRoot);
+        this.eventBus.post(naughtyBlock);
+      }
+    } catch (SlotProcessingException | EpochProcessingException | StateTransitionException e) {
+      STDOUT.log(Level.ERROR, "Error during block creation " + e.toString());
+    }
   }
 
-  private BLSSignature getBlockSignature(
-      BeaconState state, BeaconBlock block, BLSPublicKey proposer) {
-    int domain =
-        get_domain(
-            state,
-            Constants.DOMAIN_BEACON_PROPOSER,
-            BeaconStateUtil.compute_epoch_of_slot(block.getSlot()));
-
-    Bytes32 blockRoot = block.signing_root("signature");
-
-    return getSignature(blockRoot, domain, proposer);
-  }
-
-  private BeaconBlock createInitialBlock(BeaconStateWithCache state, BeaconBlock oldBlock) {
-    Bytes32 blockRoot = oldBlock.signing_root("signature");
-    List<Attestation> current_attestations = new ArrayList<>();
-    final Bytes32 MockStateRoot = Bytes32.ZERO;
-
-    if (state
-            .getSlot()
-            .compareTo(
-                UnsignedLong.valueOf(
-                    Constants.GENESIS_SLOT + Constants.MIN_ATTESTATION_INCLUSION_DELAY))
+  private SSZList<Attestation> getAttestationsForSlot(final UnsignedLong slot) {
+    SSZList<Attestation> attestations = BeaconBlockBodyLists.createAttestations();
+    if (slot.compareTo(
+            UnsignedLong.valueOf(
+                Constants.GENESIS_SLOT + Constants.MIN_ATTESTATION_INCLUSION_DELAY))
         >= 0) {
 
       UnsignedLong attestation_slot =
-          state.getSlot().minus(UnsignedLong.valueOf(Constants.MIN_ATTESTATION_INCLUSION_DELAY));
+          slot.minus(UnsignedLong.valueOf(Constants.MIN_ATTESTATION_INCLUSION_DELAY));
 
-      current_attestations =
-          this.store.getUnprocessedAttestationsUntilSlot(state, attestation_slot);
+      attestations =
+          blockAttestationsPool.getAggregatedAttestationsForBlockAtSlot(attestation_slot);
     }
-
-    BeaconBlock newBlock =
-        DataStructureUtil.newBeaconBlock(
-            state.getSlot().plus(UnsignedLong.ONE),
-            blockRoot,
-            MockStateRoot,
-            newDeposits,
-            current_attestations,
-            numValidators);
-
-    return newBlock;
+    return attestations;
   }
 
-  @SuppressWarnings("unchecked")
-  private void initializeValidators(HailongConfiguration config) {
-    Pair<Integer, Integer> startAndEnd = getStartAndEnd();
-    int startIndex = startAndEnd.getLeft();
-    int endIndex = startAndEnd.getRight();
-    long numNaughtyValidators = Math.round((naughtinessPercentage * numValidators) / 100.0);
-    List<BLSKeyPair> keypairs = new ArrayList<>();
-    if (config.getInteropActive()) {
-      try {
-        Path path = Paths.get(config.getInteropInputFile());
-        String read = Files.readAllLines(path).get(0);
-        JSONParser parser = new JSONParser();
-        Object obj = parser.parse(read);
-        JSONObject array = (JSONObject) obj;
-        JSONArray privateKeyStrings = (JSONArray) array.get("privateKeys");
-        for (int i = startIndex; i <= endIndex; i++) {
-          BLSKeyPair keypair =
-              new BLSKeyPair(
-                  new KeyPair(
-                      SecretKey.fromBytes(
-                          Bytes.fromHexString(privateKeyStrings.get(i).toString()))));
-          keypairs.add(keypair);
-        }
-      } catch (IOException | ParseException e) {
-        STDOUT.log(Level.FATAL, e.toString());
+  private SSZList<ProposerSlashing> getSlashingsForBlock(final BeaconState state) {
+    SSZList<ProposerSlashing> slashingsForBlock = BeaconBlockBodyLists.createProposerSlashings();
+    ProposerSlashing slashing = slashings.poll();
+    while (slashing != null) {
+      if (!state.getValidators().get(slashing.getProposer_index().intValue()).isSlashed()) {
+        slashingsForBlock.add(slashing);
       }
-    } else {
-      for (int i = startIndex; i <= endIndex; i++) {
-        BLSKeyPair keypair = BLSKeyPair.random(i);
-        keypairs.add(keypair);
+      if (slashingsForBlock.size() >= slashingsForBlock.getMaxSize()) {
+        break;
       }
+      slashing = slashings.poll();
     }
-    int our_index = 0;
-    for (int i = startIndex; i <= endIndex; i++) {
-      BLSKeyPair keypair = keypairs.get(our_index);
-      int port = Constants.VALIDATOR_CLIENT_PORT_BASE + i;
-      new ValidatorClient(keypair, port);
-      ManagedChannel channel =
-          ManagedChannelBuilder.forAddress("localhost", port).usePlaintext().build();
-      validatorClientChannels.put(keypair.getPublicKey(), channel);
-      STDOUT.log(Level.DEBUG, "i = " + i + ": " + keypair.getPublicKey().toString());
-      if (numNaughtyValidators > 0) {
-        validatorSet.put(keypair.getPublicKey(), new MutableTriple<>(keypair, true, -1));
-      } else {
-        validatorSet.put(keypair.getPublicKey(), new MutableTriple<>(keypair, false, -1));
-      }
-      numNaughtyValidators--;
-      our_index++;
-    }
+    return slashingsForBlock;
   }
 
-  private void createBlockIfNecessary(BeaconStateWithCache state, BeaconBlock oldBlock) {
-    BeaconStateWithCache checkState = BeaconStateWithCache.deepCopy(state);
-    try {
-      process_slots(checkState, checkState.getSlot().plus(UnsignedLong.ONE), false);
-    } catch (SlotProcessingException | EpochProcessingException e) {
-      STDOUT.log(Level.FATAL, "Coordinator checking proposer index exception");
-    }
+  private SSZList<Deposit> getDepositsForBlock() {
+    // TODO - Look into how deposits should be managed, this seems wrong
+    final SSZList<Deposit> deposits = BeaconBlockBodyLists.createDeposits();
+    deposits.addAll(newDeposits);
+    return deposits;
+  }
 
-    // Calculate the block proposer index, and if we have the
-    // block proposer in our set of validators, produce the block
-    int proposerIndex = BeaconStateUtil.get_beacon_proposer_index(checkState);
-    BLSPublicKey proposer = checkState.getValidator_registry().get(proposerIndex).getPubkey();
+  private Signer getSigner(BLSPublicKey signer) {
+    return (message, domain) -> getSignature(validators, message, domain, signer);
+  }
 
-    BeaconStateWithCache newState = BeaconStateWithCache.deepCopy(state);
-    if (validatorSet.containsKey(proposer)) {
-      CompletableFuture<BLSSignature> epochSignatureTask =
-          CompletableFuture.supplyAsync(() -> getEpochSignature(newState, proposer));
-      CompletableFuture<BeaconBlock> blockCreationTask =
-          CompletableFuture.supplyAsync(() -> createInitialBlock(newState, oldBlock));
+  @VisibleForTesting
+  void asyncProduceAttestations(
+      List<AttesterInformation> attesterInformations,
+      BeaconState state,
+      AttestationData genericAttestationData) {
+    reportExceptions(
+        CompletableFuture.runAsync(
+            () ->
+                attesterInformations
+                    .parallelStream()
+                    .forEach(
+                        attesterInfo ->
+                            produceAttestations(
+                                state,
+                                attesterInfo.getPublicKey(),
+                                attesterInfo.getIndexIntoCommitee(),
+                                attesterInfo.getCommittee(),
+                                genericAttestationData))));
+  }
 
-      BeaconBlock newBlock;
-      try {
-        newBlock = blockCreationTask.get();
-        BLSSignature epochSignature = epochSignatureTask.get();
-        newBlock.getBody().setRandao_reveal(epochSignature);
-        List<ProposerSlashing> slashingsInBlock = newBlock.getBody().getProposer_slashings();
-        slashings.forEach(
-            slashing -> {
-              if (!state
-                  .getValidator_registry()
-                  .get(slashing.getProposer_index().intValue())
-                  .isSlashed()) {
-                slashingsInBlock.add(slashing);
+  @VisibleForTesting
+  static void getIndicesOfOurValidators(
+      BeaconState state, Map<BLSPublicKey, ValidatorInfo> validators) {
+    List<Validator> validatorRegistry = state.getValidators();
+    IntStream.range(0, validatorRegistry.size())
+        .forEach(
+            i -> {
+              if (validators.containsKey(validatorRegistry.get(i).getPubkey())) {
+                STDOUT.log(
+                    Level.DEBUG,
+                    "owned index = " + i + ": " + validatorRegistry.get(i).getPubkey());
+                validators.get(validatorRegistry.get(i).getPubkey()).setValidatorIndex(i);
               }
             });
-        slashings = new LinkedBlockingQueue<>();
-        boolean validate_state_root = false;
-        Bytes32 stateRoot = stateTransition.initiate(newState, newBlock, validate_state_root);
-        newBlock.setState_root(stateRoot);
-        BLSSignature blockSignature = getBlockSignature(newState, newBlock, proposer);
-        newBlock.setSignature(blockSignature);
-        validatorBlock = newBlock;
-
-        // If validator set object's right variable is set to true, then the validator is naughty
-        if (validatorSet.get(proposer).getMiddle()) {
-          BeaconStateWithCache naughtyState = BeaconStateWithCache.deepCopy(state);
-          BeaconBlock newestBlock = createInitialBlock(naughtyState, oldBlock);
-          BLSSignature eSignature = epochSignatureTask.get();
-          newestBlock.getBody().setRandao_reveal(eSignature);
-          Bytes32 sRoot = stateTransition.initiate(naughtyState, newestBlock, validate_state_root);
-          newestBlock.setState_root(sRoot);
-          BLSSignature bSignature = getBlockSignature(naughtyState, newestBlock, proposer);
-          newestBlock.setSignature(bSignature);
-          this.eventBus.post(newestBlock);
-        }
-      } catch (InterruptedException | ExecutionException | StateTransitionException e) {
-        STDOUT.log(Level.WARN, "Error during block creation" + e.toString());
-      }
-    }
-  }
-
-  private BLSSignature getSignature(Bytes message, int domain, BLSPublicKey signer) {
-    SignatureRequest request =
-        SignatureRequest.newBuilder()
-            .setMessage(ByteString.copyFrom(message.toArray()))
-            .setDomain(domain)
-            .build();
-
-    SignatureResponse response;
-    response =
-        MessageSignerGrpc.newBlockingStub(validatorClientChannels.get(signer)).signMessage(request);
-    return BLSSignature.fromBytes(Bytes.wrap(response.getMessage().toByteArray()));
-  }
-
-  private Pair<Integer, Integer> getStartAndEnd() {
-    // Add all validators to validatorSet hashMap
-    int nodeCounter = UInt256.fromBytes(nodeIdentity.bytes()).mod(numNodes).intValue();
-
-    int startIndex = nodeCounter * (numValidators / numNodes);
-    int endIndex =
-        startIndex
-            + (numValidators / numNodes - 1)
-            + toIntExact(Math.round((double) nodeCounter / Math.max(1, numNodes - 1)));
-    endIndex = Math.min(endIndex, numValidators - 1);
-
-    int numValidators = endIndex - startIndex + 1;
-
-    LOG.log(Level.INFO, "startIndex: " + startIndex + " endIndex: " + endIndex);
-    return new ImmutablePair<>(startIndex, endIndex);
   }
 }

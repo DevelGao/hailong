@@ -16,21 +16,21 @@ package tech.devgao.hailong.datastructures.state;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static tech.devgao.hailong.datastructures.util.DataStructureUtil.randomAttestationData;
+import static tech.devgao.hailong.datastructures.util.DataStructureUtil.randomBitlist;
 import static tech.devgao.hailong.datastructures.util.DataStructureUtil.randomUnsignedLong;
 
 import com.google.common.primitives.UnsignedLong;
 import java.util.Objects;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 import tech.devgao.hailong.datastructures.operations.AttestationData;
+import tech.devgao.hailong.util.SSZTypes.Bitlist;
 
 class PendingAttestationTest {
-
-  private Bytes participationBitfield = Bytes32.random();
-  private AttestationData data = randomAttestationData();
-  private UnsignedLong inclusionDelay = randomUnsignedLong();
-  private UnsignedLong proposerIndex = randomUnsignedLong();
+  private int seed = 100;
+  private Bitlist participationBitfield = randomBitlist(seed);
+  private AttestationData data = randomAttestationData(seed++);
+  private UnsignedLong inclusionDelay = randomUnsignedLong(seed++);
+  private UnsignedLong proposerIndex = randomUnsignedLong(seed++);
 
   private PendingAttestation pendingAttestation =
       new PendingAttestation(participationBitfield, data, inclusionDelay, proposerIndex);
@@ -54,9 +54,9 @@ class PendingAttestationTest {
   void equalsReturnsFalseWhenAttestationDataIsDifferent() {
     // BeaconBlock is rather involved to create. Just create a random one until it is not the same
     // as the original.
-    AttestationData otherAttestationData = randomAttestationData();
+    AttestationData otherAttestationData = randomAttestationData(seed++);
     while (Objects.equals(otherAttestationData, data)) {
-      otherAttestationData = randomAttestationData();
+      otherAttestationData = randomAttestationData(seed++);
     }
     PendingAttestation testPendingAttestation =
         new PendingAttestation(
@@ -68,7 +68,7 @@ class PendingAttestationTest {
   @Test
   void equalsReturnsFalseWhenParticipationBitfieldsAreDifferent() {
     PendingAttestation testPendingAttestation =
-        new PendingAttestation(participationBitfield.not(), data, inclusionDelay, proposerIndex);
+        new PendingAttestation(randomBitlist(seed++), data, inclusionDelay, proposerIndex);
 
     assertNotEquals(pendingAttestation, testPendingAttestation);
   }
@@ -77,7 +77,10 @@ class PendingAttestationTest {
   void equalsReturnsFalseWhenCustodyBitfieldsAreDifferent() {
     PendingAttestation testPendingAttestation =
         new PendingAttestation(
-            participationBitfield, data, inclusionDelay.plus(randomUnsignedLong()), proposerIndex);
+            participationBitfield,
+            data,
+            inclusionDelay.plus(randomUnsignedLong(seed++)),
+            proposerIndex);
 
     assertNotEquals(pendingAttestation, testPendingAttestation);
   }
@@ -86,48 +89,11 @@ class PendingAttestationTest {
   void equalsReturnsFalseWhenProposerIndicesAreDifferent() {
     PendingAttestation testPendingAttestation =
         new PendingAttestation(
-            participationBitfield, data, inclusionDelay, proposerIndex.plus(randomUnsignedLong()));
-
-    assertNotEquals(pendingAttestation, testPendingAttestation);
-  }
-
-  @Test
-  void roundtripSSZ() {
-    Bytes sszPendingAttestationBytes = pendingAttestation.toBytes();
-    assertEquals(pendingAttestation, PendingAttestation.fromBytes(sszPendingAttestationBytes));
-  }
-
-  @Test
-  void roundtripSSZVariableLengthBitfield() {
-    PendingAttestation byte1BitfieldPendingAttestation =
-        new PendingAttestation(Bytes.fromHexString("0x00"), data, inclusionDelay, proposerIndex);
-    PendingAttestation byte4BitfieldPendingAttestation =
-        new PendingAttestation(
-            Bytes.fromHexString("0x00000000"), data, inclusionDelay, proposerIndex);
-    PendingAttestation byte8BitfieldPendingAttestation =
-        new PendingAttestation(
-            Bytes.fromHexString("0x0000000000000000"), data, inclusionDelay, proposerIndex);
-    PendingAttestation byte16BitfieldPendingAttestation =
-        new PendingAttestation(
-            Bytes.fromHexString("0x00000000000000000000000000000000"),
+            participationBitfield,
             data,
             inclusionDelay,
-            proposerIndex);
-    Bytes byte1BitfieldPendingAttestationBytes = byte1BitfieldPendingAttestation.toBytes();
-    Bytes byte4BitfieldPendingAttestationBytes = byte4BitfieldPendingAttestation.toBytes();
-    Bytes byte8BitfieldPendingAttestationBytes = byte8BitfieldPendingAttestation.toBytes();
-    Bytes byte16BitfieldPendingAttestationBytes = byte16BitfieldPendingAttestation.toBytes();
-    assertEquals(
-        byte1BitfieldPendingAttestation,
-        PendingAttestation.fromBytes(byte1BitfieldPendingAttestationBytes));
-    assertEquals(
-        byte4BitfieldPendingAttestation,
-        PendingAttestation.fromBytes(byte4BitfieldPendingAttestationBytes));
-    assertEquals(
-        byte8BitfieldPendingAttestation,
-        PendingAttestation.fromBytes(byte8BitfieldPendingAttestationBytes));
-    assertEquals(
-        byte16BitfieldPendingAttestation,
-        PendingAttestation.fromBytes(byte16BitfieldPendingAttestationBytes));
+            proposerIndex.plus(randomUnsignedLong(seed++)));
+
+    assertNotEquals(pendingAttestation, testPendingAttestation);
   }
 }

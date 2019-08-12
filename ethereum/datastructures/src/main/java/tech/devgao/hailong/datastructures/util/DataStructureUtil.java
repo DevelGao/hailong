@@ -13,65 +13,54 @@
 
 package tech.devgao.hailong.datastructures.util;
 
-import static tech.devgao.hailong.datastructures.Constants.DEPOSIT_CONTRACT_TREE_DEPTH;
-import static tech.devgao.hailong.datastructures.Constants.ZERO_HASH;
-import static tech.devgao.hailong.datastructures.util.BeaconStateUtil.bls_domain;
+import static java.lang.Math.toIntExact;
+import static tech.devgao.hailong.util.config.Constants.SLOTS_PER_ETH1_VOTING_PERIOD;
 
 import com.google.common.primitives.UnsignedLong;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Random;
-import java.util.stream.IntStream;
-import org.apache.tuweni.bytes.Bytes;
+import java.util.function.Function;
+import java.util.stream.LongStream;
 import org.apache.tuweni.bytes.Bytes32;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-import tech.devgao.hailong.datastructures.Constants;
 import tech.devgao.hailong.datastructures.blocks.BeaconBlock;
 import tech.devgao.hailong.datastructures.blocks.BeaconBlockBody;
 import tech.devgao.hailong.datastructures.blocks.BeaconBlockHeader;
 import tech.devgao.hailong.datastructures.blocks.Eth1Data;
+import tech.devgao.hailong.datastructures.blocks.SignedBeaconBlock;
+import tech.devgao.hailong.datastructures.blocks.SignedBeaconBlockHeader;
+import tech.devgao.hailong.datastructures.operations.AggregateAndProof;
 import tech.devgao.hailong.datastructures.operations.Attestation;
 import tech.devgao.hailong.datastructures.operations.AttestationData;
 import tech.devgao.hailong.datastructures.operations.AttesterSlashing;
 import tech.devgao.hailong.datastructures.operations.Deposit;
 import tech.devgao.hailong.datastructures.operations.DepositData;
+import tech.devgao.hailong.datastructures.operations.DepositMessage;
+import tech.devgao.hailong.datastructures.operations.DepositWithIndex;
 import tech.devgao.hailong.datastructures.operations.IndexedAttestation;
 import tech.devgao.hailong.datastructures.operations.ProposerSlashing;
-import tech.devgao.hailong.datastructures.operations.Transfer;
+import tech.devgao.hailong.datastructures.operations.SignedVoluntaryExit;
 import tech.devgao.hailong.datastructures.operations.VoluntaryExit;
-import tech.devgao.hailong.datastructures.state.BeaconStateWithCache;
-import tech.devgao.hailong.datastructures.state.Crosslink;
+import tech.devgao.hailong.datastructures.state.BeaconState;
+import tech.devgao.hailong.datastructures.state.Checkpoint;
+import tech.devgao.hailong.datastructures.state.Fork;
+import tech.devgao.hailong.datastructures.state.PendingAttestation;
 import tech.devgao.hailong.datastructures.state.Validator;
-import tech.devgao.hailong.util.alogger.ALogger;
+import tech.devgao.hailong.util.SSZTypes.Bitlist;
+import tech.devgao.hailong.util.SSZTypes.Bitvector;
+import tech.devgao.hailong.util.SSZTypes.Bytes4;
+import tech.devgao.hailong.util.SSZTypes.SSZList;
+import tech.devgao.hailong.util.SSZTypes.SSZVector;
 import tech.devgao.hailong.util.bls.BLSKeyPair;
 import tech.devgao.hailong.util.bls.BLSPublicKey;
 import tech.devgao.hailong.util.bls.BLSSignature;
-import tech.devgao.hailong.util.config.HailongConfiguration;
+import tech.devgao.hailong.util.config.Constants;
 
 public final class DataStructureUtil {
-  private static final ALogger LOG = new ALogger(DataStructureUtil.class.getName());
-
-  public static int randomInt() {
-    return (int) Math.round(Math.random() * 1000000);
-  }
 
   public static int randomInt(int seed) {
     return new Random(seed).nextInt();
-  }
-
-  public static long randomLong() {
-    return Math.round(Math.random() * 1000000);
   }
 
   public static long randomLong(long seed) {
@@ -82,112 +71,127 @@ public final class DataStructureUtil {
     return UnsignedLong.fromLongBits(randomLong(seed));
   }
 
-  public static UnsignedLong randomUnsignedLong() {
-    return UnsignedLong.fromLongBits(randomLong());
-  }
-
   public static Bytes32 randomBytes32(long seed) {
     ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
     buffer.putLong(seed);
     return Bytes32.random(new SecureRandom(buffer.array()));
   }
 
-  public static Bytes32 randomBytes32() {
-    return Bytes32.random();
+  public static <T> SSZList<T> randomSSZList(
+      Class<T> classInfo, long maxSize, Function<Integer, T> randomFunction, int seed) {
+    SSZList<T> sszList = new SSZList<>(classInfo, maxSize);
+    long numItems = maxSize / 10;
+    LongStream.range(0, numItems).forEach(i -> sszList.add(randomFunction.apply(seed)));
+    return sszList;
   }
 
-  public static BLSPublicKey randomPublicKey() {
-    return BLSPublicKey.random();
+  public static <T> SSZVector<T> randomSSZVector(
+      T defaultClassObject, long maxSize, Function<Integer, T> randomFunction, int seed) {
+    SSZVector<T> sszvector = new SSZVector<>(toIntExact(maxSize), defaultClassObject);
+    long numItems = maxSize / 10;
+    LongStream.range(0, numItems)
+        .forEach(i -> sszvector.set(toIntExact(i), randomFunction.apply(seed)));
+    return sszvector;
+  }
+
+  public static Bitlist randomBitlist(long seed) {
+    return randomBitlist(Constants.MAX_VALIDATORS_PER_COMMITTEE, seed);
+  }
+
+  public static Bitlist randomBitlist(int n, long seed) {
+    byte[] byteArray = new byte[n];
+    Random random = new Random(seed);
+
+    for (int i = 0; i < n; i++) {
+      byteArray[i] = (byte) (random.nextBoolean() ? 1 : 0);
+    }
+    return new Bitlist(byteArray, n);
+  }
+
+  public static Bitvector randomBitvector(int n, long seed) {
+    byte[] byteArray = new byte[n];
+    Random random = new Random(seed);
+
+    for (int i = 0; i < n; i++) {
+      byteArray[i] = (byte) (random.nextBoolean() ? 1 : 0);
+    }
+    return new Bitvector(byteArray, n);
   }
 
   public static BLSPublicKey randomPublicKey(int seed) {
     return BLSPublicKey.random(seed);
   }
 
-  public static Eth1Data randomEth1Data() {
-    return new Eth1Data(randomBytes32(), randomUnsignedLong(), randomBytes32());
-  }
-
   public static Eth1Data randomEth1Data(int seed) {
-    return new Eth1Data(randomBytes32(seed), randomUnsignedLong(seed), randomBytes32(seed));
+    return new Eth1Data(randomBytes32(seed), randomUnsignedLong(seed++), randomBytes32(seed++));
   }
 
-  public static Crosslink randomCrosslink() {
-    return new Crosslink(
-        randomUnsignedLong(),
-        randomUnsignedLong(),
-        randomUnsignedLong(),
-        randomBytes32(),
-        randomBytes32());
+  public static Checkpoint randomCheckpoint(int seed) {
+    return new Checkpoint(randomUnsignedLong(seed), randomBytes32(seed++));
   }
 
-  public static Crosslink randomCrosslink(int seed) {
-    return new Crosslink(
-        randomUnsignedLong(seed),
-        randomUnsignedLong(seed),
-        randomUnsignedLong(seed),
-        randomBytes32(seed),
-        randomBytes32(seed));
-  }
-
-  public static AttestationData randomAttestationData(long slotNum) {
+  public static AttestationData randomAttestationData(int seed) {
     return new AttestationData(
-        randomBytes32(),
-        UnsignedLong.valueOf(slotNum),
-        randomBytes32(),
-        randomUnsignedLong(),
-        randomBytes32(),
-        randomCrosslink());
-  }
-
-  public static AttestationData randomAttestationData(long slotNum, int seed) {
-    return new AttestationData(
-        randomBytes32(seed),
-        UnsignedLong.valueOf(slotNum),
-        randomBytes32(seed),
         randomUnsignedLong(seed),
-        randomBytes32(seed),
-        randomCrosslink(seed));
+        randomUnsignedLong(seed++),
+        randomBytes32(seed++),
+        randomCheckpoint(seed++),
+        randomCheckpoint(seed++));
   }
 
-  public static AttestationData randomAttestationData() {
-    return randomAttestationData(randomLong());
-  }
-
-  public static Attestation randomAttestation(UnsignedLong slotNum) {
+  public static Attestation randomAttestation(int seed) {
     return new Attestation(
-        randomBytes32(), randomAttestationData(), randomBytes32(), BLSSignature.random());
+        randomBitlist(seed), randomAttestationData(seed++), BLSSignature.random(seed++));
   }
 
-  public static Attestation randomAttestation() {
-    return randomAttestation(UnsignedLong.valueOf(randomLong()));
+  public static AggregateAndProof randomAggregateAndProof(int seed) {
+    return new AggregateAndProof(
+        randomUnsignedLong(seed), BLSSignature.random(seed), randomAttestation(seed));
   }
 
-  public static AttesterSlashing randomAttesterSlashing() {
-    return new AttesterSlashing(randomIndexedAttestation(), randomIndexedAttestation());
+  public static PendingAttestation randomPendingAttestation(int seed) {
+    return new PendingAttestation(
+        randomBitlist(seed),
+        randomAttestationData(seed++),
+        randomUnsignedLong(seed++),
+        randomUnsignedLong(seed++));
   }
 
   public static AttesterSlashing randomAttesterSlashing(int seed) {
-    return new AttesterSlashing(randomIndexedAttestation(seed), randomIndexedAttestation(seed));
+    return new AttesterSlashing(randomIndexedAttestation(seed), randomIndexedAttestation(seed++));
   }
 
-  public static BeaconBlock randomBeaconBlock(long slotNum) {
+  public static SignedBeaconBlock randomSignedBeaconBlock(long slotNum, int seed) {
+    final BeaconBlock beaconBlock = randomBeaconBlock(slotNum, seed);
+    return new SignedBeaconBlock(beaconBlock, BLSSignature.random());
+  }
+
+  public static SignedBeaconBlock randomSignedBeaconBlock(
+      long slotNum, Bytes32 parentRoot, int seed) {
+    final BeaconBlock beaconBlock = randomBeaconBlock(slotNum, parentRoot, seed);
+    return new SignedBeaconBlock(beaconBlock, BLSSignature.random());
+  }
+
+  public static BeaconBlock randomBeaconBlock(long slotNum, int seed) {
     UnsignedLong slot = UnsignedLong.valueOf(slotNum);
-    Bytes32 previous_root = Bytes32.random();
-    Bytes32 state_root = Bytes32.random();
-    BeaconBlockBody body = randomBeaconBlockBody();
-    BLSSignature signature = BLSSignature.random();
+    Bytes32 previous_root = randomBytes32(seed);
+    Bytes32 state_root = randomBytes32(seed++);
+    BeaconBlockBody body = randomBeaconBlockBody(seed++);
 
-    return new BeaconBlock(slot, previous_root, state_root, body, signature);
+    return new BeaconBlock(slot, previous_root, state_root, body);
   }
 
-  public static BeaconBlockHeader randomBeaconBlockHeader() {
-    return new BeaconBlockHeader(
-        randomUnsignedLong(),
-        randomBytes32(),
-        randomBytes32(),
-        randomBytes32(),
-        BLSSignature.random());
+  public static BeaconBlock randomBeaconBlock(long slotNum, Bytes32 parentRoot, int seed) {
+    UnsignedLong slot = UnsignedLong.valueOf(slotNum);
+
+    Bytes32 state_root = randomBytes32(seed);
+    BeaconBlockBody body = randomBeaconBlockBody(seed++);
+
+    return new BeaconBlock(slot, parentRoot, state_root, body);
+  }
+
+  public static SignedBeaconBlockHeader randomSignedBeaconBlockHeader(int seed) {
+    return new SignedBeaconBlockHeader(randomBeaconBlockHeader(seed), BLSSignature.random());
   }
 
   public static BeaconBlockHeader randomBeaconBlockHeader(int seed) {
@@ -195,267 +199,204 @@ public final class DataStructureUtil {
         randomUnsignedLong(seed++),
         randomBytes32(seed++),
         randomBytes32(seed++),
-        randomBytes32(seed++),
-        BLSSignature.random(seed));
+        randomBytes32(seed++));
   }
 
-  public static BeaconBlockBody randomBeaconBlockBody() {
+  public static BeaconBlockBody randomBeaconBlockBody(int seed) {
     return new BeaconBlockBody(
-        BLSSignature.random(),
-        randomEth1Data(),
+        BLSSignature.random(seed),
+        randomEth1Data(seed++),
         Bytes32.ZERO,
-        Arrays.asList(randomProposerSlashing(), randomProposerSlashing(), randomProposerSlashing()),
-        Arrays.asList(randomAttesterSlashing(), randomAttesterSlashing(), randomAttesterSlashing()),
-        Arrays.asList(randomAttestation(), randomAttestation(), randomAttestation()),
-        randomDeposits(100),
-        Arrays.asList(randomVoluntaryExit(), randomVoluntaryExit(), randomVoluntaryExit()),
-        Arrays.asList(randomTransfer()));
-  }
-
-  public static ProposerSlashing randomProposerSlashing() {
-    return new ProposerSlashing(
-        randomUnsignedLong(), randomBeaconBlockHeader(), randomBeaconBlockHeader());
+        randomSSZList(
+            ProposerSlashing.class,
+            Constants.MAX_PROPOSER_SLASHINGS,
+            DataStructureUtil::randomProposerSlashing,
+            seed++),
+        randomSSZList(
+            AttesterSlashing.class,
+            Constants.MAX_ATTESTER_SLASHINGS,
+            DataStructureUtil::randomAttesterSlashing,
+            seed++),
+        randomSSZList(
+            Attestation.class,
+            Constants.MAX_ATTESTATIONS,
+            DataStructureUtil::randomAttestation,
+            seed++),
+        randomSSZList(
+            Deposit.class,
+            Constants.MAX_DEPOSITS,
+            DataStructureUtil::randomDepositWithoutIndex,
+            seed++),
+        randomSSZList(
+            SignedVoluntaryExit.class,
+            Constants.MAX_VOLUNTARY_EXITS,
+            DataStructureUtil::randomSignedVoluntaryExit,
+            seed++));
   }
 
   public static ProposerSlashing randomProposerSlashing(int seed) {
     return new ProposerSlashing(
-        randomUnsignedLong(seed++), randomBeaconBlockHeader(seed++), randomBeaconBlockHeader(seed));
-  }
-
-  public static IndexedAttestation randomIndexedAttestation() {
-    return new IndexedAttestation(
-        Arrays.asList(randomInt(), randomInt(), randomInt()),
-        Arrays.asList(randomInt(), randomInt(), randomInt()),
-        randomAttestationData(),
-        BLSSignature.random());
+        randomUnsignedLong(seed++),
+        randomSignedBeaconBlockHeader(seed++),
+        randomSignedBeaconBlockHeader(seed));
   }
 
   public static IndexedAttestation randomIndexedAttestation(int seed) {
+    SSZList<UnsignedLong> attesting_indices =
+        new SSZList<>(UnsignedLong.class, Constants.MAX_VALIDATORS_PER_COMMITTEE);
+    attesting_indices.add(randomUnsignedLong(seed));
+    attesting_indices.add(randomUnsignedLong(seed++));
+    attesting_indices.add(randomUnsignedLong(seed++));
     return new IndexedAttestation(
-        Arrays.asList(randomInt(seed), randomInt(seed), randomInt(seed)),
-        Arrays.asList(randomInt(seed), randomInt(seed), randomInt(seed)),
-        randomAttestationData(seed++),
-        BLSSignature.random(seed));
-  }
-
-  public static DepositData randomDepositData() {
-    BLSKeyPair keyPair = BLSKeyPair.random();
-    BLSPublicKey pubkey = keyPair.getPublicKey();
-    Bytes32 withdrawal_credentials = Bytes32.random();
-
-    DepositData proof_of_possession_data =
-        new DepositData(
-            pubkey,
-            withdrawal_credentials,
-            UnsignedLong.valueOf(Constants.MAX_EFFECTIVE_BALANCE),
-            Constants.EMPTY_SIGNATURE);
-
-    BLSSignature proof_of_possession =
-        BLSSignature.sign(
-            keyPair,
-            proof_of_possession_data.signing_root("signature"),
-            bls_domain(Constants.DOMAIN_DEPOSIT));
-
-    return new DepositData(
-        keyPair.getPublicKey(),
-        withdrawal_credentials,
-        UnsignedLong.valueOf(Constants.MAX_EFFECTIVE_BALANCE),
-        proof_of_possession);
+        attesting_indices, randomAttestationData(seed++), BLSSignature.random(seed++));
   }
 
   public static DepositData randomDepositData(int seed) {
     BLSKeyPair keyPair = BLSKeyPair.random(seed);
     BLSPublicKey pubkey = keyPair.getPublicKey();
-    Bytes32 withdrawal_credentials = randomBytes32(seed);
+    Bytes32 withdrawal_credentials = randomBytes32(seed++);
 
-    DepositData proof_of_possession_data =
-        new DepositData(
-            pubkey,
-            withdrawal_credentials,
-            UnsignedLong.valueOf(Constants.MAX_EFFECTIVE_BALANCE),
-            Constants.EMPTY_SIGNATURE);
+    DepositMessage proof_of_possession_data =
+        new DepositMessage(
+            pubkey, withdrawal_credentials, UnsignedLong.valueOf(Constants.MAX_EFFECTIVE_BALANCE));
 
     BLSSignature proof_of_possession =
         BLSSignature.sign(
             keyPair,
-            proof_of_possession_data.signing_root("signature"),
-            bls_domain(Constants.DOMAIN_DEPOSIT));
+            proof_of_possession_data.hash_tree_root(),
+            BeaconStateUtil.compute_domain(Constants.DOMAIN_DEPOSIT));
 
-    return new DepositData(
-        keyPair.getPublicKey(),
-        withdrawal_credentials,
-        UnsignedLong.valueOf(Constants.MAX_EFFECTIVE_BALANCE),
-        proof_of_possession);
+    return new DepositData(proof_of_possession_data, proof_of_possession);
   }
 
-  public static Deposit randomDeposit() {
-    return new Deposit(Collections.nCopies(32, Bytes32.random()), randomDepositData());
+  public static DepositWithIndex randomDepositWithIndex(int seed) {
+    return new DepositWithIndex(
+        new SSZVector<>(32, randomBytes32(seed)),
+        randomDepositData(seed++),
+        randomUnsignedLong(seed++)
+            .mod(UnsignedLong.valueOf(Constants.DEPOSIT_CONTRACT_TREE_DEPTH)));
+  }
+
+  public static Deposit randomDepositWithoutIndex(int seed) {
+    return new Deposit(
+        new SSZVector<>(Constants.DEPOSIT_CONTRACT_TREE_DEPTH + 1, randomBytes32(seed)),
+        randomDepositData(seed++));
   }
 
   public static Deposit randomDeposit(int seed) {
     return new Deposit(
-        Arrays.asList(randomBytes32(seed), randomBytes32(seed++), randomBytes32(seed++)),
+        new SSZVector<>(Constants.DEPOSIT_CONTRACT_TREE_DEPTH + 1, randomBytes32(seed)),
         randomDepositData(seed));
   }
 
-  public static ArrayList<Deposit> randomDeposits(int num) {
-    ArrayList<Deposit> deposits = new ArrayList<Deposit>();
+  public static ArrayList<DepositWithIndex> randomDeposits(int num, int seed) {
+    ArrayList<DepositWithIndex> deposits = new ArrayList<>();
 
     for (int i = 0; i < num; i++) {
-      deposits.add(randomDeposit());
+      deposits.add(randomDepositWithIndex(seed++));
     }
 
     return deposits;
   }
 
-  public static ArrayList<Deposit> randomDeposits(int num, int seed) {
-    ArrayList<Deposit> deposits = new ArrayList<Deposit>();
-
-    for (int i = 0; i < num; i++) {
-      deposits.add(randomDeposit(i + seed));
-    }
-
-    return deposits;
-  }
-
-  public static VoluntaryExit randomVoluntaryExit() {
-    return new VoluntaryExit(randomUnsignedLong(), randomUnsignedLong(), BLSSignature.random());
+  public static SignedVoluntaryExit randomSignedVoluntaryExit(int seed) {
+    return new SignedVoluntaryExit(randomVoluntaryExit(seed), BLSSignature.random());
   }
 
   public static VoluntaryExit randomVoluntaryExit(int seed) {
-    return new VoluntaryExit(
-        randomUnsignedLong(seed), randomUnsignedLong(seed++), BLSSignature.random());
+    return new VoluntaryExit(randomUnsignedLong(seed), randomUnsignedLong(seed++));
   }
 
-  public static Transfer randomTransfer() {
-    return new Transfer(
-        randomUnsignedLong(),
-        randomUnsignedLong(),
-        randomUnsignedLong(),
-        randomUnsignedLong(),
-        randomUnsignedLong(),
-        BLSPublicKey.random(),
-        BLSSignature.random());
-  }
-
-  public static Transfer randomTransfer(int seed) {
-    return new Transfer(
-        randomUnsignedLong(seed),
-        randomUnsignedLong(seed + 1),
-        randomUnsignedLong(seed + 2),
-        randomUnsignedLong(seed + 3),
-        randomUnsignedLong(seed + 4),
-        BLSPublicKey.random(seed + 5),
-        BLSSignature.random(seed + 6));
-  }
-
-  public static ArrayList<Deposit> newDeposits(int numDeposits) {
-    ArrayList<Deposit> deposits = new ArrayList<Deposit>();
+  public static ArrayList<DepositWithIndex> newDeposits(int numDeposits) {
+    ArrayList<DepositWithIndex> deposits = new ArrayList<>();
+    final DepositGenerator depositGenerator = new DepositGenerator();
 
     for (int i = 0; i < numDeposits; i++) {
-      // https://github.com/ethereum/eth2.0-specs/blob/0.4.0/specs/validator/0_beacon-chain-validator.md#submit-deposit
       BLSKeyPair keypair = BLSKeyPair.random(i);
       DepositData depositData =
-          new DepositData(
-              keypair.getPublicKey(),
-              Bytes32.ZERO,
+          depositGenerator.createDepositData(
+              keypair,
               UnsignedLong.valueOf(Constants.MAX_EFFECTIVE_BALANCE),
-              BLSSignature.empty());
-      BLSSignature proof_of_possession =
-          BLSSignature.sign(
-              keypair, depositData.signing_root("signature"), bls_domain(Constants.DOMAIN_DEPOSIT));
-      depositData.setSignature(proof_of_possession);
+              keypair.getPublicKey());
 
-      List<Bytes32> proof =
-          new ArrayList<>(Collections.nCopies(DEPOSIT_CONTRACT_TREE_DEPTH, Bytes32.ZERO));
-      Deposit deposit = new Deposit(proof, depositData);
+      SSZVector<Bytes32> proof =
+          new SSZVector<>(Constants.DEPOSIT_CONTRACT_TREE_DEPTH + 1, Bytes32.ZERO);
+      DepositWithIndex deposit = new DepositWithIndex(proof, depositData, UnsignedLong.valueOf(i));
       deposits.add(deposit);
     }
     return deposits;
   }
 
-  public static BeaconBlock newBeaconBlock(
-      UnsignedLong slotNum,
-      Bytes32 previous_block_root,
-      Bytes32 state_root,
-      ArrayList<Deposit> deposits,
-      List<Attestation> attestations,
-      int numValidators) {
-    return new BeaconBlock(
-        slotNum,
-        previous_block_root,
-        state_root,
-        new BeaconBlockBody(
-            Constants.EMPTY_SIGNATURE,
-            new Eth1Data(ZERO_HASH, UnsignedLong.valueOf(numValidators), ZERO_HASH),
-            Bytes32.ZERO,
-            new ArrayList<>(),
-            new ArrayList<>(),
-            attestations,
-            deposits,
-            new ArrayList<>(),
-            new ArrayList<>()),
-        BLSSignature.empty());
-  }
-
-  public static BeaconStateWithCache createInitialBeaconState(
-      List<Deposit> deposits, Bytes32 deposit_root) {
-    BeaconStateWithCache state = new BeaconStateWithCache();
-    return BeaconStateUtil.get_genesis_beacon_state(
-        state,
-        deposits,
-        UnsignedLong.valueOf(Constants.GENESIS_SLOT),
-        new Eth1Data(deposit_root, UnsignedLong.ZERO, Bytes32.ZERO));
-  }
-
-  @SuppressWarnings("unchecked")
-  public static BeaconStateWithCache createInitialBeaconState(HailongConfiguration config)
-      throws IOException, ParseException {
-    BeaconStateWithCache state = new BeaconStateWithCache();
-    final List<Deposit> deposits = new ArrayList<>();
-    if (config.getInteropActive()) {
-      Path path = Paths.get("interopDepositsAndKeys.json");
-      String read = Files.readAllLines(path).get(0);
-      JSONParser parser = new JSONParser();
-      Object obj = parser.parse(read);
-      JSONObject array = (JSONObject) obj;
-      JSONArray privateKeyStrings = (JSONArray) array.get("deposits");
-      IntStream.range(0, config.getNumValidators())
-          .forEach(
-              i ->
-                  deposits.add(
-                      Deposit.fromBytes(Bytes.fromHexString(privateKeyStrings.get(i).toString()))));
-    } else {
-      deposits.addAll(newDeposits(config.getNumValidators()));
-    }
-    return BeaconStateUtil.get_genesis_beacon_state(
-        state,
-        deposits,
-        UnsignedLong.valueOf(Constants.GENESIS_SLOT),
-        new Eth1Data(Bytes32.ZERO, UnsignedLong.valueOf(config.getNumValidators()), Bytes32.ZERO));
-  }
-
-  public static Validator randomValidator() {
-    return new Validator(
-        randomPublicKey(),
-        randomBytes32(),
-        Constants.FAR_FUTURE_EPOCH,
-        Constants.FAR_FUTURE_EPOCH,
-        Constants.FAR_FUTURE_EPOCH,
-        Constants.FAR_FUTURE_EPOCH,
-        false,
-        UnsignedLong.valueOf(Constants.MAX_EFFECTIVE_BALANCE));
-  }
-
   public static Validator randomValidator(int seed) {
     return new Validator(
         randomPublicKey(seed),
-        randomBytes32(seed),
-        Constants.FAR_FUTURE_EPOCH,
-        Constants.FAR_FUTURE_EPOCH,
-        Constants.FAR_FUTURE_EPOCH,
-        Constants.FAR_FUTURE_EPOCH,
+        randomBytes32(seed++),
+        UnsignedLong.valueOf(Constants.MAX_EFFECTIVE_BALANCE),
         false,
-        UnsignedLong.valueOf(Constants.MAX_EFFECTIVE_BALANCE));
+        Constants.FAR_FUTURE_EPOCH,
+        Constants.FAR_FUTURE_EPOCH,
+        Constants.FAR_FUTURE_EPOCH,
+        Constants.FAR_FUTURE_EPOCH);
+  }
+
+  public static Fork randomFork(int seed) {
+    return new Fork(
+        new Bytes4(randomBytes32(seed).slice(0, 4)),
+        new Bytes4(randomBytes32(seed++).slice(0, 4)),
+        randomUnsignedLong(seed++));
+  }
+
+  public static BeaconState randomBeaconState(int seed) {
+    return new BeaconState(
+        randomUnsignedLong(seed),
+        randomUnsignedLong(seed++),
+        randomFork(seed++),
+        randomBeaconBlockHeader(seed++),
+        randomSSZVector(
+            Bytes32.ZERO,
+            Constants.SLOTS_PER_HISTORICAL_ROOT,
+            DataStructureUtil::randomBytes32,
+            seed++),
+        randomSSZVector(
+            Bytes32.ZERO,
+            Constants.SLOTS_PER_HISTORICAL_ROOT,
+            DataStructureUtil::randomBytes32,
+            seed++),
+        randomSSZList(Bytes32.class, 1000, DataStructureUtil::randomBytes32, seed++),
+        randomEth1Data(seed++),
+        randomSSZList(
+            Eth1Data.class,
+            SLOTS_PER_ETH1_VOTING_PERIOD,
+            DataStructureUtil::randomEth1Data,
+            seed++),
+        randomUnsignedLong(seed++),
+
+        // Can't use the actual maxSize cause it is too big
+        randomSSZList(Validator.class, 1000, DataStructureUtil::randomValidator, seed++),
+        randomSSZList(UnsignedLong.class, 1000, DataStructureUtil::randomUnsignedLong, seed++),
+        randomSSZVector(
+            Bytes32.ZERO,
+            Constants.EPOCHS_PER_HISTORICAL_VECTOR,
+            DataStructureUtil::randomBytes32,
+            seed++),
+        randomSSZVector(
+            UnsignedLong.ZERO,
+            Constants.EPOCHS_PER_SLASHINGS_VECTOR,
+            DataStructureUtil::randomUnsignedLong,
+            seed++),
+        randomSSZList(
+            PendingAttestation.class, 1000, DataStructureUtil::randomPendingAttestation, seed++),
+        randomSSZList(
+            PendingAttestation.class, 1000, DataStructureUtil::randomPendingAttestation, seed++),
+        randomBitvector(Constants.JUSTIFICATION_BITS_LENGTH, seed++),
+        randomCheckpoint(seed++),
+        randomCheckpoint(seed++),
+        randomCheckpoint(seed++));
+  }
+
+  public static BeaconState randomBeaconState(UnsignedLong slot, int seed) {
+    BeaconState randomBeaconState = randomBeaconState(seed);
+    randomBeaconState.setSlot(slot);
+    return randomBeaconState;
   }
 }

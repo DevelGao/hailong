@@ -13,6 +13,7 @@
 
 package tech.devgao.hailong.datastructures.blocks;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.primitives.UnsignedLong;
 import java.util.Arrays;
 import java.util.List;
@@ -20,11 +21,13 @@ import java.util.Objects;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.ssz.SSZ;
+import tech.devgao.hailong.util.SSZTypes.SSZContainer;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil;
 import tech.devgao.hailong.util.hashtree.HashTreeUtil.SSZTypes;
+import tech.devgao.hailong.util.hashtree.Merkleizable;
 import tech.devgao.hailong.util.sos.SimpleOffsetSerializable;
 
-public final class Eth1Data implements SimpleOffsetSerializable {
+public class Eth1Data implements Merkleizable, SimpleOffsetSerializable, SSZContainer {
 
   // The number of SimpleSerialize basic types in this SSZ Container/POJO.
   private static final int SSZ_FIELD_COUNT = 3;
@@ -136,12 +139,22 @@ public final class Eth1Data implements SimpleOffsetSerializable {
     this.block_hash = block_hash;
   }
 
+  @Override
   public Bytes32 hash_tree_root() {
     return HashTreeUtil.merkleize(
         Arrays.asList(
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, deposit_root),
+            HashTreeUtil.hash_tree_root(SSZTypes.VECTOR_OF_BASIC, deposit_root),
             HashTreeUtil.hash_tree_root(
                 SSZTypes.BASIC, SSZ.encodeUInt64(deposit_count.longValue())),
-            HashTreeUtil.hash_tree_root(SSZTypes.TUPLE_OF_BASIC, block_hash)));
+            HashTreeUtil.hash_tree_root(SSZTypes.VECTOR_OF_BASIC, block_hash)));
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("deposit_root", deposit_root)
+        .add("deposit_count", deposit_count)
+        .add("block_hash", block_hash)
+        .toString();
   }
 }

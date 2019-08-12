@@ -169,5 +169,5 @@ This document is adapted from the following sources:
 [New contributors]: /CONTRIBUTING.md
 [two-factor authentication]: https://help.github.com/articles/about-two-factor-authentication
 [hailong-dev@devgao.tech]: mailto:hailong-dev@devgao.tech
-[Hailong Gitter]: https://gitter.im/devgaoEng/hailong
-[Hailong Wiki]: https://github.com/devgaoEng/hailong/wiki
+[Hailong Gitter]: https://gitter.im/DevelGao/hailong
+[Hailong Wiki]: https://github.com/DevelGao/hailong/wiki

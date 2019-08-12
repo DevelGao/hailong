@@ -8,8 +8,8 @@ After you download and unpackage Hailong:
     ./bin/hailong --help
    ```
 
-A [basic quickstart](https://github.com/devgaoEng/hailong/wiki/Quickstart) and other options for [starting Hailong](https://github.com/devgaoEng/hailong/wiki/Starting-Hailong) are included in the documentation. 
+A [basic quickstart](https://github.com/DevelGao/hailong/wiki/Quickstart) and other options for [starting Hailong](https://github.com/DevelGao/hailong/wiki/Starting-Hailong) are included in the documentation. 
 
-The documentation is included in this release package and on the [Hailong Wiki](https://github.com/devgaoEng/hailong/wiki). 
+The documentation is included in this release package and on the [Hailong Wiki](https://github.com/DevelGao/hailong/wiki). 
 
 >**Note** Starting Hailong by double-clicking the `hailong` or `hailong.bat` executables starts a node synchronizing with the Ethereum mainnet. 
